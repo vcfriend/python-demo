@@ -14,7 +14,7 @@ from matplotlib import cm
 from sklearn import svm
 
 # we create 40 separable points
-np.random.seed(0)
+np.random.seed(1)
 X = np.r_[np.random.randn(20, 2) - [2, 2], np.random.randn(20, 2) + [2, 2]]
 Y = [0] * 20 + [1] * 20
 
@@ -22,16 +22,23 @@ Y = [0] * 20 + [1] * 20
 fignum = 1
 
 # fit the model
-for name, penalty in (("unreg", 1), ("reg", 0.05)):
+# 参考 https://blog.csdn.net/qq_43043256/article/details/104259061
+# for name, penalty in (("unreg", 1), ("reg", 0.05)):
+for name, penalty in (("unreg", 1), ):
 
     clf = svm.SVC(kernel="linear", C=penalty)
     clf.fit(X, Y)
 
     # get the separating hyperplane #获取分离超平面
-    w = clf.coef_[0]
-    a = -w[0] / w[1]
-    xx = np.linspace(-5, 5)
-    yy = a * xx - (clf.intercept_[0]) / w[1]
+    w = clf.coef_[0]  # 获取w
+
+    # 根据超平面 yy= -w0/w1*x1-b1/w1
+    a = -w[0] / w[1]  #斜率
+    xx = np.linspace(-5, 5)  #公式中的x1
+    # 我们得到截距b1和w1后，就可以求出所需要的公式
+    # clf.intercept_[0]  #用来获得截距b1(这里共有两个值，分别为到x和到y的)
+    yy = a * xx - (clf.intercept_[0]) / w[1]  #超平面
+
 
     # plot the parallels to the separating hyperplane that pass through the
     # support vectors (margin away from hyperplane in direction
@@ -40,10 +47,17 @@ for name, penalty in (("unreg", 1), ("reg", 0.05)):
     # 绘制通过的分离超平面的平行线
     # 支持向量(从超平面方向上的边距)
     # 垂直于超平面)。竖直方向上是sqrt(1+a^2)
-    # 2 - d。
+    # 对于线性回归和逻辑回归，其目标函数为：
+    # g(x) = w1x1 + w2x2 + w3x3 + w4x4 + w0
+    # coef_和intercept_都是模型参数，即为w
+    # coef_为w1到w4
+    # intercept_为w0
+    # 如果有激活函数sigmoid，增加非线性变化  则为分类  即逻辑回归
+    # 如果没有激活函数，则为回归
+    # 对于这样的线性函数，都会有coef_和intercept_函数
     margin = 1 / np.sqrt(np.sum(clf.coef_ ** 2))
-    yy_down = yy - np.sqrt(1 + a ** 2) * margin
-    yy_up = yy + np.sqrt(1 + a ** 2) * margin
+    yy_down = yy - np.sqrt(1 + a ** 2) * margin  #下边界
+    yy_up = yy + np.sqrt(1 + a ** 2) * margin  #上边界
 
     # plot the line, the points, and the nearest vectors to the plane
     # 绘制直线、点和距离平面最近的向量
@@ -54,8 +68,8 @@ for name, penalty in (("unreg", 1), ("reg", 0.05)):
     plt.plot(xx, yy_up, "k--")
 
     plt.scatter(
-        clf.support_vectors_[:, 0],
-        clf.support_vectors_[:, 1],
+        clf.support_vectors_[:, 0],  #分类0的支持向量
+        clf.support_vectors_[:, 1],  #分类1的支持向量
         s=80,
         facecolors="none",
         zorder=10,
