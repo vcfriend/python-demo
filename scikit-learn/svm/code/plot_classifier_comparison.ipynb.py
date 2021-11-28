@@ -66,8 +66,8 @@ classifiers = [
 #%%
 
 
-n_samples = 100  #测试样本数量
-n_class = 4  #测试分类器的个数
+n_samples = 1000  #测试样本数量
+n_class = 11  #测试分类器的个数
 
 names = names[:n_class]
 classifiers = classifiers[:n_class]
