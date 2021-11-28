@@ -20,6 +20,7 @@ from sklearn.datasets import make_moons, make_circles, make_classification
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.tree import DecisionTreeClassifier
@@ -32,22 +33,25 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 h = 0.02  # step size in the mesh 网格中的步长
 
+#分类器的名称
 names = [
-    "Linear SVM",
-    "RBF SVM",
-    "Nearest Neighbors",
-    "Decision Tree",
-    "Random Forest",
-    "Neural Net",
-    "AdaBoost",
-    "Naive Bayes",
+    "Linear SVM",  #线性分类器
+    "RBF SVM",  #径向基核函数分类器
+    "LogisticRegression",  #逻辑回归分类器
+    "Nearest Neighbors",  #最近邻居分类器
+    "Decision Tree",  #决策树分类器
+    "Random Forest",  #随机森林分类器
+    "Neural Net",  #神经网络分类器
+    "AdaBoost",  #通过迭代弱分类器而产生最终的强分类器
+    "Naive Bayes",  #朴素贝叶斯分类器
     "QDA",
-    "Gaussian Process",
+    "Gaussian Process",  #高斯过程分类器
 ]
 
 classifiers = [
     SVC(kernel="linear", C=0.1),
-    SVC(C=10, gamma=1),
+    SVC(kernel="rbf", C=1, gamma=1),
+    LogisticRegression(C=1),
     KNeighborsClassifier(3),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
@@ -60,11 +64,13 @@ classifiers = [
 
 
 #%%
-names = names[:]
-classifiers = classifiers[:]
 
-n_samples = 100
 
+n_samples = 100  #测试样本数量
+n_class = 4  #测试分类器的个数
+
+names = names[:n_class]
+classifiers = classifiers[:n_class]
 #%%
 
 X, y = make_classification(
@@ -94,7 +100,7 @@ print(y[:10,])
 
 rng = np.random.RandomState(2)  #使用RandomState(int)可以自定义随机数种子，以保证每次执行代码，生成的数组都相同。 https://blog.csdn.net/weixin_42782150/article/details/102841192
 X += 2 * rng.uniform(size=X.shape)  #从参数化的均匀分布中抽取样本
-linearly_separable = (X, y)  #线性可分的
+linearly_separable = (X, y)  #线性可分的, 随机生成的自定义测试数据
 
 
 
@@ -119,7 +125,7 @@ datasets = [
                  factor=0.5,  #	0 < double < 1 (default=.8)内圆和外圆之间的比例因子。
                  random_state=0,  #int, RandomState instance, default=None确定用于数据集改组和噪声的随机数生成。为多个函数调用传递可重复输出的int值
                  ),
-    linearly_separable,  #线性可分的
+    linearly_separable,  #线性可分的, 随机生成的自定义测试数据
 ]
 
 #%%

@@ -50,8 +50,8 @@ names = [
 ]
 
 classifiers = [
-    SVC(kernel="linear", C=0.1),
-    SVC(kernel="rbf", C=10, gamma=1),
+    SVC(kernel="linear", C=.5),
+    SVC(kernel="rbf", C=1, gamma=0.5),
     KNeighborsClassifier(3),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
@@ -65,10 +65,10 @@ classifiers = [
 
 
 # %%
-names = names[:-1]
-classifiers = classifiers[:-1]
+names = names[:3]
+classifiers = classifiers[:3]
 
-n_samples = 3500  # 样本数量
+n_samples = 100  # 样本数量
 
 # %%
 
@@ -76,11 +76,11 @@ X, y = make_classification(
     n_samples=n_samples,  # 样本个数
     n_features=2,  # 特征集个数
     n_redundant=0,  # 冗余特征个数
-    n_informative=2,  # 有效特征个数
+    n_informative=1,  # 有效特征个数
     random_state=1,  # 确定用于生成数据集的随机数生成。 为多个函数调用传递可重复输出的int值。
     n_clusters_per_class=1,  # 簇的个数
     flip_y=0.5,  # (default=0.01)类别随机分配的样本比例。 较大的值会在标签中引入噪音，并使分类任务更加困难。
-    n_classes=2,  # int类型 (default=2)分类问题的类（或标签）数。sss
+    n_classes=2,  # int类型 (default=2)分类问题的类（或标签）数。
 )
 
 # %%
@@ -101,7 +101,7 @@ datasets = [
                # int or two-element tuple, optional (default=100)如果为int，则生成的总点数。 如果是两个元素的元组，则两个元素中每个元素的点数。
                noise=0.5,  # double or None (default=None)加到数据中的高斯噪声的标准偏差。
                shuffle=True,  # bool, optional (default=True)是否打乱数据顺序。
-               random_state=0,  # random_state:生成随机种子，给定一个int型数据，能够保证每次生成数据相同。
+               random_state=1,  # random_state:生成随机种子，给定一个int型数据，能够保证每次生成数据相同。
                ),
     # 在2d中制作一个包含较小圆圈的大圆圈的形状的数据集
     make_circles(n_samples=n_samples,
@@ -111,7 +111,7 @@ datasets = [
                  factor=0.5,  # 0 < double < 1 (default=.8)内圆和外圆之间的比例因子。
                  random_state=1,  # int, RandomState instance, default=None确定用于数据集改组和噪声的随机数生成。为多个函数调用传递可重复输出的int值
                  ),
-    linearly_separable,  # 线性可分的
+    linearly_separable,  #线性可分的, 随机生成的自定义测试数据
 ]
 
 # %%
