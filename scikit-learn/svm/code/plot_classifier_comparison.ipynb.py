@@ -37,6 +37,7 @@ h = 0.02  # step size in the mesh 网格中的步长
 names = [
     "Linear SVM",  #线性分类器
     "RBF SVM",  #径向基核函数分类器
+    "poly",
     "LogisticRegression",  #逻辑回归分类器
     "Nearest Neighbors",  #最近邻居分类器
     "Decision Tree",  #决策树分类器
@@ -51,6 +52,7 @@ names = [
 classifiers = [
     SVC(kernel="linear", C=0.1),
     SVC(kernel="rbf", C=1, gamma=1),
+    SVC(kernel="poly", C=1, gamma="auto", degree=3, coef0=1, probability=True),
     LogisticRegression(C=1),
     KNeighborsClassifier(3),
     DecisionTreeClassifier(max_depth=5),
@@ -66,7 +68,7 @@ classifiers = [
 #%%
 
 
-n_samples = 1000  #测试样本数量
+n_samples = 100  #测试样本数量
 n_class = 11  #测试分类器的个数
 
 names = names[:n_class]
@@ -77,10 +79,11 @@ X, y = make_classification(
     n_samples=n_samples,  #样本个数
     n_features=2,  #特征集个数
     n_redundant=0,  #冗余特征个数
-    n_informative=2,  #有效特征个数
-    random_state=0,  #确定用于生成数据集的随机数生成。 为多个函数调用传递可重复输出的int值。
+    n_repeated=0,  #(default=0)从信息性和冗余性特征中随机抽取的重复性特征的数量。
+    n_informative=1,  #有效特征个数
     n_clusters_per_class=1,  #簇的个数
-    flip_y = 0.5,  # (default=0.01)类别随机分配的样本比例。 较大的值会在标签中引入噪音，并使分类任务更加困难。
+    random_state=1,  #确定用于生成数据集的随机数生成。 为多个函数调用传递可重复输出的int值。
+    flip_y = 0.8,  # (default=0.01)类别随机分配的样本比例。 较大的值会在标签中引入噪音，并使分类任务更加困难。
     n_classes=2,  #int类型 (default=2)分类问题的类（或标签）数。sss
 )
 
@@ -170,7 +173,7 @@ for ds_cnt, ds in enumerate(datasets):
     cm_bright = ListedColormap(["#FF0000", "#0000FF"])  #样本点颜色（样本分为2个类，所以为两个颜色）
     ax = plt.subplot(len(datasets), len(classifiers) + 1, i)  #创建单个子图
     if ds_cnt == 0:  #第一列是输入数据
-        ax.set_title("Input data")
+        ax.set_title("Input data:%s" % n_samples)
     # Plot the training points 绘制训练点
     ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k")
     # Plot the testing points 绘制测试点
