@@ -18,7 +18,7 @@ n_sample = len(X)
 np.random.seed(0)
 order = np.random.permutation(n_sample)
 X = X[order]
-y = y[order].astype(np.float)
+y = y[order].astype(np.float64)
 
 X_train = X[:int(.9 * n_sample)]
 y_train = y[:int(.9 * n_sample)]
@@ -52,7 +52,7 @@ for kernel in ('linear', 'rbf', 'poly'):
 
     # Put the result into a color plot
     Z = Z.reshape(XX.shape)
-    plt.pcolormesh(XX, YY, Z > 0, cmap=plt.cm.Paired)
+    plt.pcolormesh(XX, YY, Z > 0, cmap=plt.cm.Paired,shading='auto')
     plt.contour(XX, YY, Z, colors=['k', 'k', 'k'],
                 linestyles=['--', '-', '--'], levels=[-.5, 0, .5])
 
