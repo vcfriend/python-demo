@@ -63,9 +63,9 @@ if __name__ == '__main__':
          backtest_slippage_ratio回测滑点比例
          '''
     run(strategy_id='strategy_id',
-        filename='main.py',
+        filename='双均线策略(期货).py',
         mode=MODE_BACKTEST,
-        token='token_id',
+        token='e85fb3ce49e6aee3a7fabbadeb90d9c26a193c6e',
         backtest_start_time='2017-09-01 09:00:00',
         backtest_end_time='2017-09-30 15:00:00',
         backtest_adjust=ADJUST_NONE,

@@ -16,10 +16,13 @@ class TestStrategy(bt.Strategy):
     def __init__(self):
         # 保存收盘价的引用
         self.dataclose = self.datas[0].close
+        print('切片访问前3个值', self.datas[0].array[:3])
+        print('close0',self.dataclose[0],'close1',self.dataclose[1])
 
     def next(self):
         # 记录收盘价
         self.log('Close, %.2f' % self.dataclose[0])
+        pass
 
 
 if __name__ == '__main__':
@@ -39,9 +42,9 @@ if __name__ == '__main__':
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
         # 数据必须大于fromdate
-        fromdate=datetime.datetime(2000, 1, 1),
+        fromdate=datetime.datetime(2014, 12, 1),
         # 数据必须小于todate
-        todate=datetime.datetime(2000, 12, 31),
+        todate=datetime.datetime(2014, 12, 10),
         reverse=False)
 
     # 加载交易数据
