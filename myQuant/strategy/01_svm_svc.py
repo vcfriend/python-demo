@@ -65,8 +65,11 @@ print(X[:3, ])
 # 收盘价>开盘价 标记为类别1 收盘价<=开盘价 标记为类别0
 df['flag'] = df.apply(lambda x: 0 if (x['open'] > x['close']) else 1, axis=1)
 
-# 收盘价>开盘价 标记类别为1 收盘价<开盘价 标记类别为-1 收盘价=开盘价 标记类别为0
-# df['flag'] = df.apply(lambda x: lambda x: 0 if (abs(x['open'] - x['close']) <= 1.0) else (-1 if ((x['open'] - x['close']) > 1) else 1), axis=1)
+# # 收盘价>开盘价 标记类别为1 收盘价<开盘价 标记类别为-1 收盘价=开盘价 标记类别为0
+# epsilon = 0.1  #误差
+# df['flag'] = df.apply(
+#     lambda x: 0 if (abs(x['close'] - x['open']) <= epsilon)
+#     else ( 1 if (x['close'] - x['open'] > epsilon) else -1), axis=1)
 
 print(df.head())
 
