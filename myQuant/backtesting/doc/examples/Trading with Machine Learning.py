@@ -25,7 +25,7 @@
 # +
 from backtesting.test import EURUSD, GOOG, SMA
 
-data = GOOG.copy()
+data = EURUSD.copy()
 data
 
 
@@ -191,7 +191,8 @@ class MLTrainOnceStrategy(Strategy):
 
         # Forecast the next movement
         X = get_X(self.data.df.iloc[-1:])
-        forecast = self.clf.predict(X)[0]
+        predict = self.clf.predict(X)
+        forecast = predict[0]
 
         # Update the plotted "forecast" indicator
         self.forecasts[-1] = forecast
