@@ -9,6 +9,7 @@ import backtrader.feeds as btfeeds
 # Load the Data
 datapath = args.dataname or '../../datas/2006-day-001.txt'
 data = btfeeds.BacktraderCSVData(dataname=datapath)
+cerebro = bt.Cerebro()
 cerebro.adddata(data)  # First add the original data - smaller timeframe
 
 tframes = dict(daily=bt.TimeFrame.Days, weekly=bt.TimeFrame.Weeks,

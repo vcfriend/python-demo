@@ -27,7 +27,7 @@ def runstrat():
         monthly=bt.TimeFrame.Months)
 
     # Add the resample data instead of the original
-    cerebro.resampledata(data,
+    cerebro.resampledata(dataname=data,
                          timeframe=tframes[args.timeframe],
                          compression=args.compression)
 
