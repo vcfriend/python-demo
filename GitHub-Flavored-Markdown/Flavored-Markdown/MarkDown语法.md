@@ -299,7 +299,10 @@ swift
 ```Swift
     var name:String = "小明"
 ```
+```python
+print("hello world")
 
+```
 
 
 ### Bottom Out

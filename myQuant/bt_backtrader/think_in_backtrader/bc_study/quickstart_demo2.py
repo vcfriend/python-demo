@@ -12,14 +12,14 @@
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import tushare_csv_datafeed as ts_df
 
 
 # 演示用策略，每日输出开盘价
 class DemoStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
-        ''' Logging function for this strategy'''
+        """ Logging function for this strategy"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 

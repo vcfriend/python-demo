@@ -4,9 +4,9 @@ from urllib.parse import urlencode
 
 
 def get_futures_base_info() -> pd.DataFrame:
-    '''
+    """
     获取四个期货交易所全部期货基本信息
-    '''
+    """
     EastmoneyHeaders = {
         'Host': '19.push2.eastmoney.com',
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko',
@@ -49,7 +49,7 @@ def get_futures_base_info() -> pd.DataFrame:
 
 def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101', klt: int = 101,
                          fqt: int = 1) -> pd.DataFrame:
-    '''
+    """
     获取k线数据
 
     Parameters
@@ -72,7 +72,7 @@ def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101
     ------
     DateFrame : 包含期货k线数据
 
-    '''
+    """
     EastmoneyHeaders = {
         'Host': '19.push2.eastmoney.com',
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko',

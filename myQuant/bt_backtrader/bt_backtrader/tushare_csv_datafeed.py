@@ -89,7 +89,8 @@ def get_csv_GenericCSVData(stock_id="600016.SH", start="20190101", end="20191231
 
 
 def get_tushare_online_daily_data():
-    """将A股票日线数据返回BT Data
+    """
+    将A股票日线数据返回BT Data
     """
     stock_id = "000001.SZ"
     start = "20190101"
@@ -105,7 +106,7 @@ def get_tushare_online_daily_data():
         # 加载数据
         df = pro.daily(ts_code=stock_id, start_date=start, end_date=end)
         df.sort_values(by=["trade_date"], ascending=True,
-                       inplace=True)    # 按日期先后排序
+                       inplace=True)  # 按日期先后排序
         df.reset_index(inplace=True, drop=True)
 
         # 开始数据清洗：
@@ -133,9 +134,8 @@ def get_tushare_online_daily_data():
 
 
 if __name__ == "__main__":
-    # # 读取从tushare下载的日线数据文件：
+    # 读取从tushare下载的日线数据文件：
     data = get_csv_daily_data()
-
 
     # # 读取csv文件
     # data = get_csv_GenericCSVData()

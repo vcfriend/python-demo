@@ -2,12 +2,15 @@
 from __future__ import print_function, absolute_import
 from gm.api import *
 
+
 def init(context):
     # 订阅浦发银行, bar频率为一天和一分钟
     # 指定数据窗口大小为50
     # 订阅订阅多个频率的数据，可多次调用subscribe
     subscribe(symbols='SHSE.600000', frequency='1d', count=50)
     subscribe(symbols='SHSE.600000', frequency='60s', count=50)
+
+
 def on_bar(context, bars):
     # context.data提取缓存的数据滑窗, 可用于计算指标
     # 注意：context.data里的count要小于或者等于subscribe里的count

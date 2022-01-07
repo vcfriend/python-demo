@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-'''
+"""
 @File    :   quickstart_demo0.py
 @Time    :   2020/10/29 15:25:16
 @Author  :   Jeffrey Wang
@@ -11,9 +11,9 @@
 尝试买入的策略：
 1. 买入的尝试，如果价格连续跌两天则买入
 
-'''
+"""
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import tushare_csv_datafeed as ts_df
 
 
 # 演示用策略，每日输出开盘价
