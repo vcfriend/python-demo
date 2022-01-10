@@ -44,7 +44,8 @@ class MarketOrderWithSlippageStrategy(bt.Strategy):
             return
         elif order.status in [order.Completed]:
             self.log('买单(oid={oid})执行, 开盘价={open}, 成交价={pexec}，滑点差价={sp}'.format(
-                oid=order.ref, pexec=order.executed.price, open=self.dataopen[0], sp=(order.executed.price-self.dataopen[0])))
+                oid=order.ref, pexec=order.executed.price, open=self.dataopen[0],
+                sp=(order.executed.price - self.dataopen[0])))
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             pass
@@ -71,7 +72,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(MarketOrderWithSlippageStrategy)
 
     # 设置初始资金：
-    cerebro.broker.setcash(100000.0)    # 10万元
+    cerebro.broker.setcash(100000.0)  # 10万元
     # cerebro.broker.set_slippage_fixed(fixed=0.01)
     cerebro.broker.set_slippage_perc(perc=0.01)
 

@@ -9,8 +9,7 @@ source = ColumnDataSource(data=dict(
             for i in [0, 0, 1, 0, 1, 0, 0, 1, 0, 2]],
     x=list(range(10)),
     bottom=[1, 3, 4, 3, 2, 3, 5, 5, 7, 6.5],
-    top=   [4, 7, 6, 5, 4, 6, 8, 7, 9, 8]))   # noqa: E222,E251
-
+    top=[4, 7, 6, 5, 4, 6, 8, 7, 9, 8]))  # noqa: E222,E251
 
 p = figure(plot_height=800, plot_width=1200, tools='wheel_zoom,save')
 p.vbar('x', .6, 'bottom', 'top', source=source,

@@ -2,8 +2,9 @@ import datetime  #
 import os.path  # 路径管理
 import sys  # 获取当前运行脚本的路径 (in argv[0])
 
-#导入backtrader框架
+# 导入backtrader框架
 import backtrader as bt
+
 
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
@@ -53,7 +54,6 @@ if __name__ == '__main__':
 
     # 加载交易数据
     cerebro.adddata(data)
-
 
     # 设置投资金额100000.0
     cerebro.broker.setcash(100000.0)

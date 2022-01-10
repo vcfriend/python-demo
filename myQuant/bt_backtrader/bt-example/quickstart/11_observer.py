@@ -86,7 +86,6 @@ class TestStrategy(bt.Strategy):
 
             # Not yet ... we MIGHT BUY if ...
             if self.dataclose[0] > self.sma[0]:
-
                 # BUY, BUY, BUY!!! (with all possible default parameters)
                 self.log('BUY CREATE, %.2f' % self.dataclose[0])
 

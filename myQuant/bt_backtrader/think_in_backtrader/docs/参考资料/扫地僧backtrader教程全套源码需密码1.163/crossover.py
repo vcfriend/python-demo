@@ -39,7 +39,7 @@ class SmaCross(bt.Strategy):
         self.move_average = bt.ind.MovingAverageSimple(
             self.data, period=self.params.period)
         # 交叉信号指标
-        self.crossover = bt.ind.CrossOver(self.data, self.move_average)        
+        self.crossover = bt.ind.CrossOver(self.data, self.move_average)
 
     def next(self):
         if not self.position:  # 还没有仓位

@@ -2,8 +2,9 @@ import datetime  #
 import os.path  # 路径管理
 import sys  # 获取当前运行脚本的路径 (in argv[0])
 
-#导入backtrader框架
+# 导入backtrader框架
 import backtrader as bt
+
 
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
@@ -28,7 +29,6 @@ class TestStrategy(bt.Strategy):
         self.buycomm = None
         # 加入均线指标
         self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.maperiod)
-
 
     # 订单状态通知，买入卖出都是下单
     def notify_order(self, order):
@@ -83,7 +83,7 @@ class TestStrategy(bt.Strategy):
             if self.dataclose[0] > self.sma[0]:
                 # 买入
                 self.log('买入单, %.2f' % self.dataclose[0])
-                    # 跟踪订单避免重复
+                # 跟踪订单避免重复
                 self.order = self.buy()
         else:
             # 如果已经持仓，收盘价在均线价格之下
@@ -95,7 +95,7 @@ class TestStrategy(bt.Strategy):
 
     # 测略结束时，多用于参数调优
     def stop(self):
-        self.log('(均线周期 %2d)期末资金 %.2f' % (self.params.maperiod, self.broker.getvalue()) )
+        self.log('(均线周期 %2d)期末资金 %.2f' % (self.params.maperiod, self.broker.getvalue()))
         # self.log('(均线周期 %2d)期末资金 %.2f' % (self.params.maperiod, self.broker.getvalue()), doprint=True)
 
 
@@ -129,7 +129,6 @@ if __name__ == '__main__':
 
     # 加载交易数据
     cerebro.adddata(data)
-
 
     # 设置投资金额1000.0
     cerebro.broker.setcash(1000.0)

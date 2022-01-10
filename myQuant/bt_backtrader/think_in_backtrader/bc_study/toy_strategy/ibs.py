@@ -25,6 +25,7 @@ class IBSStrategy(bt.Strategy):
     """
     IBS（Internal Bar Strength）内部条形强度 策略
     """
+
     # # 参数：长短均线的日期
     # params = {"short_window": 20, "long_window": 50}
 
@@ -61,7 +62,7 @@ class IBSStrategy(bt.Strategy):
 
         if self.ibs[0] < 0.1:
             # 买入
-            self.buy(exectype=bt.Order.Market, size=100*100)
+            self.buy(exectype=bt.Order.Market, size=100 * 100)
         elif size > 0 and self.ibs[0] > 0.9:
             # 卖出
             self.close(self.datas[0])
@@ -78,7 +79,7 @@ if __name__ == '__main__':
     cerebro.addanalyzer(btanalyzers.SharpeRatio, _name='mysharpe')
 
     # 设置初始资金：
-    cerebro.broker.setcash(100*10000.0)    # 10万元
+    cerebro.broker.setcash(100 * 10000.0)  # 10万元
 
     # 从csv文件加载数据
     # 仅3天数据

@@ -11,29 +11,24 @@ import os.path  # 管理路径
 import sys  # 发现脚本名字(in argv[0])
 
 
-
-class SmaCross(bt.Strategy): # 这是信号策略
+class SmaCross(bt.Strategy):  # 这是信号策略
     params = (
-        ('sma1', 10), # 需要优化的参数1，短期均线窗口
-        ('sma2', 30), # 需要优化的参数2，长期均线窗口
+        ('sma1', 10),  # 需要优化的参数1，短期均线窗口
+        ('sma2', 30),  # 需要优化的参数2，长期均线窗口
     )
+
     def __init__(self):
-        SMA1 = bt.ind.SMA(period=int(self.params.sma1)) # 用int取整
-        SMA2 = bt.ind.SMA(period=int(self.params.sma2)) # 用int取整
+        SMA1 = bt.ind.SMA(period=int(self.params.sma1))  # 用int取整
+        SMA2 = bt.ind.SMA(period=int(self.params.sma2))  # 用int取整
         self.crossover = bt.ind.CrossOver(SMA1, SMA2)
 
-
-    
     def next(self):
-        if not self.position:           
-            if self.crossover > 0:              
+        if not self.position:
+            if self.crossover > 0:
                 self.buy(size=100)
-       
-        elif self.crossover < 0:            
+
+        elif self.crossover < 0:
             self.sell(size=100)
-
-
-
 
 
 ################
@@ -61,9 +56,8 @@ data0 = bt.feeds.GenericCSVData(
 
 
 # 评估函数，输入参数，返回评估函数值，这里是总市值，要求最大化
-def runstrat(sma1,sma2):
-    
-    print('I am called',datetime.now().strftime('%H:%M:%S'))
+def runstrat(sma1, sma2):
+    print('I am called', datetime.now().strftime('%H:%M:%S'))
     cerebro = bt.Cerebro()
     cerebro.addstrategy(SmaCross, sma1=sma1, sma2=sma2)
 
@@ -76,9 +70,7 @@ def runstrat(sma1,sma2):
 #  执行优化，第一个参数是评估函数
 # 执行5次回测（num_evals,实战时回测次数要设大一些，比如100次），设置两个参数sma1,sma2的取值范围
 # solver_name可取算法包括 particle swarm,sobol,random search,cma-es,grid search
-opt = optunity.maximize(runstrat,  num_evals=10,solver_name='particle swarm', sma1=[2, 55], sma2=[2, 55])
-
-
+opt = optunity.maximize(runstrat, num_evals=10, solver_name='particle swarm', sma1=[2, 55], sma2=[2, 55])
 
 ########################################
 # 优化完成，得到最优参数结果

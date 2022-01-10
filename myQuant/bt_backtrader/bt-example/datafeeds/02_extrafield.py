@@ -10,9 +10,11 @@ import backtrader as bt
 
 from feeds.amibrokercsvpe import AmibrokerCSVPE
 
+
 class MyStrategy(bt.Strategy):
-	def __init__(self):
-		bt.indicators.SMA(self.data.pe, period=1, subplot=True, plotname="PE")
+    def __init__(self):
+        bt.indicators.SMA(self.data.pe, period=1, subplot=True, plotname="PE")
+
 
 if __name__ == '__main__':
     # Create a cerebro entity

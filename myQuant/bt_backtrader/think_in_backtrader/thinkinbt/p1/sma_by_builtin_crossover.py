@@ -17,7 +17,6 @@ plt.rcParams['axes.unicode_minus'] = False  # 这两行需要手动设置
 
 
 class DemoStrategy(bt.Strategy):
-
     # 定义参数
     params = dict(
         period=10
@@ -29,7 +28,7 @@ class DemoStrategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        self.order = None   # 未决订单
+        self.order = None  # 未决订单
         # 移动平均线
         self.ma = bt.ind.MovingAverageSimple(self.data, period=self.p.period)
         # Crossover
@@ -56,7 +55,7 @@ class DemoStrategy(bt.Strategy):
             elif order.issell():
                 self.log("卖单执行, {p}".format(p=order.executed.price))
 
-        self.order = None   # 重置未决订单
+        self.order = None  # 重置未决订单
 
 
 # 启动回测

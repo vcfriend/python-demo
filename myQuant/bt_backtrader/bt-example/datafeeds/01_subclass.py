@@ -18,27 +18,27 @@ if __name__ == '__main__':
     datapath = '../datas/SET50_H1_2011_2017.csv'
 
     # Create a Data Feed
-#     data = bt.feeds.GenericCSVData(
-#         dataname=datapath,
-#         dtformat='%Y%m%d',
-#         tmformat='%H%M%S',
-#         # Do not pass values before this date
-#         fromdate=datetime.datetime(2011, 6, 1),
-#         # Do not pass values after this date
-#         todate=datetime.datetime(2011, 8, 31),
-#         datetime=0,
-#         time=1,
-#         open=2,
-#         high=3,
-#         low=4,
-#         close=5,
-#         volume=-1,
-#         openinterest=-1,
-#
-#     )
+    #     data = bt.feeds.GenericCSVData(
+    #         dataname=datapath,
+    #         dtformat='%Y%m%d',
+    #         tmformat='%H%M%S',
+    #         # Do not pass values before this date
+    #         fromdate=datetime.datetime(2011, 6, 1),
+    #         # Do not pass values after this date
+    #         todate=datetime.datetime(2011, 8, 31),
+    #         datetime=0,
+    #         time=1,
+    #         open=2,
+    #         high=3,
+    #         low=4,
+    #         close=5,
+    #         volume=-1,
+    #         openinterest=-1,
+    #
+    #     )
     data = AmibrokerCSV(
-		dataname=datapath,
-	)
+        dataname=datapath,
+    )
 
     # Add the Data Feed to Cerebro
     cerebro.adddata(data)

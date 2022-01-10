@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 
 import backtrader as bt
 
+
 # Test a Stratey
 class TestStrategy(bt.Strategy):
 

@@ -13,24 +13,20 @@ import chardet
 class Strategy(bt.Strategy):
     params = dict(
         rebal_monthday=[1],  # 每月1日执行再平衡
-        num_cap = 1000, # 按市值取前多少支股票
+        num_cap=1000,  # 按市值取前多少支股票
         num_amount=800,  # 按成交额排序取前多少支股票
-        pct_assetliability= 0.2, # 扣除资产负债率最高的20%个股
-        num_roe=100, # 按roe取前100名
-        num_pb=50, # 按pb取前50
-
-
+        pct_assetliability=0.2,  # 扣除资产负债率最高的20%个股
+        num_roe=100,  # 按roe取前100名
+        num_pb=50,  # 按pb取前50
 
     )
 
     def __init__(self):
-
         self.inds = collections.defaultdict(dict)
 
         # datas[0]存放数据spy（标普指数），其他股票数据放在stocks列表里
         self.stocks = self.datas[0:]
-        self.lastRanks = [] # 初始化上次标的列表 
-       
+        self.lastRanks = []  # 初始化上次标的列表
 
         self.add_timer(  # 定时器
             when=bt.Timer.SESSION_START,
@@ -45,7 +41,8 @@ class Strategy(bt.Strategy):
         # if len(self)==0:  # 策略self自己是时间基准，要有长度才能执行后续操作。（注意，这里len(seld)比策略迭代表当前长度小1，所以实际上浪费了第一条记录，不过影响不大）
         #     return
 
-        if(self.data0.datetime.date(0).month == 5 or self.data0.datetime.date(0).month == 9 or self.data0.datetime.date(0).month == 11):  # 只在5，9，11月的1号执行再平衡
+        if (self.data0.datetime.date(0).month == 5 or self.data0.datetime.date(
+                0).month == 9 or self.data0.datetime.date(0).month == 11):  # 只在5，9，11月的1号执行再平衡
             # print('notify', self.datetime.date(0), self.data0.datetime.date(0),len(self.data0.datetime),  self.data1.datetime.date(0),len(self.data1.datetime))
             self.rebalance_portfolio()
 
@@ -64,9 +61,8 @@ class Strategy(bt.Strategy):
     def rebalance_portfolio(self):
         # print('in balance',self.data0.datetime.date(0))
 
-
         # 从stocks列表取出最大的日期，就是当前日期currDate
-        currDate = max(list(d.datetime.date(0) for d in self.stocks if len(d)>0))
+        currDate = max(list(d.datetime.date(0) for d in self.stocks if len(d) > 0))
         # # 最终标的选取过程
         # # 1 先做排除筛选过程
         # self.ranks = [d for d in self.stocks if
@@ -88,10 +84,6 @@ class Strategy(bt.Strategy):
 
         # ....其它排序规则
 
-
-
-
-        
         # if len(self.ranks) != 50: # 不等于50只股票，则不操作
         #     return
 
@@ -103,12 +95,8 @@ class Strategy(bt.Strategy):
         # # 4 本次标的下单
         # for d in self.ranks:
         #     o = self.order_target_percent(data=d, target=0.019) # 下单，每只股票分配账户价值的2%。未防止次日开票价格过高导致超过总账户价值，采用0.019的分配比例 
-            
 
         # self.lastRanks = self.ranks # 跟踪上次买入的标的
-
-
-    
 
 
 ##########################
@@ -130,7 +118,7 @@ for fname in datafilelist:
     #     result = chardet.detect(f.read())
     # df = pd.read_csv(
     #     fname, parse_dates=True, index_col=0, encoding='result['encoding']')
-    
+
     df = pd.read_csv(
         fname, parse_dates=True, index_col=0, encoding='gbk')
     print(df.head())
@@ -147,7 +135,6 @@ for fname in datafilelist:
 
     )
     cerebro.adddata(data)
-
 
 cerebro.addstrategy(Strategy)
 startcash = 1000000

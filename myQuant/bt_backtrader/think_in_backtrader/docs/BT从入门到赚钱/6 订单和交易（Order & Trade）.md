@@ -7,9 +7,9 @@
 5. 订单的数量Sizer
 6. 订单的通知
 7. 订单下单时机和执行时机
-   1. 默认：当日下单，次日成交
-   2. 收盘作弊模式 head_on_close
-   3. 开盘作弊模式 head_on_open
+    1. 默认：当日下单，次日成交
+    2. 收盘作弊模式 head_on_close
+    3. 开盘作弊模式 head_on_open
 8. 利用 order_target_xxx方法下单
 9. Trade的概念
 10. Trade的生命周期

@@ -19,12 +19,13 @@ tickers = pd.read_csv(datapath, header=None)[1].tolist()
 maxtickersNum = 20
 tickers = tickers[0:maxtickersNum]  # 取前maxtickersNum支股票代码
 
+
 ####################################
 
 
 class Momentum(bt.Indicator):
-    lines = ('trend', )
-    params = (('period', 90), )
+    lines = ('trend',)
+    params = (('period', 90),)
 
     def __init__(self):
         self.addminperiod(self.params.period)
@@ -33,14 +34,14 @@ class Momentum(bt.Indicator):
         returns = np.log(self.data.get(size=self.p.period))
         x = np.arange(len(returns))
         slope, _, rvalue, _, _ = linregress(x, returns)
-        annualized = (1 + slope)**252
-        self.lines.trend[0] = annualized * (rvalue**2)
+        annualized = (1 + slope) ** 252
+        self.lines.trend[0] = annualized * (rvalue ** 2)
 
 
 class Strategy(bt.Strategy):
     params = dict(
         rebal_weekday=5,  # 每周5执行再平衡
-        momentum_period=90,  #动量计算周期
+        momentum_period=90,  # 动量计算周期
         idx_period=200,  # 标普指数200日均线
         stock_period=100,  # 股票100日均线
         vol_period=20,  # 平均真实波幅ATR计算周期
@@ -49,7 +50,7 @@ class Strategy(bt.Strategy):
     def log(self, arg):
         print('{} {}'.format(self.datetime.date(), arg))
 
-    def __init__(self): 
+    def __init__(self):
         self.inds = collections.defaultdict(dict)
 
         # datas[0]存放数据spy（标普指数），其他股票数据放在stocks列表里
@@ -74,7 +75,7 @@ class Strategy(bt.Strategy):
 
         self.timercount = 1  # timer触发次数
 
-    def notify_timer(self, timer, when, *args, **kwargs):        
+    def notify_timer(self, timer, when, *args, **kwargs):
         self.rebalance_portfolio()
         self.timercount = self.timercount + 1
         if self.timercount % 2 == 0:
@@ -158,7 +159,7 @@ cerebro.adddata(spy)  # 加入S&P 500指数
 for ticker in tickers:
     df = pd.read_csv(
         f"survivorship-free/{ticker}.csv", parse_dates=True, index_col=0)
-    
+
     data = bt.feeds.PandasData(
         dataname=df,
         datetime=None,  # 使用索引列作日期列
@@ -171,7 +172,7 @@ for ticker in tickers:
         plot=False
 
     )
-    
+
     if len(df) > 100:  # 数据要足够长以支持计算100日移动均线
         cerebro.adddata(data)
 

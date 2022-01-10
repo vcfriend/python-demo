@@ -1,13 +1,14 @@
 from datetime import datetime
 import backtrader as bt
 
+
 # Create a subclass of Strategy to define the indicators and logic
 
 class SmaCross(bt.Strategy):
     # list of parameters which are configurable for the strategy
     params = dict(
         pfast=5,  # period for the fast moving average
-        pslow=10   # period for the slow moving average
+        pslow=10  # period for the slow moving average
     )
 
     def __init__(self):
@@ -30,18 +31,18 @@ cerebro = bt.Cerebro()  # create a "Cerebro" engine instance
 
 # Create a data feed
 data = bt.feeds.GenericCSVData(
-        dataname='./600000qfq.csv',
-        datetime=2,
-        open=3,
-        high=4,
-        low=5,
-        close=6,
-        volume=10,
-        #dtformat=('%Y%m%d'),
-        dtformat=('%Y%m%d'),
-        fromdate=datetime(2019, 1, 1),
-        todate=datetime(2020, 7, 8)
-    )
+    dataname='./600000qfq.csv',
+    datetime=2,
+    open=3,
+    high=4,
+    low=5,
+    close=6,
+    volume=10,
+    # dtformat=('%Y%m%d'),
+    dtformat=('%Y%m%d'),
+    fromdate=datetime(2019, 1, 1),
+    todate=datetime(2020, 7, 8)
+)
 cerebro.adddata(data)  # Add the data feed
 
 cerebro.addstrategy(SmaCross)  # Add the trading strategy

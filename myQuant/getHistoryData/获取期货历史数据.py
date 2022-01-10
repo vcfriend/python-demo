@@ -38,7 +38,7 @@ def get_futures_base_info() -> pd.DataFrame:
     for item in response.json()['data']['diff']:
         code = item['f12']
         name = item['f14']
-        secid = str(item['f13'])+'.'+code
+        secid = str(item['f13']) + '.' + code
         belong = cfg[item['f13']]
         row = [code, name, secid, belong]
         rows.append(row)
@@ -47,7 +47,8 @@ def get_futures_base_info() -> pd.DataFrame:
     return df
 
 
-def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101', klt: int = 101, fqt: int = 1) -> pd.DataFrame:
+def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101', klt: int = 101,
+                         fqt: int = 1) -> pd.DataFrame:
     """
     获取k线数据
 
@@ -92,7 +93,6 @@ def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101
         'f60': '涨跌额',
         'f61': '换手率',
 
-
     }
     fields = list(EastmoneyKlines.keys())
     columns = list(EastmoneyKlines.values())
@@ -109,7 +109,7 @@ def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101
         ('fqt', f'{fqt}'),
     )
     base_url = 'https://push2his.eastmoney.com/api/qt/stock/kline/get'
-    url = base_url+'?'+urlencode(params)
+    url = base_url + '?' + urlencode(params)
     json_response = requests.get(
         url, headers=EastmoneyHeaders).json()
 
@@ -124,7 +124,6 @@ def get_ftures_k_history(secid: str, beg: str = '19000101', end: str = '20500101
 
     rows = []
     for _kline in klines:
-
         kline = _kline.split(',')
         rows.append(kline)
 
@@ -137,7 +136,7 @@ if "__main__" == __name__:
     # 获取全市场期货基本数据，即下面的 4 列信息
     # ['期货代码', '期货名称', 'secid', '归属交易所']
     futures_info_df = get_futures_base_info()
-    futures_info_df.to_csv('期货信息表.csv',index=None, encoding='utf-8-sig')
+    futures_info_df.to_csv('期货信息表.csv', index=None, encoding='utf-8-sig')
     print('期货基本信息表如下')
     print(futures_info_df)
     secids = futures_info_df['secid']

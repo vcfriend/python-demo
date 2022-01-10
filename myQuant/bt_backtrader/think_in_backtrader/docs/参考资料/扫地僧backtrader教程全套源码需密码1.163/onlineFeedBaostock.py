@@ -5,6 +5,7 @@ import sys  # 发现脚本名字(in argv[0])
 import baostock as bs
 import pandas as pd
 
+
 # 创建策略类
 class SmaCross(bt.Strategy):
     # 定义参数
@@ -33,8 +34,6 @@ class SmaCross(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单 Canceled/Margin/Rejected')
 
-
-
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         if trade.isclosed:
@@ -60,7 +59,6 @@ class SmaCross(bt.Strategy):
         elif self.crossover < 0:
             self.log('创建卖单')
             self.sell(size=100)
-
 
 
 ##########################

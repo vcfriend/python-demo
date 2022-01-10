@@ -60,7 +60,7 @@ class SmaCross(bt.Strategy):
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.data.close[
-                    -1] < self.move_average[-1] and self.data > self.move_average:
+                -1] < self.move_average[-1] and self.data > self.move_average:
                 self.log('创建买单')
 
                 # validday = self.data.datetime[0]  # 当前日期时间
@@ -73,10 +73,10 @@ class SmaCross(bt.Strategy):
                     valid=validday,
                     exectype=bt.Order.Limit,
                     price=10
-                    )
+                )
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.data.close[
-                -1] > self.move_average[-1] and self.data < self.move_average:
+            -1] > self.move_average[-1] and self.data < self.move_average:
             self.log('创建卖单')
             self.sell(size=100)
 
@@ -112,7 +112,6 @@ cerebro.addstrategy(SmaCross)  # 将策略注入引擎
 
 cerebro.broker.setcash(10000.0)  # 设置初始资金
 cerebro.broker.setcommission(0.001)  # 佣金费率
-
 
 print('初始市值: %.2f' % cerebro.broker.getvalue())
 cerebro.run()  # 运行

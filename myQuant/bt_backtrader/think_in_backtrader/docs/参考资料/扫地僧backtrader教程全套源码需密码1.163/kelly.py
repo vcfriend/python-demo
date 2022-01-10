@@ -14,9 +14,7 @@ class Kelly(Analyzer):
         '''Replace default implementation to instantiate an AutoOrdereDict
         rather than an OrderedDict'''
         self.rets = AutoOrderedDict()
-      
-    
-    
+
     def start(self):
         super().start()
         self.pnlWins = list()  # 盈利列表：保留盈利交易利润额的列表

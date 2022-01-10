@@ -1,9 +1,12 @@
 import backtrader as bt
 import backtrader.feeds as btfeeds
 
+
 class testStrategy(bt.Strategy):
     def next(self):
-        print(self.data0.datetime.datetime(0),self.data0.open[0],self.data0.high[0],self.data0.low[0],self.data0.close[0],)
+        print(self.data0.datetime.datetime(0), self.data0.open[0], self.data0.high[0], self.data0.low[0],
+              self.data0.close[0], )
+
 
 # Create a cerebro entity
 cerebro = bt.Cerebro(stdstats=False)
@@ -12,7 +15,7 @@ cerebro = bt.Cerebro(stdstats=False)
 cerebro.addstrategy(testStrategy)
 
 # Load the Data
-datapath =  './ticksample.csv'
+datapath = './ticksample.csv'
 
 data = btfeeds.GenericCSVData(
     dataname=datapath,
@@ -38,15 +41,10 @@ cerebro.resampledata(
     # bar2edge=1,
     # adjbartime=1,
     # rightedge=1
-    )
-
-
+)
 
 # Run over everything
 cerebro.run()
 
 # Plot the result
 # cerebro.plot(style='bar')
-
-
-

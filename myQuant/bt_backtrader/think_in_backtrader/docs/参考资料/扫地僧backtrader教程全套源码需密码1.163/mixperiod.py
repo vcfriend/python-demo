@@ -29,8 +29,6 @@ class SmaCross(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单 Canceled/Margin/Rejected')
 
-    
-
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         if trade.isclosed:
@@ -51,8 +49,9 @@ class SmaCross(bt.Strategy):
         self.isover = self.move_average - self.move_average2()
 
     def next(self):
-      
-        print(self.datetime.datetime(),'in next, move_average2 %0.2f' % self.isover[0],self.data0.open[0],self.data1.open[0])
+
+        print(self.datetime.datetime(), 'in next, move_average2 %0.2f' % self.isover[0], self.data0.open[0],
+              self.data1.open[0])
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.crossover > 0 and self.isover:
@@ -75,7 +74,7 @@ cerebro = bt.Cerebro()
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
 # 拼接得到数据文件全路径
 datapath = os.path.join(modpath, './600000d.csv')  # 日线数据
-datapath2 = os.path.join(modpath, './600000w.csv')  #周线数据
+datapath2 = os.path.join(modpath, './600000w.csv')  # 周线数据
 
 # 日线行情数据对象，加载数据
 data = bt.feeds.GenericCSVData(
@@ -88,7 +87,7 @@ data = bt.feeds.GenericCSVData(
     volume=10,  # 成交量所在列
     openinterest=-1,  # 无未平仓量列
     dtformat=('%Y%m%d'),  # 日期格式
-    timeframe = bt.TimeFrame.Days,
+    timeframe=bt.TimeFrame.Days,
     fromdate=datetime(2000, 1, 4),  # 起始日
     todate=datetime(2000, 12, 29))  # 结束日
 
@@ -103,7 +102,7 @@ data2 = bt.feeds.GenericCSVData(
     volume=10,  # 成交量所在列
     openinterest=-1,  # 无未平仓量列
     dtformat=('%Y%m%d'),  # 日期格式
-    timeframe = bt.TimeFrame.Weeks,
+    timeframe=bt.TimeFrame.Weeks,
     fromdate=datetime(2000, 1, 4),  # 起始日
     todate=datetime(2000, 12, 29))  # 结束日
 

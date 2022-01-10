@@ -1,10 +1,10 @@
-
 import datetime  #
 import os.path  # 路径管理
 import sys  # 获取当前运行脚本的路径 (in argv[0])
 
-#导入backtrader框架
+# 导入backtrader框架
 import backtrader as bt
+
 
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
@@ -27,17 +27,16 @@ class TestStrategy(bt.Strategy):
         self.buyprice = None
         self.buycomm = None
         # 加入均线指标
-        self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.maperiod)  #简单移动平均
+        self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.maperiod)  # 简单移动平均
 
         # 绘制图形时候用到的指标
-        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)  #指数移动平均线
-        bt.indicators.WeightedMovingAverage(self.datas[0], period=25,subplot=True)  #加权移动平均线
-        bt.indicators.StochasticSlow(self.datas[0])  #随机慢
+        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)  # 指数移动平均线
+        bt.indicators.WeightedMovingAverage(self.datas[0], period=25, subplot=True)  # 加权移动平均线
+        bt.indicators.StochasticSlow(self.datas[0])  # 随机慢
         bt.indicators.MACDHisto(self.datas[0])
         rsi = bt.indicators.RSI(self.datas[0])
-        bt.indicators.SmoothedMovingAverage(rsi, period=10)  #平滑移动平均线
+        bt.indicators.SmoothedMovingAverage(rsi, period=10)  # 平滑移动平均线
         bt.indicators.ATR(self.datas[0], plot=False)
-
 
     # 订单状态通知，买入卖出都是下单
     def notify_order(self, order):
@@ -92,7 +91,7 @@ class TestStrategy(bt.Strategy):
             if self.dataclose[0] > self.sma[0]:
                 # 买入
                 self.log('买入单, %.2f' % self.dataclose[0])
-                    # 跟踪订单避免重复
+                # 跟踪订单避免重复
                 self.order = self.buy()
         else:
             # 如果已经持仓，收盘价在均线价格之下
@@ -101,7 +100,6 @@ class TestStrategy(bt.Strategy):
                 self.log('卖出单, %.2f' % self.dataclose[0])
                 # 跟踪订单避免重复
                 self.order = self.sell()
-
 
 
 if __name__ == '__main__':
@@ -129,7 +127,6 @@ if __name__ == '__main__':
     # 加载交易数据
     cerebro.adddata(data)
 
-
     # 设置投资金额1000.0
     cerebro.broker.setcash(1000.0)
 
@@ -146,5 +143,3 @@ if __name__ == '__main__':
 
     # 绘制图像
     cerebro.plot()
-
-

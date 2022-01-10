@@ -46,8 +46,8 @@ def BBANDS(data, n_lookback, n_std):
     """Bollinger bands indicator"""
     hlc3 = (data.High + data.Low + data.Close) / 3
     mean, std = hlc3.rolling(n_lookback).mean(), hlc3.rolling(n_lookback).std()
-    upper = mean + n_std*std
-    lower = mean - n_std*std
+    upper = mean + n_std * std
+    lower = mean - n_std * std
     return upper, lower
 
 
@@ -103,7 +103,7 @@ def get_X(data):
 def get_y(data):
     """Return dependent variable y"""
     y = data.Close.pct_change(48).shift(-48)  # Returns after roughly two days
-    y[y.between(-.004, .004)] = 0             # Devalue returns smaller than 0.4%
+    y[y.between(-.004, .004)] = 0  # Devalue returns smaller than 0.4%
     y[y > 0] = 1
     y[y < 0] = -1
     return y
@@ -165,7 +165,7 @@ N_TRAIN = 400
 class MLTrainOnceStrategy(Strategy):
     price_delta = .004  # 0.4%
 
-    def init(self):        
+    def init(self):
         # Init our model, a kNN classifier
         self.clf = KNeighborsClassifier(7)
 
@@ -201,7 +201,7 @@ class MLTrainOnceStrategy(Strategy):
         # place a long order for 20% of available account equity. Vice versa for short.
         # Also set target take-profit and stop-loss prices to be one price_delta
         # away from the current closing price.
-        upper, lower = close[-1] * (1 + np.r_[1, -1]*self.price_delta)
+        upper, lower = close[-1] * (1 + np.r_[1, -1] * self.price_delta)
 
         if forecast == 1 and not self.position.is_long:
             self.buy(size=.2, tp=upper, sl=lower)

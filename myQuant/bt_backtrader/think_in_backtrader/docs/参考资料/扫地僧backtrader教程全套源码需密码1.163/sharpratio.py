@@ -24,7 +24,7 @@ data = bt.feeds.GenericCSVData(
     low=5,  # 最低价所在列
     close=6,  # 收盘价价所在列
     volume=10,  # 成交量所在列
-    openinterest=-1, # 无未平仓量列.(openinterest是期货交易使用的)
+    openinterest=-1,  # 无未平仓量列.(openinterest是期货交易使用的)
     dtformat=('%Y%m%d'),  # 日期格式
     fromdate=datetime(2019, 1, 1),  # 起始日
     todate=datetime(2020, 7, 8))  # 结束日
@@ -35,7 +35,7 @@ cerebro.adddata(data)
 cerebro.addstrategy(bt.strategies.SMA_CrossOver)
 
 # Analyzer
-cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='mysharpe', timeframe = bt.TimeFrame.Months)
+cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='mysharpe', timeframe=bt.TimeFrame.Months)
 cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='mysharpeA')
 
 thestrats = cerebro.run()

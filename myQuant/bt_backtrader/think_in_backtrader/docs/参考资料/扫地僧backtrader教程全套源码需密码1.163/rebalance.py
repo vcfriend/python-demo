@@ -37,7 +37,7 @@ class St(bt.Strategy):
         # 对每个数据（股票），对应的评价指标为 ms/vs,它是线对象
         self.ranks = {d: m / v for d, v, m in zip(self.datas, vs, ms)}
 
-    def next(self):       
+    def next(self):
         # 对数据：指标字典按指标当前值排序,结果ranks是list
         ranks = sorted(
             self.ranks.items(),  # 获得(d, 指标线)对

@@ -4,6 +4,7 @@ import numpy as np
 import os.path  # 管理路径
 import sys  # 发现脚本名字
 
+
 class KalmanPair(bt.Strategy):
     params = (("printlog", True), ("quantity", 1000))
 
@@ -32,9 +33,6 @@ class KalmanPair(bt.Strategy):
             print('毛收益 %0.2f, 扣佣后收益 % 0.2f, 佣金 %.2f' %
                   (trade.pnl, trade.pnlcomm, trade.commission))
 
-    
-    
-    
     def __init__(self):
         self.delta = 0.0001
         self.Vw = self.delta / (1 - self.delta) * np.eye(2)
@@ -48,7 +46,7 @@ class KalmanPair(bt.Strategy):
         self.quantity = self.params.quantity
 
     def next(self):
-       
+
         x = np.asarray([self.data0[0], 1.0]).reshape((1, 2))
         y = self.data1[0]
 
@@ -138,8 +136,6 @@ if __name__ == '__main__':
         todate=datetime(2020, 12, 8))  # 结束日
 
     cerebro.adddata(data2)
-
-
 
     # broker设置资金、手续费
     cerebro.broker.setcash(1000000.0)

@@ -2,48 +2,49 @@
 # link: https://mp.weixin.qq.com/s/WBZAt7Uiddu9LjPEqtb7nQ
 
 # =============================================================================
-#%%
+# %%
 # 第1章 通过 Strategy 类开发策略
 
 # 创建策略
 class MyStrategy(bt.Strategy):
     # 初始化策略参数
     params = (
-                (...,...), # 最后一个“,”最好别删！
-             )
+        (..., ...),  # 最后一个“,”最好别删！
+    )
+
     # 日志打印：参考的官方文档
     def log(self, txt, dt=None):
         """构建策略打印日志的函数：可用于打印订单记录或交易记录等"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
-  
+
     # 初始化函数
     def __init__(self):
         '''初始化属性、计算指标等'''
         # 指标计算可参考《backtrader指标篇》
-        self.add_timer() # 添加定时器
+        self.add_timer()  # 添加定时器
         pass
-    
+
     # 整个回测周期上，不同时间段对应的函数
     def start(self):
         '''在回测开始之前调用,对应第0根bar'''
         # 回测开始之前的有关处理逻辑可以写在这里
         # 默认调用空的 start() 函数，用于启动回测
         pass
-    
+
     def prenext(self):
         '''策略准备阶段,对应第1根bar ~ 第 min_period-1 根bar'''
         # 该函数主要用于等待指标计算，指标计算完成前都会默认调用prenext()空函数
         # min_period 就是 __init__ 中计算完成所有指标的第1个值所需的最小时间段
         pass
-    
+
     def nextstart(self):
         '''策略正常运行的第一个时点，对应第 min_period 根bar'''
         # 只有在 __init__ 中所有指标都有值可用的情况下，才会开始运行策略
         # nextstart()只运行一次，主要用于告知后面可以开始启动 next() 了
         # nextstart()的默认实现是简单地调用next(),所以next中的策略逻辑从第 min_period根bar就已经开始执行
         pass
-    
+
     def next(self):
         '''策略正常运行阶段，对应第min_period+1根bar ~ 最后一根bar'''
         # 主要的策略逻辑都是写在该函数下
@@ -52,13 +53,13 @@ class MyStrategy(bt.Strategy):
         print('当前持仓量', self.getposition(self.data).size)
         print('当前持仓成本', self.getposition(self.data).price)
         # self.getpositionbyname(name=None, broker=None)
-        print('数据集名称列表',getdatanames())
-        data = getdatabyname(name) # 根据名称返回数据集
+        print('数据集名称列表', getdatanames())
+        data = getdatabyname(name)  # 根据名称返回数据集
         # 常规下单函数
-        self.order = self.buy( ...) # 买入、做多 long
-        self.order = self.sell(...) # 卖出、做空 short
-        self.order = self.close(...) # 平仓 cover
-        self.cancel(order) # 取消订单
+        self.order = self.buy(...)  # 买入、做多 long
+        self.order = self.sell(...)  # 卖出、做空 short
+        self.order = self.close(...)  # 平仓 cover
+        self.cancel(order)  # 取消订单
         # 目标下单函数
         # 按目标数量下单
         self.order = self.order_target_size(target=size)
@@ -70,12 +71,12 @@ class MyStrategy(bt.Strategy):
         brackets = self.buy_bracket()
         brackets = self.sell_bracket()
         pass
-    
+
     def stop(self):
         '''策略结束，对应最后一根bar'''
         # 告知系统回测已完成，可以进行策略重置和回测结果整理了
         pass
-    
+
     # 打印回测日志
     def notify_order(self, order):
         '''通知订单信息'''
@@ -84,33 +85,34 @@ class MyStrategy(bt.Strategy):
     def notify_trade(self, trade):
         '''通知交易信息'''
         pass
-    
+
     def notify_cashvalue(self, cash, value):
         '''通知当前资金和总资产'''
         pass
-    
+
     def notify_fund(self, cash, value, fundvalue, shares):
         '''返回当前资金、总资产、基金价值、基金份额'''
         pass
-    
+
     def notify_store(self, msg, *args, **kwargs):
         '''返回供应商发出的信息通知'''
         pass
-    
+
     def notify_data(self, data, status, *args, **kwargs):
         '''返回数据相关的通知'''
         pass
-    
+
     def notify_timer(self, timer, when, *args, **kwargs):
         '''返回定时器的通知'''
         # 定时器可以通过函数add_time()添加
         pass
 
+
 # 将策略添加给大脑
 cerebro.addstrategy(MyStrategy)
 
 # =============================================================================
-#%%
+# %%
 # 第2章 基于交易信号直接生成策略
 '''
 【信号策略 SignalStrategy】
@@ -154,13 +156,15 @@ cerebro.addstrategy(MyStrategy)
     arg：对应信号指标类中的参数 params，直接通过 period=xxx 、p1=xxx, p2=xxx 形式修改参数取值。
 '''
 
+
 # 自定义信号指标
 class MySignal(bt.Indicator):
-    lines = ('signal',) # 声明 signal 线，交易信号放在 signal line 上
+    lines = ('signal',)  # 声明 signal 线，交易信号放在 signal line 上
     params = (('period', 30),)
 
     def __init__(self):
         self.lines.signal = self.data - bt.indicators.SMA(period=self.p.period)
+
 
 # 实例化大脑
 cerebro = bt.Cerebro()
@@ -171,8 +175,9 @@ cerebro.adddata(data)
 cerebro.add_signal(bt.SIGNAL_LONGSHORT, MySignal, period=xxx)
 cerebro.run()
 
-
 '''-------------支持添加多条交易信号---------------'''
+
+
 # 定义交易信号1
 class SMACloseSignal(bt.Indicator):
     lines = ('signal',)
@@ -180,6 +185,7 @@ class SMACloseSignal(bt.Indicator):
 
     def __init__(self):
         self.lines.signal = self.data - bt.indicators.SMA(period=self.p.period)
+
 
 # 定义交易信号2
 class SMAExitSignal(bt.Indicator):
@@ -190,7 +196,8 @@ class SMAExitSignal(bt.Indicator):
         sma1 = bt.indicators.SMA(period=self.p.p1)
         sma2 = bt.indicators.SMA(period=self.p.p2)
         self.lines.signal = sma1 - sma2
-        
+
+
 # 实例化大脑
 cerebro = bt.Cerebro()
 # 加载数据
@@ -203,7 +210,7 @@ cerebro.add_signal(bt.SIGNAL_LONGEXIT, SMAExitSignal, p1=xxx, p2=xxx)
 cerebro.run()
 
 # =============================================================================
-#%%
+# %%
 # 第3章 关于订单累计和订单并发
 '''
 由于交易信号指标通常只是技术指标之间进行加减得到，在技术指标完全已知的情况下，很容易连续不断的生成交易信号，
@@ -217,7 +224,7 @@ cerebro.signal_accumulate(True)
 cerebro.signal_concurrency(True)
 
 # =============================================================================
-#%%
+# %%
 # 第4章 返回策略收益评价指标
 '''
 回测完成后，通常需要计算此次回测的各项收益评价指标，据此判断策略的好坏表现，
@@ -246,7 +253,8 @@ cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')
 # 计算年化收益：日度收益
 cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)
 # 计算年化夏普比率：日度收益
-cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0) # 计算夏普比率
+cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True,
+                    riskfreerate=0)  # 计算夏普比率
 cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='_SharpeRatio_A')
 # 返回收益率时序
 cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')
@@ -287,38 +295,40 @@ analyzer['年化夏普比率'] = result[0].analyzers._SharpeRatio_A.get_analysis
 # 日度收益率序列
 ret = pd.Series(result[0].analyzers._TimeReturn.get_analysis())
 
-#%%
+
+# %%
 ## 第4.2节 添加自定义分析器
 # 创建分析器
 class MyAnalyzer(bt.Analyzer):
     # 初始化参数：比如内置分析器支持设置的那些参数
     params = (
-                (...,...), # 最后一个“,”最好别删！
-             )
+        (..., ...),  # 最后一个“,”最好别删！
+    )
+
     # 初始化函数
     def __init__(self):
         '''初始化属性、计算指标等'''
         pass
-    
+
     # analyzer与策略一样，都是从第0根bar开始运行
     # 都会面临 min_period 问题
     # 所以都会通过 prenext、nextstart 来等待 min_period 被满足
     def start(self):
         pass
-    
+
     def prenext(self):
         pass
-    
+
     def nextstart(self):
         pass
-    
+
     def next(self):
         pass
-    
+
     def stop(self):
         # 一般对策略整体的评价指标是在策略结束后开始计算的
         pass
-    
+
     # 支持与策略一样的信息打印函数
     def notify_order(self, order):
         '''通知订单信息'''
@@ -327,19 +337,19 @@ class MyAnalyzer(bt.Analyzer):
     def notify_trade(self, trade):
         '''通知交易信息'''
         pass
-    
+
     def notify_cashvalue(self, cash, value):
         '''通知当前资金和总资产'''
         pass
-    
+
     def notify_fund(self, cash, value, fundvalue, shares):
         '''返回当前资金、总资产、基金价值、基金份额'''
         pass
-    
+
     def get_analysis(self):
         pass
 
-    
+
 # 官方提供的 SharpeRatio 例子
 class SharpeRatio(Analyzer):
     params = (('timeframe', TimeFrame.Years), ('riskfreerate', 0.01),)
@@ -361,17 +371,20 @@ class SharpeRatio(Analyzer):
         retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
         retdev = standarddev(self.anret.rets)
         self.ratio = retavg / retdev
-        
+
     def get_analysis(self):
         return dict(sharperatio=self.ratio)
 
-#%%
+
+# %%
 ## 第4.3节 添加自定义分析器2
 '''
 下面是在 Backtrader 社区中找到的自定义分析器，用于查看每笔交易盈亏情况：
 地址：https://community.backtrader.com/topic/1274/closed-trade-list-including-mfe-mae-analyzer
 该案例涉及到 trade 对象的相关属性，具体可以参考官方文档：https://www.backtrader.com/docu/trade/
 '''
+
+
 class trade_list(bt.Analyzer):
     def __init__(self):
 
@@ -386,18 +399,18 @@ class trade_list(bt.Analyzer):
             dir = 'short'
             if trade.history[0].event.size > 0: dir = 'long'
 
-            pricein = trade.history[len(trade.history)-1].status.price
-            priceout = trade.history[len(trade.history)-1].event.price
+            pricein = trade.history[len(trade.history) - 1].status.price
+            priceout = trade.history[len(trade.history) - 1].event.price
             datein = bt.num2date(trade.history[0].status.dt)
-            dateout = bt.num2date(trade.history[len(trade.history)-1].status.dt)
+            dateout = bt.num2date(trade.history[len(trade.history) - 1].status.dt)
             if trade.data._timeframe >= bt.TimeFrame.Days:
                 datein = datein.date()
                 dateout = dateout.date()
 
             pcntchange = 100 * priceout / pricein - 100
-            pnl = trade.history[len(trade.history)-1].status.pnlcomm
+            pnl = trade.history[len(trade.history) - 1].status.pnlcomm
             pnlpcnt = 100 * pnl / brokervalue
-            barlen = trade.history[len(trade.history)-1].status.barlen
+            barlen = trade.history[len(trade.history) - 1].status.barlen
             pbar = pnl / barlen
             self.cumprofit += pnl
 
@@ -407,8 +420,8 @@ class trade_list(bt.Analyzer):
                     size = record.status.size
                     value = record.status.value
 
-            highest_in_trade = max(trade.data.high.get(ago=0, size=barlen+1))
-            lowest_in_trade = min(trade.data.low.get(ago=0, size=barlen+1))
+            highest_in_trade = max(trade.data.high.get(ago=0, size=barlen + 1))
+            lowest_in_trade = min(trade.data.low.get(ago=0, size=barlen + 1))
             hp = 100 * (highest_in_trade - pricein) / pricein
             lp = 100 * (lowest_in_trade - pricein) / pricein
             if dir == 'long':
@@ -432,9 +445,10 @@ class trade_list(bt.Analyzer):
                                 'cumpnl': self.cumprofit,
                                 'nbars': barlen, 'pnl/bar': round(pbar, 2),
                                 'mfe%': round(mfe, 2), 'mae%': round(mae, 2)})
-            
+
     def get_analysis(self):
         return self.trades
+
 
 # 添加自定义的分析指标
 cerebro.addanalyzer(trade_list, _name='tradelist')
@@ -446,7 +460,7 @@ result = cerebro.run(tradehistory=True)
 ret = pd.DataFrame(result[0].analyzers.tradelist.get_analysis())
 
 # =============================================================================
-#%%
+# %%
 # 第5章 如何对策略进行参数优化
 '''
 如果策略的收益表现可能受相关参数的影响，需要验证比较参数不同取值对策略表现的影响，
@@ -470,19 +484,20 @@ cerebro.optstrategy(strategy, *args, **kwargs)：
       cerebro.run(maxcpus=2)
 '''
 
+
 class TestStrategy(bt.Strategy):
-  
-    params=(('period1',5),
-            ('period2',10),) #全局设定均线周期
+    params = (('period1', 5),
+              ('period2', 10),)  # 全局设定均线周期
     ......
 
-    
+
 # 实例化大脑
-cerebro1= bt.Cerebro(optdatas=True, optreturn=True)
+cerebro1 = bt.Cerebro(optdatas=True, optreturn=True)
 # 设置初始资金
 cerebro1.broker.set_cash(10000000)
 # 加载数据
-datafeed1 = bt.feeds.PandasData(dataname=data1, fromdate=datetime.datetime(2019,1,2), todate=datetime.datetime(2021,1,28))
+datafeed1 = bt.feeds.PandasData(dataname=data1, fromdate=datetime.datetime(2019, 1, 2),
+                                todate=datetime.datetime(2021, 1, 28))
 cerebro1.adddata(datafeed1, name='600466.SH')
 
 # 添加优化器
@@ -503,6 +518,7 @@ cerebro1.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')
 # 启动回测
 result = cerebro1.run()
 
+
 # 打印结果
 def get_my_analyzer(result):
     analyzer = {}
@@ -516,11 +532,12 @@ def get_my_analyzer(result):
     analyzer['最大回撤（%）'] = result.analyzers._DrawDown.get_analysis()['max']['drawdown'] * (-1)
     # 提取夏普比率
     analyzer['年化夏普比率'] = result.analyzers._SharpeRatio_A.get_analysis()['sharperatio']
-    
+
     return analyzer
+
 
 ret = []
 for i in result:
     ret.append(get_my_analyzer(i[0]))
-    
+
 pd.DataFrame(ret)

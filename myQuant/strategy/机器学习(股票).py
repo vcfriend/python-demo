@@ -6,13 +6,12 @@ from datetime import datetime
 import numpy as np
 from gm.api import *
 import sys
+
 try:
     from sklearn import svm
 except:
     print('请安装scikit-learn库和带mkl的numpy')
     sys.exit(-1)
-
-
 
 set_token('e85fb3ce49e6aee3a7fabbadeb90d9c26a193c6e')
 
@@ -24,6 +23,7 @@ set_token('e85fb3ce49e6aee3a7fabbadeb90d9c26a193c6e')
 训练数据为:SHSE.600000浦发银行,时间从2016-03-01到2017-06-30
 回测时间为:2017-07-01 09:00:00到2017-10-01 09:00:00
 '''
+
 
 def init(context):
     # 订阅浦发银行的分钟bar行情
@@ -75,7 +75,6 @@ def init(context):
         # features用于存放因子
         features = [close_mean, volume_mean, max_mean, min_mean, vol, return_now, std]
         x_all.append(features)
-
 
     # 准备算法需要用到的数据
     for i in range(len(days_close) - 20):
@@ -154,7 +153,6 @@ def on_bar(context, bars):
     elif position and bar.close / context.price < 1.02 and weekday == 5:
         order_close_all()
         print('SHSE.600000以市价单全平多仓止损')
-
 
 
 if __name__ == '__main__':

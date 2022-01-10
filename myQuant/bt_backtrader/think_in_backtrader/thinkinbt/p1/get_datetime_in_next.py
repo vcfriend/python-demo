@@ -70,7 +70,7 @@ class DemoStrategy(bt.Strategy):
         pass
 
     def next(self):
-        self.log("-"*20)
+        self.log("-" * 20)
         self.log("策略时间")
         self.log("当前时间 self.datetime.datetime() : {0}".format(self.datetime.datetime()))
         self.log("当前日期 self.datetime.date() : {0}".format(self.datetime.date()))

@@ -13,7 +13,6 @@ https://www.zhihu.com/people/optmaster/
 
 '''
 
-
 from datetime import datetime
 import backtrader as bt
 import os.path  # 管理路径
@@ -32,15 +31,15 @@ class SmaCross(bt.Strategy):
             self.datas[0].close, period=self.params.period)
 
     def next(self):
-        
+
         if not self.position.size:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.datas[0].close[-1] < self.move_average.sma[
-                    -1] and self.datas[0].close[0] > self.move_average.sma[0]:
+                -1] and self.datas[0].close[0] > self.move_average.sma[0]:
                 self.buy(size=100)
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.datas[0].close[-1] > self.move_average.sma[-1] and self.datas[
-                0].close[0] < self.move_average.sma[0]:
+            0].close[0] < self.move_average.sma[0]:
             self.sell(size=100)
 
 

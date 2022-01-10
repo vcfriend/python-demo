@@ -95,8 +95,8 @@ def runstrat(args=None):
     cerebro.broker.setcash(args.cash)
 
     dkwargs = dict()
-    dkwargs['fromdate'] = datetime(2005,1,1)
-    dkwargs['todate'] = datetime(2006,12,31)
+    dkwargs['fromdate'] = datetime(2005, 1, 1)
+    dkwargs['todate'] = datetime(2006, 12, 31)
 
     # data
     datapath = '../datas/yhoo-1996-2015.txt'
@@ -121,7 +121,6 @@ def runstrat(args=None):
 
 
 def parse_args(pargs=None):
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for Order Target')

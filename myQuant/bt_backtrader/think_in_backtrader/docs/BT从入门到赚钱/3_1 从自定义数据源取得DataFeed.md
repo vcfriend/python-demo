@@ -12,27 +12,25 @@
 
 ## 一、pd.Dataframe数据源
 
-需求：Datafeed中不仅有常规的价量数据，而且加上PE、PB两列；
-数据格式：daily/600061.SH.csv存放日线数据，daily_basic/600016.SH.csv存放日线指标数据
-代码说明：
+需求：Datafeed中不仅有常规的价量数据，而且加上PE、PB两列； 数据格式：daily/600061.SH.csv存放日线数据，daily_basic/600016.SH.csv存放日线指标数据 代码说明：
 
 - **拼接dataframe**
 
-  - 使用pd.read_csv读取csv文件
-  - 使用pd.merge拼接两个dataframe成一个df
-  - 根据bt要求进行排序、列处理后返回dataframe，最终返回的dataframe如下：
+    - 使用pd.read_csv读取csv文件
+    - 使用pd.merge拼接两个dataframe成一个df
+    - 根据bt要求进行排序、列处理后返回dataframe，最终返回的dataframe如下：
 
   ![image-20210111150719220](3_1 从自定义数据源取得DataFeed.assets/image-20210111150719220.png)
 
 - **自定义的Datafeed类**
 
-  - 新建MyFeeddata类继承PandasData；
-  - Override两个参数lines、params，注明新增列的类型与位置
+    - 新建MyFeeddata类继承PandasData；
+    - Override两个参数lines、params，注明新增列的类型与位置
 
 - **添加自定义DataFeed**
 
-  - 新建自定义的Datafeed
-  - 策略大脑中添加数据源
+    - 新建自定义的Datafeed
+    - 策略大脑中添加数据源
 
 ### 完整代码示例
 
@@ -168,7 +166,6 @@ if __name__ == "__main__":
     print(df.tail().head())
 
 ```
-
 
 ## 二、CSV文件数据源
 

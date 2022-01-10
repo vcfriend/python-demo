@@ -10,7 +10,6 @@
 '''
 import backtrader as bt
 
-
 if __name__ == '__main__':
     # 初始化引擎
     cerebro = bt.Cerebro()

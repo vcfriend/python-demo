@@ -43,7 +43,7 @@ def stock_daily_to_csv(stock_id="600016.SH", start="20190101", end="20191231"):
         # 加载数据
         df = pro.daily(ts_code=stock_id, start_date=start, end_date=end)
         df.sort_values(by=["trade_date"], ascending=True,
-                       inplace=True)    # 按日期先后排序
+                       inplace=True)  # 按日期先后排序
         df.reset_index(inplace=True, drop=True)
         df.to_csv(path_or_buf=file_path, encoding='UTF-8', header=True, index=False)
         print(

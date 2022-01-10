@@ -15,13 +15,11 @@ class SmaCross(bt.Strategy):
         '''日志函数'''
         dt = dt or self.datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
-      
 
     def __init__(self):
         # 移动平均线指标
         self.move_average = bt.ind.MovingAverageSimple(
             self.data, period=self.params.period)
-
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -33,7 +31,7 @@ class SmaCross(bt.Strategy):
             if order.isbuy():
                 print(f'{self.data0.datetime.datetime(0)} 买单执行, executed date {bt.num2date(order.executed.dt)}\
                       ,{order.executed.price}, created date {bt.num2date(order.created.dt)}')
-              
+
 
             elif order.issell():
                 self.log('卖单执行, %.2f' % order.executed.price)
@@ -41,28 +39,24 @@ class SmaCross(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单 Canceled/Margin/Rejected')
 
-
-
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         print('trade')
         if trade.isclosed:
             print('毛收益 %0.2f, 扣佣后收益 % 0.2f, 佣金 %.2f' %
-                     (trade.pnl, trade.pnlcomm, trade.commission))
-
-
+                  (trade.pnl, trade.pnlcomm, trade.commission))
 
     def next(self):
-        
+
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.data.close[
-                    -1] < self.move_average[-1] and self.data > self.move_average:
+                -1] < self.move_average[-1] and self.data > self.move_average:
                 self.log('创建买单')
                 self.buy(size=100)
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.data.close[
-                -1] > self.move_average[-1] and self.data < self.move_average:
+            -1] > self.move_average[-1] and self.data < self.move_average:
             self.log('创建卖单')
             self.sell(size=100)
 
@@ -73,7 +67,6 @@ class SmaCross(bt.Strategy):
 
 # 创建大脑引擎对象
 cerebro = bt.Cerebro()
-
 
 # 获取本脚本文件所在路径
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -89,18 +82,18 @@ data = bt.feeds.GenericCSVData(
     low=5,  # 最低价所在列
     close=6,  # 收盘价价所在列
     volume=10,  # 成交量所在列
-    openinterest=-1, # 无未平仓量列
+    openinterest=-1,  # 无未平仓量列
     dtformat=('%Y%m%d'),  # 日期格式
     fromdate=datetime(2019, 1, 1),  # 起始日
     todate=datetime(2020, 7, 8))  # 结束日
 
 cerebro.adddata(data)  # 将行情数据对象注入引擎
 cerebro.addstrategy(SmaCross)  # 将策略注入引擎
-cerebro.broker.set_coc(True)  # 设置以当日收盘价成交
+cerebro.broker.set_coc(True)    #  设置以当日收盘价成交
 
 cerebro.broker.setcash(10000.0)  # 设置初始资金
-cerebro.broker.setcommission(0.001) # 佣金费率
- # 固定滑点，也可用cerebro.broker.set_slippage_perc()设置百分比滑点
+cerebro.broker.setcommission(0.001)  # 佣金费率
+# 固定滑点，也可用cerebro.broker.set_slippage_perc()设置百分比滑点
 cerebro.broker.set_slippage_fixed(0.05)
 
 print('初始市值: %.2f' % cerebro.broker.getvalue())

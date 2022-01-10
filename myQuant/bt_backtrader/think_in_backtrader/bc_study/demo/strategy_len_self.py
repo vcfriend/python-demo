@@ -47,7 +47,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(DoulbeSMAStrategy)
 
     # 设置初始资金：
-    cerebro.broker.setcash(100000.0)    # 10万元
+    cerebro.broker.setcash(100000.0)  # 10万元
 
     # 从csv文件加载数据
     # 仅3天数据

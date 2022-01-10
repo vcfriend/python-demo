@@ -19,7 +19,6 @@ import thinkinbt.p1.data_tl as data_tl
 
 
 class DemoStrategy(bt.Strategy):
-
     # 定义参数
     params = dict(
         myname="Jack", myage=10
@@ -45,7 +44,7 @@ def engine_run():
     # 初始化引擎
     cerebro = bt.Cerebro()
     # 给Cebro引擎添加策略
-    cerebro.addstrategy(DemoStrategy, myname="Mike")    # 参数覆盖了策略中的值
+    cerebro.addstrategy(DemoStrategy, myname="Mike")  # 参数覆盖了策略中的值
     # 设置初始资金：
     cerebro.broker.setcash(20000.0)
     # 从csv文件加载数据

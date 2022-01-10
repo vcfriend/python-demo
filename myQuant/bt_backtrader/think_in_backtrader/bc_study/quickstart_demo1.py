@@ -14,7 +14,6 @@
 import backtrader as bt
 import bc_study.tushare_csv_datafeed as ts_df
 
-
 if __name__ == '__main__':
     # 初始化引擎
     cerebro = bt.Cerebro()

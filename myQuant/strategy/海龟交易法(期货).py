@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from gm.api import *
 
-
 '''
 以短期为例：20日线
 第一步：获取历史数据，计算唐奇安通道和ATR
@@ -37,10 +36,12 @@ def algo(context):
     # 注：由于talib库计算ATR的结果与公式求得的结果不符，所以这里利用公式计算ATR
     # 如果是回测模式,当天的数据直接用history取到
     if context.mode == 2:
-        data = history_n(symbol=context.symbol, frequency='1d', count=context.n+1, end_time=context.now, fields='close,high,low,bob', df=True) # 计算ATR
+        data = history_n(symbol=context.symbol, frequency='1d', count=context.n + 1, end_time=context.now,
+                         fields='close,high,low,bob', df=True)  # 计算ATR
         tr_list = []
-        for i in range(0, len(data)-1):
-            tr = max((data['high'].iloc[i] - data['low'].iloc[i]), data['close'].shift(-1).iloc[i] - data['high'].iloc[i],
+        for i in range(0, len(data) - 1):
+            tr = max((data['high'].iloc[i] - data['low'].iloc[i]),
+                     data['close'].shift(-1).iloc[i] - data['high'].iloc[i],
                      data['close'].shift(-1).iloc[i] - data['low'].iloc[i])
             tr_list.append(tr)
         context.atr = int(np.floor(np.mean(tr_list)))
@@ -51,9 +52,10 @@ def algo(context):
 
     # 如果是实时模式，当天的数据需要用current取到
     if context.mode == 1:
-        data = history_n(symbol=context.symbol, frequency='1d', count=context.n, end_time=context.now, fields='close,high,low',
+        data = history_n(symbol=context.symbol, frequency='1d', count=context.n, end_time=context.now,
+                         fields='close,high,low',
                          df=True)  # 计算ATR
-        current_data = current(symbols=context.symbol)   # 最新一个交易日的最高、最低
+        current_data = current(symbols=context.symbol)  # 最新一个交易日的最高、最低
         tr_list = []
         for i in range(1, len(data)):
             tr = max((data['high'].iloc[i] - data['low'].iloc[i]),
@@ -92,11 +94,13 @@ def on_bar(context, bars):
     if not position_long and not position_short:
         # 如果向上突破唐奇安通道，则开多
         if close > context.don_open:
-            order_volume(symbol=symbol, side=OrderSide_Buy, volume=context.atr, order_type=OrderType_Market, position_effect=PositionEffect_Open)
+            order_volume(symbol=symbol, side=OrderSide_Buy, volume=context.atr, order_type=OrderType_Market,
+                         position_effect=PositionEffect_Open)
             print('开多仓atr')
         # 如果向下突破唐奇安通道，则开空
         if close < context.don_close:
-            order_volume(symbol=symbol, side=OrderSide_Sell, volume=context.atr, order_type=OrderType_Market, position_effect=PositionEffect_Open)
+            order_volume(symbol=symbol, side=OrderSide_Sell, volume=context.atr, order_type=OrderType_Market,
+                         position_effect=PositionEffect_Open)
             print('开空仓atr')
 
     # 有持仓时
@@ -104,7 +108,8 @@ def on_bar(context, bars):
     if position_long:
         # 当突破1/2atr时加仓
         if close > context.long_add_point:
-            order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Buy, order_type=OrderType_Market,position_effect=PositionEffect_Open)
+            order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Buy, order_type=OrderType_Market,
+                         position_effect=PositionEffect_Open)
             print('继续加仓0.5atr')
             context.long_add_point += context.atr_half
             context.long_stop_loss += context.atr_half
@@ -112,9 +117,11 @@ def on_bar(context, bars):
         if close < context.long_stop_loss:
             volume_hold = position_long['volume']
             if volume_hold >= context.atr_half:
-                order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Close)
+                order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Sell, order_type=OrderType_Market,
+                             position_effect=PositionEffect_Close)
             else:
-                order_volume(symbol=symbol, volume=volume_hold, side=OrderSide_Sell, order_type=OrderType_Market,position_effect=PositionEffect_Close)
+                order_volume(symbol=symbol, volume=volume_hold, side=OrderSide_Sell, order_type=OrderType_Market,
+                             position_effect=PositionEffect_Close)
             print('平多仓0.5atr')
             context.long_add_point -= context.atr_half
             context.long_stop_loss -= context.atr_half
@@ -123,7 +130,8 @@ def on_bar(context, bars):
     if position_short:
         # 当跌破加仓点时加仓
         if close < context.short_add_point:
-            order_volume(symbol = symbol, volume=context.atr_half, side=OrderSide_Sell, order_type=OrderType_Market, position_effect=PositionEffect_Open)
+            order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Sell, order_type=OrderType_Market,
+                         position_effect=PositionEffect_Open)
             print('继续加仓0.5atr')
             context.short_add_point -= context.atr_half
             context.short_stop_loss -= context.atr_half
@@ -131,9 +139,11 @@ def on_bar(context, bars):
         if close > context.short_stop_loss:
             volume_hold = position_short['volume']
             if volume_hold >= context.atr_half:
-                order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Buy, order_type=OrderType_Market, position_effect=PositionEffect_Close)
+                order_volume(symbol=symbol, volume=context.atr_half, side=OrderSide_Buy, order_type=OrderType_Market,
+                             position_effect=PositionEffect_Close)
             else:
-                order_volume(symbol=symbol, volume=volume_hold, side=OrderSide_Buy, order_type=OrderType_Market,position_effect=PositionEffect_Close)
+                order_volume(symbol=symbol, volume=volume_hold, side=OrderSide_Buy, order_type=OrderType_Market,
+                             position_effect=PositionEffect_Close)
             print('平空仓0.5atr')
             context.short_add_point += context.atr_half
             context.short_stop_loss += context.atr_half

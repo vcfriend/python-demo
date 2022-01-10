@@ -58,12 +58,12 @@ class SmaCross(bt.Strategy):
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.data.close[
-                    -1] < self.move_average and self.data > self.move_average:
+                -1] < self.move_average and self.data > self.move_average:
                 self.log('创建买单')
                 self.buy(size=100)
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.data.close[
-                -1] > self.move_average and self.data < self.move_average:
+            -1] > self.move_average and self.data < self.move_average:
             self.log('创建卖单')
             self.sell(size=100)
 

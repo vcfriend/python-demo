@@ -1,7 +1,5 @@
-
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
 
 from datetime import datetime
 import backtrader as bt
@@ -41,8 +39,8 @@ class TheStrategy(bt.Strategy):
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
-    def notify_order(self, order):       
-        print('订单状态 ',order.getstatusname(order.status))
+    def notify_order(self, order):
+        print('订单状态 ', order.getstatusname(order.status))
         if order.status in [order.Submitted, order.Accepted]:
             # 订单状态 submitted/accepted，无动作
             return
@@ -56,7 +54,7 @@ class TheStrategy(bt.Strategy):
                 self.log('卖单执行, price %.2f, size %d' % (order.executed.price, order.executed.size))
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log('订单 Canceled/Margin/Rejected, %d'%order.status)
+            self.log('订单 Canceled/Margin/Rejected, %d' % order.status)
 
         # 重置订单,表明已没有任何订单了
         self.order = None
@@ -68,7 +66,7 @@ class TheStrategy(bt.Strategy):
         self.order = None  # sentinel to avoid operrations on pending order
 
     def next(self):
-        self.log('open %.2f, close %.2f'%(self.data.open[0],self.data.close[0])) 
+        self.log('open %.2f, close %.2f' % (self.data.open[0], self.data.close[0]))
         dt = self.data.datetime.date()
 
         portfolio_value = self.broker.get_value()
@@ -76,7 +74,7 @@ class TheStrategy(bt.Strategy):
               (len(self), dt.isoformat(), self.position.size, portfolio_value))
 
         data_value = self.broker.get_value([self.data])
-     
+
         if self.p.use_target_value:
             print('%04d - %s - data value %.2f' %
                   (len(self), dt.isoformat(), data_value))
@@ -94,7 +92,7 @@ class TheStrategy(bt.Strategy):
             size = 31 - size
 
         if self.p.use_target_size:
-            target = size            
+            target = size
             print('%04d - %s - Order Target Size: %02d' %
                   (len(self), dt.isoformat(), size))
 
@@ -118,12 +116,8 @@ class TheStrategy(bt.Strategy):
 
 
 def runstrat(args=None):
-
-
     cerebro = bt.Cerebro()
     cerebro.broker.setcash(10000)
-
-
 
     # data
     # 获取本脚本文件所在路径
@@ -144,15 +138,14 @@ def runstrat(args=None):
         dtformat=('%Y%m%d'),  # 日期格式
         fromdate=datetime(2020, 1, 1),  # 起始日
         todate=datetime(2020, 5, 1))  # 结束日
-          
 
     cerebro.adddata(data)
 
     # strategy
     cerebro.addstrategy(TheStrategy,
                         # use_target_size=200, # args.target_size,
-                         use_target_value=50000, # args.target_value,
-                        #use_target_percent=0.5) # args.target_percent
+                        use_target_value=50000,  # args.target_value,
+                        # use_target_percent=0.5) # args.target_percent
                         )
 
     cerebro.run()

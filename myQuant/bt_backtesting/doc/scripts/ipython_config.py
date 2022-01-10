@@ -2,6 +2,7 @@
 # ~/.ipython/profile_default/startup/
 
 import pandas as pd
+
 pd.set_option("display.max_rows", 30)
 # This an alternative to setting display.preceision=2,
 # which doesn't work well for our dtype=object Series.

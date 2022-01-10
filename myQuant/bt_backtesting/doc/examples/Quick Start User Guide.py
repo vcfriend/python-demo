@@ -91,12 +91,12 @@ class SmaCross(Strategy):
     # for later optimization
     n1 = 10
     n2 = 20
-    
+
     def init(self):
         # Precompute the two moving averages
         self.sma1 = self.I(SMA, self.data.Close, self.n1)
         self.sma2 = self.I(SMA, self.data.Close, self.n2)
-    
+
     def next(self):
         # If sma1 crosses above sma2, close any existing
         # short trades, and buy the asset

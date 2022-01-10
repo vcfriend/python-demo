@@ -20,7 +20,7 @@ def max_n(array, n):
 
 
 class CrossSectionalMR(bt.Strategy):
-    params = (('num_positions', 10), )  # 选几只按权重分配
+    params = (('num_positions', 10),)  # 选几只按权重分配
 
     def __init__(self):
         self.inds = {}
@@ -50,7 +50,7 @@ class CrossSectionalMR(bt.Strategy):
         # 绝对权重最大的前num_positions个股票的索引列表
         max_weights_index = max_n(np.abs(weights), self.params.num_positions)
         # 取得绝对权重最大的权重列表
-        max_weights = weights[max_weights_index]  
+        max_weights = weights[max_weights_index]
         weights = weights / np.sum(np.abs(max_weights))
 
         for i, d in enumerate(available):

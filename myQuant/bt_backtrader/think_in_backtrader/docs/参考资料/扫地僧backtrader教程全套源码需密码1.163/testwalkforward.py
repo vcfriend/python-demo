@@ -4,6 +4,7 @@ import backtrader as bt
 import os.path  # 管理路径
 import sys  # 发现脚本名字(in argv[0])
 
+
 #######################333
 # walk forword相关
 #########################
@@ -11,29 +12,28 @@ def WFASplit(self, trainBy='12m', testBy='3m', loopBy='m', overlap=True):
     startDate = self.index[0]
     endDate = self.index[-1]
     if trainBy[-1] is 'm':
-        trainTime = relativedelta(months=int(trainBy[:-1])) # 取得训练时长，几个月
+        trainTime = relativedelta(months=int(trainBy[:-1]))  # 取得训练时长，几个月
     else:
         raise ValueError
     if testBy[-1] is 'm':
         testTime = relativedelta(months=int(testBy[:-1]))  # 取得测试时长，几个月
     else:
         raise ValueError
-    assert ((relativedelta(endDate, startDate)-trainTime).days) > 0
+    assert ((relativedelta(endDate, startDate) - trainTime).days) > 0
 
     if loopBy is 'm':
         # 似乎是训练开始时间列表而不是测试开始时间。从startDate开始，以测试时长为步长，依次增加，直到endDate-trainTime
         test_starts = zip(rrule(MONTHLY, dtstart=startDate,
-                                until=endDate-trainTime, interval=int(testBy[:-1])))
+                                until=endDate - trainTime, interval=int(testBy[:-1])))
     else:
         raise ValueError
 
     for i in test_starts:
-        startD = i[0] #转成日期，i是tuple他的第0个元素是日期
-        endD = i[0]+trainTime
+        startD = i[0]  # 转成日期，i是tuple他的第0个元素是日期
+        endD = i[0] + trainTime
         yield (self[(self.index >= startD) & (self.index < endD)],
-               self[(self.index >= endD) & (self.index < endD+testTime)])
+               self[(self.index >= endD) & (self.index < endD + testTime)])
     return None
-
 
 
 def runTrain(trainTestGenerator, _ind, stockName):
@@ -96,6 +96,7 @@ def runTrain(trainTestGenerator, _ind, stockName):
     WFATrainResult = pd.concat(WFATrainResult)
     return WFATrainResult
 
+
 def runTest(params, WFATrainResult, _ind, datafeed, stockName):
     # Generate Indicator ResultSet
     tester = bt.Cerebro(cheat_on_open=True)
@@ -145,6 +146,7 @@ def runTest(params, WFATrainResult, _ind, datafeed, stockName):
         plotSimGraph(tester, params, stockName, row.indicator)
     return _report
 
+
 ########################################################
 # 创建策略类
 class SmaCross(bt.Strategy):
@@ -167,7 +169,7 @@ class SmaCross(bt.Strategy):
         self.order = None
 
     def notify_order(self, order):
-        
+
         if order.status in [order.Submitted, order.Accepted]:
             # 订单状态 submitted/accepted，处于未决订单状态。不重置
             return
@@ -180,10 +182,8 @@ class SmaCross(bt.Strategy):
             elif order.issell():
                 self.log('卖单执行, %.2f' % order.executed.price)
 
-        elif order.status in [order.Canceled, order.Margin, order.Rejected,order.Expired]:
-            self.log('订单 Canceled/Margin/Rejected/order.Expired: %s'%order.getstatusname())
-            
-
+        elif order.status in [order.Canceled, order.Margin, order.Rejected, order.Expired]:
+            self.log('订单 Canceled/Margin/Rejected/order.Expired: %s' % order.getstatusname())
 
         # 重置未决订单为空，表示无未决订单了
         self.order = None
@@ -203,18 +203,18 @@ class SmaCross(bt.Strategy):
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.data.close[
-                    -1] < self.move_average[-1] and self.data > self.move_average:
+                -1] < self.move_average[-1] and self.data > self.move_average:
                 self.log('创建买单')
                 # 记录订单引用
                 validday = self.data.datetime.datetime(0) + timedelta(days=7)
                 self.order = self.buy(
                     size=100,
                     exectype=bt.Order.Limit,
-                    price=0.99 * self.data, # 限价
+                    price=0.99 * self.data,  # 限价
                     valid=validday)
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.data.close[
-                -1] > self.move_average[-1] and self.data < self.move_average:
+            -1] > self.move_average[-1] and self.data < self.move_average:
             self.log('创建卖单')
             # 记录订单引用
             self.order = self.sell(size=100)
@@ -232,8 +232,7 @@ trainTestGenerator = WFASplit(
 WFATrainResult = runTrain(trainTestGenerator, _ind, stockName)
 
 # TESTING 样本外测试
-    _report = runTest(params, WFATrainResult, _ind, datafeed, stockName) # datafeed是dataframe
-
+_report = runTest(params, WFATrainResult, _ind, datafeed, stockName)  # datafeed是dataframe
 
 # # 创建大脑引擎对象
 # cerebro = bt.Cerebro()

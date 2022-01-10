@@ -1,9 +1,10 @@
-#%%
+# %%
 import datetime  #
 import os.path  # 路径管理
 import sys  # 获取当前运行脚本的路径 (in argv[0])
-#导入backtrader框架
+# 导入backtrader框架
 import backtrader as bt
+
 
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
@@ -17,12 +18,13 @@ class TestStrategy(bt.Strategy):
         # 保存收盘价的引用
         self.dataclose = self.data_close
         print('切片访问前3个值', self.datas[0].array[:10])
-        print('close0',self.dataclose[0],'close1',self.dataclose[1])
+        print('close0', self.dataclose[0], 'close1', self.dataclose[1])
 
     def next(self):
         # 记录收盘价
         self.log('Close, %.2f' % self.dataclose[0])
         pass
+
 
 # 加载本地csv文件数据
 def get_csv_GenericCSVData(stock_id="600016.SH", start="20190101", end="20191231"):
@@ -52,6 +54,7 @@ def get_csv_GenericCSVData(stock_id="600016.SH", start="20190101", end="20191231
     )
     return data
 
+
 if __name__ == '__main__':
     # 创建Cerebro引擎
     cerebro = bt.Cerebro()
@@ -70,7 +73,6 @@ if __name__ == '__main__':
 
     # 加载交易数据
     cerebro.adddata(data)
-
 
     # 设置投资金额100000.0
     cerebro.broker.setcash(100000.0)

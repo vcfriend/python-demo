@@ -1,7 +1,7 @@
 # Lesson5：Backtrader来啦：交易篇（下）
 # link: https://mp.weixin.qq.com/s/CJwSpvS07JLT4xhO19SOeA
 
-#%%
+# %%
 # 第1章 Order 中的交易订单
 '''
 Order.Market
@@ -49,7 +49,7 @@ Order.StopTrailLimit
 '''
 
 # =============================================================================
-#%%
+# %%
 # 第2章 Strategy 中的交易函数
 
 ## 第2.1节 常规下单函数
@@ -87,11 +87,12 @@ tradeid（默认: None）：当同一资产出现重复交易的时候，通知�
 
 class TestStrategy(bt.Strategy):
     def next(self):
-        self.order = self.buy( ...) # 买入、做多 long
-        self.order = self.sell(...) # 卖出、做空 short
-        self.order = self.close(...) # 平仓 cover
+        self.order = self.buy(...)  # 买入、做多 long
+        self.order = self.sell(...)  # 卖出、做空 short
+        self.order = self.close(...)  # 平仓 cover
 
-#%%
+
+# %%
 ## 第2.2节 目标下单函数
 
 '''
@@ -126,23 +127,25 @@ order_target_percent：按目标百分比下单，订单生成逻辑同 order_ta
                       目标金额 = 目标百分比 * 当前账户的总资产。
 '''
 
-class TestStrategy(bt.Strategy):
-   def next(self):
-      # 按目标数量下单
-      self.order = self.order_target_size(target=size)
-      # 按目标金额下单
-      self.order = self.order_target_value(target=value)
-      # 按目标百分比下单
-      self.order = self.order_target_percent(target=percent)
 
-#%%
+class TestStrategy(bt.Strategy):
+    def next(self):
+        # 按目标数量下单
+        self.order = self.order_target_size(target=size)
+        # 按目标金额下单
+        self.order = self.order_target_value(target=value)
+        # 按目标百分比下单
+        self.order = self.order_target_percent(target=percent)
+
+
+# %%
 ## 第2.3节 取消订单
 '''
 1. 通过 cancel() 来取消订单 ：self.cancel(order)；
 2. 通过 Broker 来取消订单 ：self.broker.cancel(order) 
 '''
 
-#%%
+# %%
 ## 第2.4节 订单组合
 '''
 订单组合并不是同时对多个标的进行交易，而是对某一笔交易同时发出多个指令，以满足在不同市场情况时触发对应的指令
@@ -176,17 +179,17 @@ sell_bracket()
     在止盈单和止损单激活之后，如果取消两者中的任意一个，那另外一个也会被取消。
 '''
 # 函数可用参数
-buy_bracket(# 主订单的参数
-            data=None, size=None, price=None,
-            plimit=None,exectype=bt.Order.Limit,
-            valid=None, tradeid=0,
-            trailamount=None, trailpercent=None,
-            oargs={},
-            # 止损单的参数
-            stopprice=None, stopexec=bt.Order.Stop, stopargs={},
-            # 止盈单的参数
-            limitprice=None, limitexec=bt.Order.Limit, limitargs={},
-            **kwargs)
+buy_bracket(  # 主订单的参数
+    data=None, size=None, price=None,
+    plimit=None, exectype=bt.Order.Limit,
+    valid=None, tradeid=0,
+    trailamount=None, trailpercent=None,
+    oargs={},
+    # 止损单的参数
+    stopprice=None, stopexec=bt.Order.Stop, stopargs={},
+    # 止盈单的参数
+    limitprice=None, limitexec=bt.Order.Limit, limitargs={},
+    **kwargs)
 
 # 主订单以 13.5 的价格买入 self.data0 数据集对应的标的
 # 当价格超过 14.00 时，会触发止盈单，卖出标的
@@ -196,15 +199,15 @@ brackets = self.buy_bracket(price=13.50,
                             stopprice=13.00)
 
 # 函数可用参数
-sell_bracket(# 主订单设置
-             data=None,size=None, price=None, plimit=None,
-             exectype=bt.Order.Limit, valid=None, tradeid=0,
-             trailamount=None, trailpercent=None, oargs={},
-             # 止损单设置
-             stopprice=None, stopexec=bt.Order.Stop, stopargs={},
-             # 止盈单设置
-             limitprice=None, limitexec=bt.Order.Limit, limitargs={},
-             **kwargs)
+sell_bracket(  # 主订单设置
+    data=None, size=None, price=None, plimit=None,
+    exectype=bt.Order.Limit, valid=None, tradeid=0,
+    trailamount=None, trailpercent=None, oargs={},
+    # 止损单设置
+    stopprice=None, stopexec=bt.Order.Stop, stopargs={},
+    # 止盈单设置
+    limitprice=None, limitexec=bt.Order.Limit, limitargs={},
+    **kwargs)
 
 # 主订单以 13.5 的价格卖出 self.data0 数据集对应的标的
 # 当价格跌破 13.00 时，会触发止盈单，买入标的，获得套利收益
@@ -213,7 +216,7 @@ brackets = self.sell_bracket(price=13.50,
                              limitprice=13.00,
                              stopprice=14.00)
 
-#%%
+# %%
 ## 第2.5节 OCO订单
 '''
 OCO 是“aka One Cancel Others”的缩写，OCO 针对的是多个相互关联的订单，
@@ -231,26 +234,29 @@ OCO 是“aka One Cancel Others”的缩写，OCO 针对的是多个相互关联
     因为 o1 以 o2 为媒介，影响 o2 的同时，也影响了 o3。
 '''
 
+
 # 案例1
 def next(self):
-   ...
-   o1 = self.buy(...)
-   ...
-   o2 = self.buy(..., oco=o1)
-   ...
-   o3 = self.buy(..., oco=o1)
+    ...
+    o1 = self.buy(...)
+    ...
+    o2 = self.buy(..., oco=o1)
+    ...
+    o3 = self.buy(..., oco=o1)
+
 
 # 案例 2
 def next(self):
-   ...
-   o1 = self.buy(...)
-   ...
-   o2 = self.buy(..., oco=o1)
-   ...
-   o3 = self.buy(..., oco=o2)
+    ...
+    o1 = self.buy(...)
+    ...
+    o2 = self.buy(..., oco=o1)
+    ...
+    o3 = self.buy(..., oco=o2)
+
 
 # =============================================================================
-#%%
+# %%
 ## 第3章 Broker 中的交易执行
 '''
 Broker 在执行交易时，会根据执行流程给订单赋予不同的状态，不同阶段的订单状态可以通过Strategy 中定义 notify_order() 方法来捕获，从而进行自定义的处理，从下达交易指令到订单执行结束，订单可能会依次呈现如下状态：

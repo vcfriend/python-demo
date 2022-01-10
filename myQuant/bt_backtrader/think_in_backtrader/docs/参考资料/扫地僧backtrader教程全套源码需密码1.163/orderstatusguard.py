@@ -26,7 +26,7 @@ class SmaCross(bt.Strategy):
         self.order = None
 
     def notify_order(self, order):
-        
+
         if order.status in [order.Submitted, order.Accepted]:
             # 订单状态 submitted/accepted，处于未决订单状态。不重置
             return
@@ -39,10 +39,8 @@ class SmaCross(bt.Strategy):
             elif order.issell():
                 self.log('卖单执行, %.2f' % order.executed.price)
 
-        elif order.status in [order.Canceled, order.Margin, order.Rejected,order.Expired]:
-            self.log('订单 Canceled/Margin/Rejected/order.Expired: %s'%order.getstatusname())
-            
-
+        elif order.status in [order.Canceled, order.Margin, order.Rejected, order.Expired]:
+            self.log('订单 Canceled/Margin/Rejected/order.Expired: %s' % order.getstatusname())
 
         # 重置未决订单为空，表示无未决订单了
         self.order = None
@@ -62,18 +60,18 @@ class SmaCross(bt.Strategy):
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.data.close[
-                    -1] < self.move_average[-1] and self.data > self.move_average:
+                -1] < self.move_average[-1] and self.data > self.move_average:
                 self.log('创建买单')
                 # 记录订单引用
                 validday = self.data.datetime.datetime(0) + timedelta(days=7)
                 self.order = self.buy(
                     size=100,
                     exectype=bt.Order.Limit,
-                    price=0.99 * self.data, # 限价
+                    price=0.99 * self.data,  # 限价
                     valid=validday)
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.data.close[
-                -1] > self.move_average[-1] and self.data < self.move_average:
+            -1] > self.move_average[-1] and self.data < self.move_average:
             self.log('创建卖单')
             # 记录订单引用
             self.order = self.sell(size=100)

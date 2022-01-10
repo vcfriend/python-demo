@@ -8,6 +8,7 @@ import sys  # 发现脚本名字(in argv[0])
 import glob
 from backtrader.feeds import PandasData  # 用于扩展DataFeed
 
+
 # 创建新的data feed类
 
 
@@ -16,7 +17,7 @@ class PandasDataExtend(PandasData):
     lines = ('pe', 'roe', 'marketdays')
     params = (('pe', 15),
               ('roe', 16),
-              ('marketdays', 17), )  # 上市天数
+              ('marketdays', 17),)  # 上市天数
 
 
 class Strategy(bt.Strategy):
@@ -45,9 +46,8 @@ class Strategy(bt.Strategy):
 
     def notify_timer(self, timer, when, *args, **kwargs):
 
-        
         # 只在5，9，11月的1号执行再平衡
-        if(self.data0.datetime.date(0).month == 5
+        if (self.data0.datetime.date(0).month == 5
                 or self.data0.datetime.date(0).month == 9
                 or self.data0.datetime.date(0).month == 11):
             self.rebalance_portfolio()  # 执行再平衡
@@ -87,7 +87,7 @@ class Strategy(bt.Strategy):
         # 1 先做排除筛选过程
         self.ranks = [d for d in self.stocks if
                       len(d) > 0  # 重要，到今日至少要有一根实际bar
-                      and d.marketdays > 3*365  # 到今天至少上市
+                      and d.marketdays > 3 * 365  # 到今天至少上市
                       # 今日未停牌 (若去掉此句，则今日停牌的也可能进入，并下订单，次日若复牌，则次日可能成交）（假设原始数据中已删除无交易的记录)
                       and d.datetime.date(0) == self.currDate
                       and d.roe >= 0.1
@@ -110,7 +110,7 @@ class Strategy(bt.Strategy):
         # 4 本次标的下单
         print('len(self.ranks)', len(self.ranks))
         # 每只股票买入资金百分比
-        buypercentage = 1/len(self.ranks)
+        buypercentage = 1 / len(self.ranks)
         print('buypercentage', buypercentage)
         # 为保证先卖后买，要按市值从大到小排序
         # self.ranks.sort(key=lambda d: self.broker.getvalue([d]), reverse=True)
@@ -142,9 +142,8 @@ print(datafilelist)
 
 
 for fname in datafilelist:
-
     df = pd.read_csv(
-        fname,   
+        fname,
         skiprows=0,  # 不忽略行
         header=0,  # 列头在0行
     )
@@ -155,7 +154,7 @@ for fname in datafilelist:
     # print(df.info())
     # print(df.head())
     # 删除缺指标的记录
-    
+
     data = PandasDataExtend(
         dataname=df,
         datetime=0,  # 日期列
@@ -176,7 +175,6 @@ for fname in datafilelist:
     ticker = fname[-13:-4]  # 从文件路径名取得股票代码
 
     cerebro.adddata(data, name=ticker)
-
 
 cerebro.addstrategy(Strategy)
 startcash = 10000000

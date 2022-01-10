@@ -24,13 +24,7 @@ next()是最核心的函数，每一个bar生成后都会调用next()，这里�
 
 prenext()是为哪些窗口函数准备的。比如我们在init()中计算一个20日的移动平均线，所以在回测开始的前19个交易日都不应进行逻辑处理，所以bt在前19个周期中调用prenext()函数，等到第20个周期才开始调用next()。
 
-
-
 ![image-20201208112711763](5 引擎和策略（Cerebro & Strategy）.assets/image-20201208112711763.png)
-
-
-
-
 
 ### 信息点 访问回测数据
 
@@ -42,8 +36,6 @@ prenext()是为哪些窗口函数准备的。比如我们在init()中计算一�
 - self.data0 / self.data：是第一个DataFeed对象的引用；
 
 每个DataFeed可通过索引访问，索引从0开始标识当前周期的数据，-1表示上一日的数据。为避免未来函数，索引不能为正数，即不能访问后续周期的数据。
-
-
 
 #### len(self) 明确周期数
 
@@ -118,15 +110,9 @@ cerebro.addstrategy(DoulbeSMAStrategy, window=99, p2=10)
 
 为模拟市场行为，所以有了模拟交易商的 Broker，下面将讨论几个问题。
 
-
-
 ### 回测结果
 
 一个Strategy返回一个result对象，N个Strategy返回result的list。
-
-
-
-
 
 ### 现金
 
@@ -142,19 +128,11 @@ cerebro.addstrategy(DoulbeSMAStrategy, window=99, p2=10)
 
 手续费的示例
 
-
-
 ？手续费
-
-
-
-
 
 ### Position
 
 ### Trade
-
-
 
 ```python
 

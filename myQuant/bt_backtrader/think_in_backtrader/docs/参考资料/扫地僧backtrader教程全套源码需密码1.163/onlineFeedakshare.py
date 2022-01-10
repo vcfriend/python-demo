@@ -2,7 +2,6 @@ import backtrader as bt
 import akshare as ak
 
 
-
 # 创建策略类
 class SmaCross(bt.Strategy):
     # 定义参数
@@ -31,8 +30,6 @@ class SmaCross(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单 Canceled/Margin/Rejected')
 
-
-
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         if trade.isclosed:
@@ -59,6 +56,7 @@ class SmaCross(bt.Strategy):
             self.log('创建卖单')
             self.sell(size=100)
 
+
 ##########################
 # 主程序开始
 #########################
@@ -69,19 +67,16 @@ cerebro = bt.Cerebro()
 # start_date = datetime(2018, 1, 1)  # 回测开始时间
 # end_date = datetime(2020, 1, 1)  # 回测结束时间
 
- # 利用 AkShare 获取后复权数据
-stock_hfq_df = ak.stock_zh_a_daily(symbol="sh600000", adjust="hfq",start_date='20180101',end_date='20200101') 
+# 利用 AkShare 获取后复权数据
+stock_hfq_df = ak.stock_zh_a_daily(symbol="sh600000", adjust="hfq", start_date='20180101', end_date='20200101')
 # data = bt.feeds.PandasDirectData(dataname=stock_hfq_df, fromdate=start_date, todate=end_date)  # 加载数据
 
 print(stock_hfq_df)
 data = bt.feeds.PandasDirectData(dataname=stock_hfq_df)  # 加载数据
 
-
 cerebro.adddata(data)  # 将数据传入回测系统
 cerebro.addstrategy(SmaCross)  # 将交易策略加载到回测系统中
 cerebro.broker.setcash(1000000.0)  # 设置初始资金
-
-
 
 cerebro.run()  # 运行
 print('最终市值: %.2f' % cerebro.broker.getvalue())

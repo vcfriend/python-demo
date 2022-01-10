@@ -49,13 +49,14 @@ class PositionStrategy(bt.Strategy):
             return
         elif order.status in [order.Completed]:
             self.log('买单(oid={oid})执行, 开盘价={open}, 成交价={pexec}，滑点差价={sp}'.format(
-                oid=order.ref, pexec=order.executed.price, open=self.dataopen[0], sp=(order.executed.price-self.dataopen[0])))
+                oid=order.ref, pexec=order.executed.price, open=self.dataopen[0],
+                sp=(order.executed.price - self.dataopen[0])))
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             pass
 
     def next(self):
         if len(self) == 1:
-            self.log("头寸，单价={p}，规模={s}".format(p=self.position.price, s=self.position.size))     # 空头寸
+            self.log("头寸，单价={p}，规模={s}".format(p=self.position.price, s=self.position.size))  # 空头寸
             order = self.buy(size=10, exectype=bt.Order.Market)
             if order:
                 self.log("第1天，下市场买单10")
@@ -75,7 +76,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(PositionStrategy)
 
     # 设置初始资金：
-    cerebro.broker.setcash(100000.0)    # 10万元
+    cerebro.broker.setcash(100000.0)  # 10万元
 
     # 从csv文件加载数据
     # 仅3天数据

@@ -18,19 +18,19 @@ class SmaCross(bt.Strategy):
     def prenext(self):
         print(
             'prenext self {} len {}| data0 {} close {} len {} | data1 {} close {} len {} '
-            .format(self.datetime.date(), len(self),
-                    self.data0.datetime.date(), self.data0.close[0],
-                    len(self.data0), self.data1.datetime.date(),
-                    self.data1.close[0], len(self.data1)))
+                .format(self.datetime.date(), len(self),
+                        self.data0.datetime.date(), self.data0.close[0],
+                        len(self.data0), self.data1.datetime.date(),
+                        self.data1.close[0], len(self.data1)))
 
     def next(self):
         print(
             'next self {} len {}| data0 {} close {} len {} | data1 {} close {} len {} '
-            .format(self.datetime.date(), len(self),
-                    self.data0.datetime.date(), self.data0.close[0],
-                    len(self.data0), self.data1.datetime.date(),
-                    self.data1.close[0], len(self.data1)))
-   
+                .format(self.datetime.date(), len(self),
+                        self.data0.datetime.date(), self.data0.close[0],
+                        len(self.data0), self.data1.datetime.date(),
+                        self.data1.close[0], len(self.data1)))
+
 
 ##########################
 # 主程序开始

@@ -1,6 +1,6 @@
 from datetime import datetime
 import backtrader as bt
-#import backtrader.analyzers.basictradestats as bts
+# import backtrader.analyzers.basictradestats as bts
 import os.path  # 管理路径
 import sys  # 发现脚本名字(in argv[0])
 
@@ -74,7 +74,6 @@ cerebro.addanalyzer(
 cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annula_return')
 cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
 
-
 thestrats = cerebro.run()
 thestrat = thestrats[0]
 # 输出分析器结果字典
@@ -91,4 +90,3 @@ print('Max DrawDown:',
 # 打印各个分析器内容
 for a in thestrat.analyzers:
     a.print()
-

@@ -23,10 +23,6 @@
 
 ![image-20201208181200648](3 了解Bt的结构.assets/image-20201208181200648.png)
 
-
-
-
-
 ### 核心1：Cerebro
 
 bt.Cerebro（西班牙语意“大脑”）类是回测的总引擎，是组织各个部件的总程序入口。
@@ -248,19 +244,19 @@ if __name__ == '__main__':
 ### 代码分析
 
 - 策略类
-  - 首先开发了一个bt.Strategy的子类DoulbeSMAStrategy
-  - init函数中，添加了长短两根移动平均线指标
-  - next中实现了买卖的逻辑，即金叉买，死叉卖。买卖的数量是人工计算，每次5手（500股）
+    - 首先开发了一个bt.Strategy的子类DoulbeSMAStrategy
+    - init函数中，添加了长短两根移动平均线指标
+    - next中实现了买卖的逻辑，即金叉买，死叉卖。买卖的数量是人工计算，每次5手（500股）
 - 引擎
-  - 从csv文件中读取2年的数据，并通过cerebro.adddata加载到引擎中
-  - 引擎添加了DoulbeSMAStrategy策略
-  - 引擎添加了内置分析器SharpeRatio，并命名为mysharpe
-  - 引擎设定了原始资金、然后就开始执行回测
-  - 从回测结果对象中取出夏普分析器，输出最终的夏普率
-  - 绘制图形
+    - 从csv文件中读取2年的数据，并通过cerebro.adddata加载到引擎中
+    - 引擎添加了DoulbeSMAStrategy策略
+    - 引擎添加了内置分析器SharpeRatio，并命名为mysharpe
+    - 引擎设定了原始资金、然后就开始执行回测
+    - 从回测结果对象中取出夏普分析器，输出最终的夏普率
+    - 绘制图形
 - Order和Trader
-  - 在Strategy.next中，通过self.buy/close函数实现了下单，即生成Order
-  - 通过实现两个notify_xxx函数，检测了order和trade对象的变化，及时输出了order的成交价格和trade的利润情况。
+    - 在Strategy.next中，通过self.buy/close函数实现了下单，即生成Order
+    - 通过实现两个notify_xxx函数，检测了order和trade对象的变化，及时输出了order的成交价格和trade的利润情况。
 
 上述的代码使用了主要的类，未使用参数优化功能，未设置滑点、手续费等参数。
 

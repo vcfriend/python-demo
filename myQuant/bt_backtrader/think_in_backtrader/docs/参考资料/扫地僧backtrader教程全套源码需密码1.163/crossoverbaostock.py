@@ -32,8 +32,6 @@ class SmaCross(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单 Canceled/Margin/Rejected')
 
-
-
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         if trade.isclosed:
@@ -82,7 +80,7 @@ data = bt.feeds.GenericCSVData(
     low=4,  # 最低价所在列
     close=5,  # 收盘价价所在列
     volume=7,  # 成交量所在列
-    openinterest=-1, # 无未平仓量列
+    openinterest=-1,  # 无未平仓量列
     dtformat=('%Y-%m-%d'),  # 日期格式
     fromdate=datetime(2019, 1, 1),  # 起始日
     todate=datetime(2020, 7, 8))  # 结束日

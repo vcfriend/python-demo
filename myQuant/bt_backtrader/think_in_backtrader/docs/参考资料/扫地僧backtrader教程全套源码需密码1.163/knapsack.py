@@ -24,7 +24,7 @@ m.optimize()
 # print("selected items: {}".format(selected))
 
 end_time = time.time()
-print(f"run1 total_use time is {end_time-begin_time}")
+print(f"run1 total_use time is {end_time - begin_time}")
 
 # selected = [i for i in I if x[i].x >= 0.99]
 # print("selected items: {}".format(selected))

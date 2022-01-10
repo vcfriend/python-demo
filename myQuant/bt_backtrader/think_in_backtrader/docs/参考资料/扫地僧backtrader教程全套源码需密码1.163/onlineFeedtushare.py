@@ -11,7 +11,7 @@ class SmaCross(bt.Strategy):
     # 定义参数
     params = dict(period=5  # 移动平均期数
                   )
-    
+
     # 日志函数
     def log(self, txt, dt=None):
         '''日志函数'''
@@ -48,7 +48,6 @@ class SmaCross(bt.Strategy):
         # 交叉信号指标
         self.crossover = bt.ind.CrossOver(self.data, self.move_average)
 
-     
     def next(self):
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
@@ -61,8 +60,6 @@ class SmaCross(bt.Strategy):
             self.sell(size=100)
 
 
-
-
 ##########################
 # 主程序开始
 #########################
@@ -72,7 +69,6 @@ cerebro = bt.Cerebro()
 
 # 设置token
 ts.set_token('这里输入你的token号')
-
 
 # 行情结果存放到pandas dataframe，按日期降序排
 dataframe = ts.pro_bar(

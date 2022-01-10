@@ -1,4 +1,5 @@
 import tushare as ts
+
 # 设置token
 ts.set_token('????')
 
@@ -9,9 +10,9 @@ stocklist = pro.stock_basic(
     list_status='L',
     fields='ts_code,symbol,name,area,industry,list_date')
 
-for i in range(100,200):
+for i in range(100, 200):
     ticker = stocklist['ts_code'].iloc[i]
-    print(i,ticker)
+    print(i, ticker)
     df = ts.pro_bar(
         ts_code=ticker,
         adj='qfq',
@@ -21,4 +22,3 @@ for i in range(100,200):
     # 颠倒顺序，使得按日期升序排。backtrader要求日期升序
     df.sort_index(inplace=True, ascending=False)
     df.to_csv('E:/backtradertutorial/data/%s.csv' % ticker)
-

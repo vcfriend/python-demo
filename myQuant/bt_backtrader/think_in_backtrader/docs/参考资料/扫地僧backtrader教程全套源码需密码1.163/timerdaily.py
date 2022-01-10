@@ -7,7 +7,7 @@ import sys  # 发现脚本名字(in argv[0])
 # 创建策略类
 class St(bt.Strategy):
     params = dict(
-        when=datetime.time(15, 30),# bt.timer.SESSION_START,
+        when=datetime.time(15, 30),  # bt.timer.SESSION_START,
         timer=True,
         cheat=False,
         offset=datetime.timedelta(),
@@ -16,7 +16,7 @@ class St(bt.Strategy):
     )
 
     def __init__(self):
-        
+
         if self.p.timer:
             self.add_timer(
                 when=self.p.when,

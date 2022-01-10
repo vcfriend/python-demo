@@ -21,8 +21,8 @@ stocks = ((pd.concat([
         f"survivorship-free/{ticker}.csv", index_col='date',
         parse_dates=True)['close'].rename(ticker) for ticker in tickers
 ],
-                     axis=1,
-                     sort=True)))
+    axis=1,
+    sort=True)))
 stocks = stocks.loc[:, ~stocks.columns.duplicated()]
 print(stocks.head())
 
@@ -32,8 +32,8 @@ import backtrader as bt
 
 
 class Momentum(bt.Indicator):
-    lines = ('trend', )
-    params = (('period', 90), )
+    lines = ('trend',)
+    params = (('period', 90),)
 
     def __init__(self):
         self.addminperiod(self.params.period)
@@ -42,8 +42,8 @@ class Momentum(bt.Indicator):
         returns = np.log(self.data.get(size=self.p.period))
         x = np.arange(len(returns))
         slope, _, rvalue, _, _ = linregress(x, returns)
-        annualized = (1 + slope)**252
-        self.lines.trend[0] = annualized * (rvalue**2)
+        annualized = (1 + slope) ** 252
+        self.lines.trend[0] = annualized * (rvalue ** 2)
 
 
 class Strategy(bt.Strategy):

@@ -2,7 +2,6 @@
 from __future__ import print_function, absolute_import
 from gm.api import *
 
-
 """
 上轨=昨日最高点；
 下轨=昨日最低点；
@@ -21,7 +20,7 @@ def init(context):
     # 设置标的
     context.symbol = 'SHFE.rb2010'
     # 订阅一分钟线
-    subscribe(symbols = context.symbol,frequency = '60s',count = 1)
+    subscribe(symbols=context.symbol, frequency='60s', count=1)
     # 记录开仓次数，保证一天只开仓一次
     context.count = 0
     # 记录当前时间
@@ -40,7 +39,8 @@ def algo(context):
     context.history_data = history_n(symbol=context.symbol, frequency='1d', end_time=context.now,
                                      fields='symbol,open,high,low', count=2, df=True)
 
-def on_bar(context,bars):
+
+def on_bar(context, bars):
     # 取出订阅的一分钟bar
     bar = bars[0]
 
@@ -73,7 +73,7 @@ def on_bar(context,bars):
                          order_type=OrderType_Market, position_effect=PositionEffect_Close)
             print('以市价单平多仓')
 
-    elif position_short:# 空头持仓大于开盘价止损。
+    elif position_short:  # 空头持仓大于开盘价止损。
         if bar.close > open:
             order_volume(symbol=context.symbol, volume=1, side=OrderSide_Buy,
                          order_type=OrderType_Market, position_effect=PositionEffect_Close)
@@ -98,7 +98,7 @@ def on_bar(context,bars):
         order_close_all()
         print('全部平仓')
         context.count = 0
-            
+
 
 if __name__ == '__main__':
     '''

@@ -7,7 +7,6 @@ import os.path
 import time
 import sys
 
-
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
@@ -23,7 +22,7 @@ class OrderExecutionStrategy(bt.Strategy):
     )
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        """ Logging function fot this strategy"""
         dt = dt or self.data.datetime[0]
         if isinstance(dt, float):
             dt = bt.num2date(dt)
@@ -171,6 +170,7 @@ def runstrat():
     )
     cerebro.run()
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Showcase for Order Execution Types')
@@ -198,5 +198,6 @@ def parse_args():
 
     return parser.parse_args()
 
+
 if __name__ == '__main__':
-	runstrat()
+    runstrat()

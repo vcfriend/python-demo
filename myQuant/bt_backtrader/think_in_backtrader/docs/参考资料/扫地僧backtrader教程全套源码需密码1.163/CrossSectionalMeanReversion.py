@@ -16,7 +16,6 @@ tickers = tickers[0:maxtickersNum]  # 最终股票池列表
 
 
 class CrossSectionalMR(bt.Strategy):
-   
 
     def prenext(self):
         self.next()
@@ -25,7 +24,7 @@ class CrossSectionalMR(bt.Strategy):
         # 昨天有数据的数据列表
         available = list(filter(lambda d: len(d) > 1, self.datas))
 
-        if not available:  #如果空则返回
+        if not available:  # 如果空则返回
             return
 
         rets = np.zeros(len(available))  # 初始化个股收益率列表

@@ -39,7 +39,7 @@ def get_stock_daily(stock_id="600016.SH", start="20190101", end="20190115"):
             raise Exception("数据源文件未找到！" + data_file)
 
         datafeed = bt.feeds.GenericCSVData(
-            dataname=data_file,     # 数据文件
+            dataname=data_file,  # 数据文件
             datetime=1,
             open=2,
             high=3,

@@ -1,14 +1,8 @@
 # BackTrader 学习笔记
 
-
-
 ## 总结构
 
-
-
 ![Image](BackTrader 学习心得笔记.assets/Image.png)
-
-
 
 ## 引擎 Cerebro
 
@@ -20,12 +14,6 @@ Cererbro的职责有几点：
 2. 执行回测/交易
 3. 返回结果
 4. 构建图形化输出。
-
-
-
-
-
-
 
 ### 回测结果
 
@@ -57,8 +45,6 @@ AttributeError: 'Cerebro' object has no attribute '_exactbars'
 5. 调用策略的next方法；
 6. 告知Writer模块，写日志。
 7. 重复执行 2 - 6 步骤，直到将全部Bar处理完毕。
-
-
 
 ### 主要类的API
 
@@ -93,49 +79,15 @@ plot(plotter=None, numfigs=1, iplot=True, start=None, end=None, width=16, height
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## 数据源 DataFeed
 
-
-
-
-
-
-
-
-
-
-
 ## 策略基类 Strategy
-
-
-
-
 
 ### 策略长度 len(self)
 
 策略的长度（len(self)）等于其已处理数据Bar的数量，即第一个next中等于1，第N个next中等于n。
 
-
-
 ### Strategy属性
-
-
 
 ```
 env:Cerebro		# 对Cerebro引擎的引用
@@ -155,23 +107,9 @@ position		# data0的头寸信息
 
 ```
 
-
-
-
-
-
-
-
-
-
-
 ## 指标
 
-
-
 ## Orders
-
-
 
 ## Brokers
 

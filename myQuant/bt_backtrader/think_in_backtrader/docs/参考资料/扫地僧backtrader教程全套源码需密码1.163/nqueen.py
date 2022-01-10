@@ -1,9 +1,6 @@
-
 from mip import Model, xsum, minimize, BINARY
 import time
 import datetime  # For datetime objects
-
-
 
 begin_time = time.time()
 # number of queens
@@ -34,9 +31,8 @@ for p, k in enumerate(range(3, n + n)):
 
 queens.optimize()
 
-
 end_time = time.time()
-print(f"total_use time is {end_time-begin_time}")
+print(f"total_use time is {end_time - begin_time}")
 
 # if queens.num_solutions:
 #     stdout.write('\n')

@@ -7,19 +7,19 @@ import sys  # 发现脚本名字(in argv[0])
 class St(bt.Strategy):
     params = dict(
         ma=bt.ind.SMA,
-        p1=5, # 快速均线周期
-        p2=15, # 慢速均线周期
-        limit=0.005, # 用于计算限价单的限价
-        limdays=3, # 买单有效期
-        limdays2=1000, # 卖单有效期
-        hold=10, 
-      
+        p1=5,  # 快速均线周期
+        p2=15,  # 慢速均线周期
+        limit=0.005,  # 用于计算限价单的限价
+        limdays=3,  # 买单有效期
+        limdays2=1000,  # 卖单有效期
+        hold=10,
+
     )
 
     def notify_order(self, order):
         print('{}: Order ref: {} / Type {} / Status {}'.format(
             self.data.datetime.date(0), order.ref, 'Buy' * order.isbuy()
-            or 'Sell', order.getstatusname()))
+                                                   or 'Sell', order.getstatusname()))
 
         if order.status == order.Completed:
             self.holdstart = len(self)
@@ -32,15 +32,15 @@ class St(bt.Strategy):
         ma1, ma2 = self.p.ma(period=self.p.p1), self.p.ma(period=self.p.p2)
         self.cross = bt.ind.CrossOver(ma1, ma2)
 
-        self.orefs = list() # 未决订单标识列表
+        self.orefs = list()  # 未决订单标识列表
 
     def next(self):
         # 如果有未决订单，直接返回
         if self.orefs:
             return
 
-        if not self.position: # 如果没有仓位
-            if self.cross > 0.0:  #买入信号
+        if not self.position:  # 如果没有仓位
+            if self.cross > 0.0:  # 买入信号
 
                 close = self.data.close[0]
                 p1 = close * (1.0 - self.p.limit)
@@ -50,8 +50,7 @@ class St(bt.Strategy):
                 valid1 = datetime.timedelta(self.p.limdays)
                 valid2 = valid3 = datetime.timedelta(self.p.limdays2)
 
-      
-                #　发布一个限价买单
+                # 　发布一个限价买单
                 o1 = self.buy(
                     exectype=bt.Order.Limit,
                     price=p1,
@@ -65,7 +64,7 @@ class St(bt.Strategy):
                     exectype=bt.Order.Stop,
                     price=p2,
                     valid=valid2,
-                    parent=o1, # 父订单是o1
+                    parent=o1,  # 父订单是o1
                     transmit=False)
 
                 print('{}: Oref {} / Sell Stop at {}'.format(
@@ -81,7 +80,7 @@ class St(bt.Strategy):
 
                 print('{}: Oref {} / Sell Limit at {}'.format(
                     self.datetime.date(), o3.ref, p3))
-                
+
                 # 将三个订单标识放入未决订单列表
                 self.orefs = [o1.ref, o2.ref, o3.ref]
 

@@ -7,11 +7,10 @@ from backtrader.feeds import GenericCSVData  # 用于扩展DataFeed
 
 # 创建新的data feed类
 class GenericCSV_PE(GenericCSVData):
-
     # 增加pe线
-    lines = ('pe', )
+    lines = ('pe',)
     # 默认第8列（从0开始数）
-    params = (('pe', 8), )
+    params = (('pe', 8),)
 
 
 # 创建策略类

@@ -11,6 +11,7 @@ import sys  # 发现脚本名字(in argv[0])
 import glob
 from backtrader.feeds import PandasData  # 用于扩展DataFeed
 
+
 # 创建新的data feed类
 
 
@@ -19,7 +20,7 @@ class PandasDataExtend(PandasData):
     lines = ('pe', 'roe', 'marketdays')
     params = (('pe', 15),
               ('roe', 16),
-              ('marketdays', 17), )  # 上市天数
+              ('marketdays', 17),)  # 上市天数
 
 
 class stampDutyCommissionScheme(bt.CommInfoBase):
@@ -40,19 +41,18 @@ class stampDutyCommissionScheme(bt.CommInfoBase):
         '''
 
         if size > 0:  # 买入，不考虑印花税
-            return size * price * self.p.commission*100
+            return size * price * self.p.commission * 100
         elif size < 0:  # 卖出，考虑印花税
-            return - size * price * (self.p.stamp_duty + self.p.commission*100)
+            return - size * price * (self.p.stamp_duty + self.p.commission * 100)
         else:
             return 0  # just in case for some reason the size is 0.
-
 
 
 class Strategy(bt.Strategy):
     params = dict(
         rebal_monthday=[1],  # 每月1日执行再平衡
         num_volume=100,  # 成交量取前100名
-        period = 5,
+        period=5,
     )
 
     # 日志函数
@@ -62,7 +62,7 @@ class Strategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        
+
         self.lastRanks = []  # 上次交易股票的列表
         # 0号是指数，不进入选股池，从1号往后进入股票池
         self.stocks = self.datas[1:]
@@ -70,20 +70,16 @@ class Strategy(bt.Strategy):
         self.order_list = []
 
         # 移动平均线指标 
-        self.sma={d:bt.ind.SMA(d,period=self.p.period) for d in self.stocks}
-     
+        self.sma = {d: bt.ind.SMA(d, period=self.p.period) for d in self.stocks}
+
     def prenext(self):
         self.next()
-    
+
     def next(self):
-        if self.data0.datetime.date(0).month in [5,9,11] and \
-            self.data0.datetime.date(0).month != self.data0.datetime.date(-1).month:
+        if self.data0.datetime.date(0).month in [5, 9, 11] and \
+                self.data0.datetime.date(0).month != self.data0.datetime.date(-1).month:
             self.rebalance_portfolio()  # 执行再平衡
 
-          
-
-
-     
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
             # 订单状态 submitted/accepted，无动作
@@ -116,23 +112,21 @@ class Strategy(bt.Strategy):
 
         # 如果是指数的最后一本bar，则退出，防止取下一日开盘价越界错
         if len(self.datas[0]) == self.data0.buflen():
-            return     
-        
-        
-        # 取消以往所下订单（已成交的不会起作用）
+            return
+
+            # 取消以往所下订单（已成交的不会起作用）
         for o in self.order_list:
             self.cancel(o)
         self.order_list = []  # 重置订单列表
 
-        
         # for d in self.stocks:
         #     print('sma', d._name, self.sma[d][0],self.sma[d][1], d.marketdays[0])
-        
+
         # 最终标的选取过程
         # 1 先做排除筛选过程
         self.ranks = [d for d in self.stocks if
                       len(d) > 0  # 重要，到今日至少要有一根实际bar
-                      and d.marketdays > 3*365  # 到今天至少上市
+                      and d.marketdays > 3 * 365  # 到今天至少上市
                       # 今日未停牌 (若去掉此句，则今日停牌的也可能进入，并下订单，次日若复牌，则次日可能成交）（假设原始数据中已删除无交易的记录)
                       and d.datetime.date(0) == self.currDate
                       and d.roe >= 0.1
@@ -153,12 +147,12 @@ class Strategy(bt.Strategy):
         data_toclose = set(self.lastRanks) - set(self.ranks)
         for d in data_toclose:
             print('sell 平仓', d._name, self.getposition(d).size)
-            o = self.close(data=d)            
-            self.order_list.append(o) # 记录订单
+            o = self.close(data=d)
+            self.order_list.append(o)  # 记录订单
 
         # 4 本次标的下单
         # 每只股票买入资金百分比，预留2%的资金以应付佣金和计算误差
-        buypercentage = (1-0.02)/len(self.ranks)
+        buypercentage = (1 - 0.02) / len(self.ranks)
 
         # 得到目标市值
         targetvalue = buypercentage * self.broker.getvalue()
@@ -174,19 +168,18 @@ class Strategy(bt.Strategy):
             validday = d.datetime.datetime(1)  # 该股下一实际交易日
             if self.broker.getvalue([d]) > targetvalue:  # 持仓过多，要卖
                 # 次日跌停价近似值
-                lowerprice = d.close[0]*0.9+0.02
+                lowerprice = d.close[0] * 0.9 + 0.02
 
                 o = self.sell(data=d, size=size, exectype=bt.Order.Limit,
                               price=lowerprice, valid=validday)
             else:  # 持仓过少，要买
                 # 次日涨停价近似值
-                upperprice = d.close[0]*1.1-0.02
+                upperprice = d.close[0] * 1.1 - 0.02
                 o = self.buy(data=d, size=size, exectype=bt.Order.Limit,
                              price=upperprice, valid=validday)
-                             
-            self.order_list.append(o) # 记录订单
 
-        
+            self.order_list.append(o)  # 记录订单
+
         self.lastRanks = self.ranks  # 跟踪上次买入的标的
 
 
@@ -211,41 +204,38 @@ print(datafilelist)
 
 
 for fname in datafilelist:
-    
     df = pd.read_csv(
-            fname,   
-            skiprows=0,  # 不忽略行
-            header=0,  # 列头在0行
-        )
+        fname,
+        skiprows=0,  # 不忽略行
+        header=0,  # 列头在0行
+    )
     # df = df[~df['交易状态'].isin(['停牌一天'])]  # 去掉停牌日记录
     df['date'] = pd.to_datetime(df['date'])  # 转成日期类型   
     df = df.dropna()
 
     # print(df.info())
     # print(df.head())
- 
-        
-    data = PandasDataExtend(
-            dataname=df,
-            datetime=0,  # 日期列
-            open=2,  # 开盘价所在列
-            high=3,  # 最高价所在列
-            low=4,  # 最低价所在列
-            close=5,  # 收盘价价所在列
-            volume=6,  # 成交量所在列
-            pe=7,
-            roe=8,
-            marketdays=9,
-            openinterest=-1,  # 无未平仓量列
-            fromdate=datetime(2002, 4, 1),  # 起始日2002, 4, 1
-            todate=datetime(2015, 12, 31),  # 结束日 2015, 12, 31
-            plot=False
 
-        )
+    data = PandasDataExtend(
+        dataname=df,
+        datetime=0,  # 日期列
+        open=2,  # 开盘价所在列
+        high=3,  # 最高价所在列
+        low=4,  # 最低价所在列
+        close=5,  # 收盘价价所在列
+        volume=6,  # 成交量所在列
+        pe=7,
+        roe=8,
+        marketdays=9,
+        openinterest=-1,  # 无未平仓量列
+        fromdate=datetime(2002, 4, 1),  # 起始日2002, 4, 1
+        todate=datetime(2015, 12, 31),  # 结束日 2015, 12, 31
+        plot=False
+
+    )
     ticker = fname[-13:-4]  # 从文件路径名取得股票代码
 
     cerebro.adddata(data, name=ticker)
-
 
 cerebro.addstrategy(Strategy)
 startcash = 10000000

@@ -12,12 +12,12 @@ import pandas as pd
 import akshare as ak
 
 from backtrader.feeds import PandasData
+
 conn = pymssql.connect(host='.', user='sa', password='test', database='50_ak', charset='utf8')
 engine = create_engine('mssql+pymssql://sa:test@127.0.0.1/50_ak')
 sql_query = 'select * from [50_ak]'
 df_read = pd.read_sql(sql_query, engine)
-#df_read = df_read.loc[:100]
-
+# df_read = df_read.loc[:100]
 
 
 df_read.columns = ['ts_code', 'datetime', 'open', 'high', 'low', 'close', 'volume']
@@ -30,11 +30,10 @@ df_read['volume'] = df_read['volume'].astype('int64')
 df_read['ttm'] = 0
 df_read['impvol'] = 0.5
 
-
-
 stk_num = 1000  # 回测股票数据
 
-#date_value_list = []
+
+# date_value_list = []
 
 
 # 创建策略
@@ -42,7 +41,7 @@ class BollStrategy(bt.Strategy):
     # 可配置策略参数
     params = dict(
         poneplot=False,  # 是否打印到同一张图
-        pstake=100,      # 单笔交易股票数据
+        pstake=100,  # 单笔交易股票数据
     )
 
     def log(self, txt, dt=None):
@@ -69,7 +68,7 @@ class BollStrategy(bt.Strategy):
         date = self.datetime.date()
         print(date)
 
-        for i,d in enumerate(self.datas):
+        for i, d in enumerate(self.datas):
             pos = self.getposition(d)
             # if self.datas[i].close[0] < 0.05:
             #     self.close(d,size = self.params.pstake)
@@ -83,25 +82,24 @@ class BollStrategy(bt.Strategy):
         # # 存入列表
         # date_value_list.append((date, value))
 
-        for i,d in enumerate(self.datas):
-            #if self.datas[i].close[0] > 0.01:
+        for i, d in enumerate(self.datas):
+            # if self.datas[i].close[0] > 0.01:
             if True:
-                print('buy',d.close[0])
-                self.order = self.buy(data = d, size=self.params.pstake)
-                #print(d._name)
-                #order.addinfo(ticker=d._name)
-                #print(d._name)
+                print('buy', d.close[0])
+                self.order = self.buy(data=d, size=self.params.pstake)
+                # print(d._name)
+                # order.addinfo(ticker=d._name)
+                # print(d._name)
             else:
-                #print('sell',d.close[0])
-                self.order = self.sell(data = d, size=self.params.pstake)
-                #order.addinfo(ticker=d._name)
-                #print(d._name)
-
+                # print('sell',d.close[0])
+                self.order = self.sell(data=d, size=self.params.pstake)
+                # order.addinfo(ticker=d._name)
+                # print(d._name)
 
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         date = self.datetime.date()
-        print('order',date)
+        print('order', date)
         dt = self.data.datetime.date()
         if trade.isclosed:
             print('{} {} Closed: Pnl Gross{}, Net {}'.format(
@@ -132,6 +130,7 @@ class BollStrategy(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             print('Order Canceled/Margin/Rejected: {}'.format(order.info['ticker']))
 
+
 # #回测结束后输出结果（可省略，默认输出结果）
 #     def stop(self):
 #         self.log('(MA均线： %2d日) 期末总资金 %.2f' %
@@ -139,6 +138,7 @@ class BollStrategy(bt.Strategy):
 class ETFOptionPandasData(PandasData):
     lines = ('ttm', 'impvol')
     params = (('ttm', 7), ('impvol', 8))
+
 
 from backtrader.feeds import PandasData
 
@@ -161,6 +161,7 @@ print(cerebro.broker.getvalue())
 
 import matplotlib
 import matplotlib.pyplot as plt
+
 plt.figure()
 for d in cerebro.datas:
     d.plotinfo.plot = False

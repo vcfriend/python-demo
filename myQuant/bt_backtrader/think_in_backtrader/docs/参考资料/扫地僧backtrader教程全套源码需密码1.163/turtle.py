@@ -5,14 +5,14 @@ import sys  # 发现脚本名字(in argv[0])
 
 
 class TurtleStrategy(bt.Strategy):
-    #默认参数
+    # 默认参数
     params = (
         ('H_period', 20),  # 唐奇安通道上轨周期
         ('L_period', 10),  # 唐奇安通道下轨周期
         ('ATRPeriod', 20),  # 平均真实波幅ATR周期
     )
 
-    #交易记录日志（默认打印结果）
+    # 交易记录日志（默认打印结果）
     def log(self, txt, dt=None, doprint=True):
         if doprint:
             dt = dt or self.datetime.date(0)
@@ -42,28 +42,28 @@ class TurtleStrategy(bt.Strategy):
         if self.order:
             return
 
-        #入场：价格突破上轨线且空仓时
+        # 入场：价格突破上轨线且空仓时
         if self.buy_signal and self.buy_count == 0:
-             # 计算买入数量
-            self.buy_size = self.broker.getvalue() * 0.01 / self.ATR 
-            self.buy_size = int(self.buy_size / 100) * 100 
+            # 计算买入数量
+            self.buy_size = self.broker.getvalue() * 0.01 / self.ATR
+            self.buy_size = int(self.buy_size / 100) * 100
 
             self.buy_count += 1  # 买入次数计数
             self.log('创建买单')
             self.order = self.buy(size=self.buy_size)
 
-        #加仓：价格上涨了买入价的0.5的ATR且加仓次数少于3次（含）
+        # 加仓：价格上涨了买入价的0.5的ATR且加仓次数少于3次（含）
         elif self.data.close > self.buyprice + 0.5 * self.ATR[0] \
                 and self.buy_count > 0 and self.buy_count <= 4:
-             # 计算买入数量
-            self.buy_size = self.broker.getvalue() * 0.01 / self.ATR 
-            self.buy_size = int(self.buy_size / 100) * 100  
+            # 计算买入数量
+            self.buy_size = self.broker.getvalue() * 0.01 / self.ATR
+            self.buy_size = int(self.buy_size / 100) * 100
 
             self.log('创建买单')
             self.order = self.buy(size=self.buy_size)
             self.buy_count += 1  # 买入次数计数
 
-        #离场：价格跌破下轨线且持仓时
+        # 离场：价格跌破下轨线且持仓时
         elif self.position:
             if self.sell_signal or self.data.close < (
                     self.buyprice - 2 * self.ATR[0]):
@@ -71,7 +71,7 @@ class TurtleStrategy(bt.Strategy):
                 self.order = self.close()  # 清仓
                 self.buy_count = 0
 
-    #记录交易执行情况（默认不输出结果）
+    # 记录交易执行情况（默认不输出结果）
     def notify_order(self, order):
         # 如果order为submitted/accepted,返回
         if order.status in [order.Submitted, order.Accepted]:
@@ -96,7 +96,7 @@ class TurtleStrategy(bt.Strategy):
             self.log('交易失败%s' % order.getstatusname())
         self.order = None
 
-    #记录交易收益情况（可省略，默认不输出结果）
+    # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
         if not trade.isclosed:
             return

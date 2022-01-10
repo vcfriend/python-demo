@@ -29,8 +29,8 @@ class BOLLStrat(bt.Strategy):
     def __init__(self):
         self.boll = bt.indicators.BollingerBands(
             period=self.p.period, devfactor=self.p.devfactor)
-        #self.sx = bt.indicators.CrossDown(self.data.close, self.boll.lines.top)
-        #self.lx = bt.indicators.CrossUp(self.data.close, self.boll.lines.bot)
+        # self.sx = bt.indicators.CrossDown(self.data.close, self.boll.lines.top)
+        # self.lx = bt.indicators.CrossUp(self.data.close, self.boll.lines.bot)
 
     def next(self):
         # 未决订单列表
@@ -120,7 +120,7 @@ class BOLLStrat(bt.Strategy):
             )
 
 
-#Variable for our starting cash
+# Variable for our starting cash
 startcash = 10000
 
 # Create an instance of cerebro
@@ -157,11 +157,11 @@ cerebro.addsizer(bt.sizers.FixedReverser, stake=10)
 # Run over everything
 cerebro.run()
 
-#Get final portfolio Value
+# Get final portfolio Value
 portvalue = cerebro.broker.getvalue()
 pnl = portvalue - startcash
 
-#Print out the final result
+# Print out the final result
 print('Final Portfolio Value: ${}'.format(round(portvalue, 2)))
 print('P/L: ${}'.format(round(pnl, 2)))
 

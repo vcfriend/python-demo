@@ -3,15 +3,13 @@ import backtrader as bt
 import os.path  # 管理路径
 import sys  # 发现脚本名字(in argv[0])
 
+
 # 创建策略类
 class SmaCross(bt.Strategy):
     # 定义参数
     params = dict(period=5  # 移动平均期数
                   )
 
-    
-    
-    
     def __init__(self):
         # 移动平均线指标
         self.move_average = bt.ind.MovingAverageSimple(
@@ -21,11 +19,11 @@ class SmaCross(bt.Strategy):
         if not self.position:  # 还没有仓位
             # 当日收盘价上穿5日均线，创建买单，买入100股
             if self.data.close[
-                    -1] < self.move_average[-1] and self.data > self.move_average:
+                -1] < self.move_average[-1] and self.data > self.move_average:
                 self.buy(size=100)
         # 有仓位，并且当日收盘价下破5日均线，创建卖单，卖出100股
         elif self.data.close[
-                -1] > self.move_average[-1] and self.data < self.move_average:
+            -1] > self.move_average[-1] and self.data < self.move_average:
             self.sell(size=100)
 
 
@@ -50,7 +48,7 @@ data = bt.feeds.GenericCSVData(
     low=5,  # 最低价所在列
     close=6,  # 收盘价价所在列
     volume=10,  # 成交量所在列
-    openinterest=-1, # 无未平仓量列.(openinterest是期货交易使用的)
+    openinterest=-1,  # 无未平仓量列.(openinterest是期货交易使用的)
     dtformat=('%Y%m%d'),  # 日期格式
     fromdate=datetime(2019, 1, 1),  # 起始日
     todate=datetime(2020, 7, 8))  # 结束日

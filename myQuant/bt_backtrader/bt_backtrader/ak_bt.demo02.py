@@ -49,7 +49,7 @@ cerebro = bt.Cerebro()  # 初始化回测系统
 date_start = datetime(2020, 1, 1)  # 回测开始时间
 date_end = datetime(2021, 12, 16)  # 回测结束时间
 # 利用 AKShare 获取股票的后复权数据，这里只获取前 6 列
-stock_hfq_df = ak.stock_zh_a_hist(symbol="000001",start_date=date_start, end_date=date_end, adjust="hfq").iloc[:, :6]
+stock_hfq_df = ak.stock_zh_a_hist(symbol="000001", start_date=date_start, end_date=date_end, adjust="hfq").iloc[:, :6]
 # 处理字段命名，以符合 Backtrader 的要求
 stock_hfq_df.columns = ['date', 'open', 'close', 'high', 'low', 'volume', ]
 # 把 date 作为日期索引，以符合 Backtrader 的要求

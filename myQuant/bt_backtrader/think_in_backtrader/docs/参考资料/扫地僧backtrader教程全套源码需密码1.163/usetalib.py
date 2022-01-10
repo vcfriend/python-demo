@@ -5,7 +5,7 @@ import sys  # 发现脚本名字
 
 
 class TALibStrategy(bt.Strategy):
-    params = (('period', 20), )
+    params = (('period', 20),)
 
     def __init__(self):
         # ta-lib移动平均指标

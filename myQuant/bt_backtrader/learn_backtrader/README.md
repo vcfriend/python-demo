@@ -1,9 +1,12 @@
 # Backtrader 中文教程
+
 * 作者：[量化投资与机器学习](https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=MzAxNTc0Mjg0Mg==&scene=124#wechat_redirect)
 * 笔记：Jason
 
 ## [Lesson1：Backtrader来啦](https://mp.weixin.qq.com/s/7S4AnbUfQy2kCZhuFN1dZw)
+
 Backtrader 是 2015 年开源的 Python 量化回测框架（支持实盘交易），功能丰富，操作方便灵活：
+
 * 品种多：股票、期货、期权、外汇、数字货币；
 * 周期全：Ticks 级、秒级、分钟级、日度、周度、月度、年度；
 * 速度快：pandas 矢量运算、多策略并行运算；
@@ -22,6 +25,7 @@ pip install backtrader[plotting]
 ## [Lesson2：Backtrader来啦：数据篇](https://mp.weixin.qq.com/s/NTct2_AYhz4Z8q5MYtBQcA)
 
 ### Data Feed 数据馈送对象
+
 * 数据表格中的“行”和“列”
 * 列是“lines”
 * 如何调用某一条 line ?
@@ -29,11 +33,13 @@ pip install backtrader[plotting]
 * 行是“Bars”
 
 ### DataFeeds 数据模块
+
 * 默认的导入方式
 * 自定义读取函数
 * 新增指标
 
 ## [Lesson3：Backtrader来啦：指标篇](https://mp.weixin.qq.com/s/rFaU96l4mYzC0Kaua9jRJA)
+
 在编写策略时，除了常规的高开低收成交量等行情数据外，还会用到各式各样的指标（变量），比如宏观经济指标、基本面分析指标、技术分析指标、另类数据等等。Backtrader 大致有 2 种获取指标的方式：
 
     1. 直接通过 DataFeeds 模块导入已经计算好的指标，比如《数据篇》中的导入新增指标 PE、PB；
@@ -62,33 +68,38 @@ Backtrader中的交易流程大致如下：
     * step6：Order 模块返回经纪商 Broker 中的订单执行结果。
 
 ### Broker 中的交易条件
+
 * 资金管理
 * 持仓查询
 
 ### 滑点管理
+
 * 百分比滑点
 * 固定滑点
 * 其他设置
 
 ### 交易税费管理
+
 * 通过 BackBroker() 设置
 * 通过 setcommission() 设置
 * 通过 addcommissioninfo() 设置
 * 自定义交易费用的例子
 
 ### 成交量限制管理
-* 形式1：bt.broker.fillers.FixedSize(size) 
+
+* 形式1：bt.broker.fillers.FixedSize(size)
 * 形式2：bt.broker.fillers.FixedBarPerc(perc)
 * 形式3：bt.broker.fillers.BarPointPerc(minmov=0.01，perc=100.0)
 
 ### 交易时机管理
+
 * Cheat-On-Open
 * Cheat-On-Close
-
 
 ## [Lesson5：Backtrader来啦：交易篇（下）](https://mp.weixin.qq.com/s/CJwSpvS07JLT4xhO19SOeA)
 
 ### Order 中的交易订单
+
 * Order.Market
 * Order.Close
 * Order.Limit
@@ -98,6 +109,7 @@ Backtrader中的交易流程大致如下：
 * Order.StopTrailLimit
 
 ### Strategy 中的交易函数
+
 * 常规下单函数
 * 目标下单函数
 * 取消订单
@@ -106,6 +118,7 @@ Backtrader中的交易流程大致如下：
     * sell_bracket()
 
 ### 执行逻辑
+
 * 通用逻辑
     * 只当在主订单执行后，止损单和止盈单才会被激活，而且是同时激活；
     * 如果主订单被取消，止盈单和止损单也会被取消；
@@ -114,6 +127,7 @@ Backtrader中的交易流程大致如下：
 * OCO订单
 
 ### Broker 中的交易执行
+
 * Order.Created：订单已被创建；
 * Order.Submitted：订单已被传递给经纪商 Broker；
 * Order.Accepted：订单已被经纪商接收；
@@ -136,16 +150,17 @@ Backtrader中的交易流程大致如下：
 * 如何返回策略收益评价指标
 * 如何对策略进行参数优化
 
-
 ## [Lesson7：Backtrader来啦：可视化篇（重构）](https://mp.weixin.qq.com/s/WA7Dgr_kcZz-WhriHkf4AQ)
 
 ### observers 观测器
+
 * 最常用的观测器
 * 如何添加 observers
 * 如何读取 observers 中的数据
 * 自定义 observers
 
 ### plot() 图形绘制
+
 * plot() 中的参数
 * 局部绘图参数设置
 * 部分修改效果

@@ -1,10 +1,10 @@
-
 import datetime  #
 import os.path  # 路径管理
 import sys  # 获取当前运行脚本的路径 (in argv[0])
 
-#导入backtrader框架
+# 导入backtrader框架
 import backtrader as bt
+
 
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
@@ -19,7 +19,6 @@ class TestStrategy(bt.Strategy):
         self.dataclose = self.datas[0].close
         # 跟踪挂单
         self.order = None
-
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -59,7 +58,7 @@ class TestStrategy(bt.Strategy):
                 if self.dataclose[-1] < self.dataclose[-2]:
                     # 买入
                     self.log('买入, %.2f' % self.dataclose[0])
-                     # 跟踪订单避免重复
+                    # 跟踪订单避免重复
                     self.order = self.buy()
         else:
             # 如果已经持仓，且当前交易数据量在买入后5个单位后
@@ -68,7 +67,6 @@ class TestStrategy(bt.Strategy):
                 self.log('卖出, %.2f' % self.dataclose[0])
                 # 跟踪订单避免重复
                 self.order = self.sell()
-
 
 
 if __name__ == '__main__':
@@ -95,7 +93,6 @@ if __name__ == '__main__':
 
     # 加载交易数据
     cerebro.adddata(data)
-
 
     # 设置投资金额100000.0
     cerebro.broker.setcash(100000.0)

@@ -69,12 +69,14 @@ class DoulbeSMAStrategy(bt.Strategy):
         if size == 0 and self.short_ma[-1] < self.long_ma[-1] and self.short_ma[0] > self.long_ma[0]:
             # 开仓
             # self.order_target_value(self.datas[0]*, target=5)
-            order = self.buy(size=100*5)
-            self.log("金叉，买{0}, Short SMA yes={1}, Long SMA today={2}".format(order.size, self.short_ma[-1], self.long_ma[0]))
+            order = self.buy(size=100 * 5)
+            self.log(
+                "金叉，买{0}, Short SMA yes={1}, Long SMA today={2}".format(order.size, self.short_ma[-1], self.long_ma[0]))
         # 平多
         if size > 0 and self.short_ma[-1] > self.long_ma[-1] and self.short_ma[0] < self.long_ma[0]:
             order = self.close(self.datas[0])
-            self.log("死叉，卖{0}, Short SMA yes={1}, Long SMA today={2}".format(order.size, self.short_ma[-1], self.long_ma[0]))
+            self.log(
+                "死叉，卖{0}, Short SMA yes={1}, Long SMA today={2}".format(order.size, self.short_ma[-1], self.long_ma[0]))
 
 
 if __name__ == '__main__':
@@ -88,7 +90,7 @@ if __name__ == '__main__':
     cerebro.addanalyzer(btanalyzers.SharpeRatio, _name='mysharpe')
 
     # 设置初始资金：
-    cerebro.broker.setcash(100000.0)    # 10万元
+    cerebro.broker.setcash(100000.0)  # 10万元
 
     # 从csv文件加载数据
     # 仅3天数据

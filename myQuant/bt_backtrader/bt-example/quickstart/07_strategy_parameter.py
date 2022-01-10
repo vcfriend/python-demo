@@ -79,16 +79,16 @@ class TestStrategy(bt.Strategy):
 
             # Not yet ... we MIGHT BUY if ...
             if self.dataclose[0] < self.dataclose[-1]:
-                    # current close less than previous close
+                # current close less than previous close
 
-                    if self.dataclose[-1] < self.dataclose[-2]:
-                        # previous close less than the previous close
+                if self.dataclose[-1] < self.dataclose[-2]:
+                    # previous close less than the previous close
 
-                        # BUY, BUY, BUY!!! (with default parameters)
-                        self.log('BUY CREATE, %.2f' % self.dataclose[0])
+                    # BUY, BUY, BUY!!! (with default parameters)
+                    self.log('BUY CREATE, %.2f' % self.dataclose[0])
 
-                        # Keep track of the created order to avoid a 2nd order
-                        self.order = self.buy()
+                    # Keep track of the created order to avoid a 2nd order
+                    self.order = self.buy()
 
         else:
 

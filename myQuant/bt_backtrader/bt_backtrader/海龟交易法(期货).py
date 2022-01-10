@@ -5,6 +5,7 @@ import pandas as pd
 import tushare as ts
 import os
 
+
 # 使用tushare 从网络加载数据源
 def get_tushare_online_daily_data(
         code="000001.SZ",
@@ -51,6 +52,7 @@ def get_tushare_online_daily_data(
     except Exception as err:
         print("下载{0}完毕失败！")
         print("失败原因 = " + str(err))
+
 
 class TestSizer(bt.Sizer):
     params = (('stake', 1),)
@@ -160,13 +162,13 @@ if __name__ == '__main__':
     cerebro.addstrategy(TestStrategy)
     # 准备股票日线数据，输入到backtrader    
     file_path = os.path.join('fd_data/600016.SH.csv')
-    df = pd.read_csv(file_path,nrows=500, index_col=0, parse_dates=True)
+    df = pd.read_csv(file_path, nrows=500, index_col=0, parse_dates=True)
     # 按日期先后排序
     df.sort_values(by=["trade_date"], ascending=True, inplace=True)
     # 将日期列，设置成index
     df.index = pd.to_datetime(df.trade_date, format='%Y%m%d')
     df['openinterest'] = 0
-    print('df:',df.info())
+    print('df:', df.info())
     print(df.head())
     data = bt.feeds.PandasData(dataname=df)
     cerebro.adddata(data)

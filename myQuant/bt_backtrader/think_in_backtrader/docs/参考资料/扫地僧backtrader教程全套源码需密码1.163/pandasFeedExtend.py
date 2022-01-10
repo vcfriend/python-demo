@@ -5,15 +5,15 @@ import sys  # 发现脚本名字(in argv[0])
 import pandas
 from backtrader.feeds import PandasData  # 用于扩展DataFeed
 
+
 # 创建新的data feed类
 
 
 class PandasData_PE(PandasData):
-
     # 增加pe线
-    lines = ('pe', )
+    lines = ('pe',)
     # 默认第8列（从0开始数）
-    params = (('pe', 8), )
+    params = (('pe', 8),)
 
 
 # 创建策略类
@@ -90,7 +90,6 @@ dataframe = pandas.read_csv(
     # parse_dates=True,  # 解析日期
     # index_col=2
 )  # 索引列为2，即日期所在列
-
 
 dataframe['trade_date'] = dataframe['trade_date'].apply(str)
 dataframe['trade_date'] = pandas.to_datetime(dataframe['trade_date'])

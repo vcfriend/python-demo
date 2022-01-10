@@ -26,27 +26,27 @@ def WFASplit(self, trainBy='12m', testBy='3m', loopBy='m', overlap=True):
     startDate = self.index[0]
     endDate = self.index[-1]
     if trainBy[-1] is 'm':
-        trainTime = relativedelta(months=int(trainBy[:-1])) # 取得训练时长，几个月
+        trainTime = relativedelta(months=int(trainBy[:-1]))  # 取得训练时长，几个月
     else:
         raise ValueError
     if testBy[-1] is 'm':
         testTime = relativedelta(months=int(testBy[:-1]))  # 取得测试时长，几个月
     else:
         raise ValueError
-    assert ((relativedelta(endDate, startDate)-trainTime).days) > 0
+    assert ((relativedelta(endDate, startDate) - trainTime).days) > 0
 
     if loopBy is 'm':
         # 似乎是训练开始时间列表而不是测试开始时间。从startDate开始，以测试时长为步长，依次增加，直到endDate-trainTime
         test_starts = zip(rrule(MONTHLY, dtstart=startDate,
-                                until=endDate-trainTime, interval=int(testBy[:-1])))
+                                until=endDate - trainTime, interval=int(testBy[:-1])))
     else:
         raise ValueError
 
     for i in test_starts:
-        startD = i[0] #转成日期，i是tuple他的第0个元素是日期
-        endD = i[0]+trainTime
+        startD = i[0]  # 转成日期，i是tuple他的第0个元素是日期
+        endD = i[0] + trainTime
         yield (self[(self.index >= startD) & (self.index < endD)],
-               self[(self.index >= endD) & (self.index < endD+testTime)])
+               self[(self.index >= endD) & (self.index < endD + testTime)])
     return None
 
 
@@ -161,7 +161,6 @@ def runTest(params, WFATrainResult, _ind, datafeed, stockName):
     return _report
 
 
-
 # 程序入口
 ######################
 if __name__ == "__main__":
@@ -170,7 +169,7 @@ if __name__ == "__main__":
     params['timeString'] = '0621_113833'
     params['topResult'] = pd.read_csv(
         '{}{}/consoReport.csv'.format(params['resultLocation'], params['timeString']), index_col=0)
-    params['resultLocation'] += params['timeString']+'/WFA'
+    params['resultLocation'] += params['timeString'] + '/WFA'
     simulations = []
 
     try:
@@ -182,7 +181,7 @@ if __name__ == "__main__":
         pass
     os.makedirs(params['resultLocation'], exist_ok=True)
     for element in ['order', 'trade', 'mr', 'ohlc', 'simulation', 'bestTrain', 'graph']:
-        os.makedirs(params['resultLocation']+'/'+element, exist_ok=True)
+        os.makedirs(params['resultLocation'] + '/' + element, exist_ok=True)
     # Create master Log
     handler = logging.FileHandler(
         filename='{}/Master.log'.format(params['resultLocation']))
@@ -206,7 +205,7 @@ if __name__ == "__main__":
                         'selfMDD', 'winRate', 'tradingTimeRatio',
                         'averageTradingBar', 'tradeNumber', 'maxValue',
                         'minValue', 'initialv', 'totalCommission',
-                                    'barNumber', 'expectancy100', 'bnhReturn', 'bnhRatio']
+                        'barNumber', 'expectancy100', 'bnhReturn', 'bnhRatio']
     reportLogger.info(str(simResultColumns).strip(
         "[]").replace("'", "").replace(" ", ""))
 
@@ -233,13 +232,13 @@ if __name__ == "__main__":
             logger.info(
                 '{}: Indicator does not have WFA parameters and skipped'.format(row.indicator))
             continue
-        datafeed = feeder(stockName, market, params) # 这里应该是dataframe
+        datafeed = feeder(stockName, market, params)  # 这里应该是dataframe
         bnhReturn = round(
             datafeed.iloc[-1]['close'] - datafeed.iloc[0]['open'], 2)
         # Extract Feeder from Data to save time for multi-simulation
         print('Start WFA for {}-{} from {} to {}'.format(stockName,
                                                          row.indicator, datafeed.iloc[0].name, datafeed.iloc[-1].name))
-        
+
         # 重要，数据划分，datafeed是dataframe，包含k线数据
         trainTestGenerator = WFASplit(
             datafeed, trainBy='8m', testBy='8m', loopBy='m')
@@ -248,15 +247,13 @@ if __name__ == "__main__":
         # Training 样本内训练
         WFATrainResult = runTrain(trainTestGenerator, _ind, stockName)
 
-
         WFATrainResult = pd.DataFrame.from_records(WFATrainResult)
         WFATrainResult.to_csv('{}/bestTrain/{}_{}_train.csv'.format(
             params['resultLocation'], stockName, row.indicator), index=False)
-        
-        # TESTING 样本外测试
-        _report = runTest(params, WFATrainResult, _ind, datafeed, stockName) # datafeed是dataframe
 
-        
+        # TESTING 样本外测试
+        _report = runTest(params, WFATrainResult, _ind, datafeed, stockName)  # datafeed是dataframe
+
         # Consolidate T
         if _report[0] is not None:
             reportLogger.info(str(_report).strip("[]").strip(
@@ -281,5 +278,5 @@ if __name__ == "__main__":
     consoResult.sort_values('res').to_csv(
         '{}/optReport.csv'.format(params['resultLocation']), index=False)
 
-    timeRequired = time.time()-startTime
+    timeRequired = time.time() - startTime
     print('timeRequired={:.2f}s'.format(timeRequired))

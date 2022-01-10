@@ -58,7 +58,7 @@ class PairTradingStrategy(bt.Strategy):
 
         # Signals performed with PD.OLS :
         self.transform = bt.ind.OLS_TransformationN(self.data0, self.data1,
-                                                   period=self.p.period)
+                                                    period=self.p.period)
         self.zscore = self.transform.zscore
 
         # Checking signals built with StatsModel.API :
@@ -129,7 +129,6 @@ class PairTradingStrategy(bt.Strategy):
             self.qty2 = y  # The new open position quantity for Stock2 is y shares
             self.status = 2  # The current status is "long the spread"
 
-
             # Step 4: Check conditions for No Trade
             # If the z-score is within the two bounds, close all
         """
@@ -145,6 +144,7 @@ class PairTradingStrategy(bt.Strategy):
         print('Starting Value - %.2f' % self.broker.startingcash)
         print('Ending   Value - %.2f' % self.broker.getvalue())
         print('==================================================')
+
 
 ##########################
 # 主程序开始
@@ -194,8 +194,6 @@ if __name__ == '__main__':
         todate=datetime(2020, 12, 8))  # 结束日
 
     cerebro.adddata(data2)
-
-
 
     # broker设置资金、手续费
     cerebro.broker.setcash(1000000.0)

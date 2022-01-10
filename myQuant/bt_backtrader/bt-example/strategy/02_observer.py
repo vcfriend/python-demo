@@ -16,7 +16,7 @@ class TestStrategy(bt.Strategy):
     )
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        """ Logging function fot this strategy"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
@@ -86,7 +86,6 @@ class TestStrategy(bt.Strategy):
 
             # Not yet ... we MIGHT BUY if ...
             if self.dataclose[0] > self.sma[0]:
-
                 # BUY, BUY, BUY!!! (with all possible default parameters)
                 self.log('BUY CREATE, %.2f' % self.dataclose[0])
 

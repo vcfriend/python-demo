@@ -93,7 +93,7 @@ if __name__ == '__main__':
     bs.login()
 
     # 获取下载股票数据列表, 如设置date参数，需确保date为交易日
-    stk_list = load_stk_list('all', date=None, update=False) # 'all' 
+    stk_list = load_stk_list('all', date=None, update=False)  # 'all'
     # stk_list = load_stk_list('main', date=None, update=False)
     # stk_list = load_stk_list('star', date=None, update=False)
     # stk_list = load_stk_list('ms', date=None, update=False)

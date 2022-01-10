@@ -93,4 +93,4 @@ if __name__ == "__main__":
     cerebro.report(OUTPUTDIR,
                    infilename='btc_usd.csv',
                    user='Trading John',
-                   memo='a.k.a. Golden Cross',)
+                   memo='a.k.a. Golden Cross', )

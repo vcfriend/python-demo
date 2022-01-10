@@ -6,7 +6,6 @@ import datetime
 
 import backtrader as bt
 
-
 ORDER_HISTORY = (
     ('2005-02-01', 1, 2984.63),
     ('2005-03-04', -1, 3079.93),

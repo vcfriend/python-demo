@@ -1,6 +1,6 @@
 from datetime import datetime
 import backtrader as bt
-#import backtrader.analyzers.basictradestats as bts
+# import backtrader.analyzers.basictradestats as bts
 import os.path  # 管理路径
 import sys  # 发现脚本名字(in argv[0])
 
@@ -95,5 +95,5 @@ cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
 cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
 
 cerebro.addwriter(bt.WriterFile, csv=True, out='mywriter.csv', rounding=2)
-#cerebro.addwriter(bt.WriterFile, out='mywriter.csv', rounding=2)
+# cerebro.addwriter(bt.WriterFile, out='mywriter.csv', rounding=2)
 cerebro.run()

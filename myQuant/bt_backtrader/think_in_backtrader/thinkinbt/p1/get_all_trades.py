@@ -44,7 +44,7 @@ class DemoStrategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        self.order = None   # 未决订单
+        self.order = None  # 未决订单
 
     def next(self):
         # 如果有未决订单则什么都不做
@@ -71,7 +71,7 @@ class DemoStrategy(bt.Strategy):
     def stop(self):
         # 输出所有的Trade：
         self.log("所有的交易")
-        for t in self._trades[self.data][0]:    # tradeid=0的所有交易
+        for t in self._trades[self.data][0]:  # tradeid=0的所有交易
             self.log(t.ref)
             print(t)
 
@@ -85,7 +85,7 @@ class DemoStrategy(bt.Strategy):
             elif order.issell():
                 self.log("卖单执行, {p}".format(p=order.executed.price))
 
-        self.order = None   # 重置未决订单
+        self.order = None  # 重置未决订单
 
     def notify_trade(self, trade):
         self.log("Trade id = {0} (size={1})".format(trade.ref, trade.size))

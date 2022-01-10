@@ -33,6 +33,7 @@ from backtrader.analyzers import (SQN, AnnualReturn, TimeReturn, SharpeRatio,
 import os.path  # 管理路径
 import sys  # 发现脚本名字
 
+
 class LongShortStrategy(bt.Strategy):
     '''This strategy buys/sells upong the close price crossing
     upwards/downwards a Simple Moving Average.
@@ -55,8 +56,7 @@ class LongShortStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
         if self.p.printout:
-            
-            dt = dt or self.datas[0].datetime.date(0)           
+            dt = dt or self.datas[0].datetime.date(0)
             print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
@@ -70,16 +70,15 @@ class LongShortStrategy(bt.Strategy):
         self.signal.csv = self.p.csvcross
 
     def next(self):
-       
+
         if self.orderid:
             return  # if an order is active, no new orders are allowed
 
-        
         if self.signal > 0.0:  # cross upwards
             if self.position:
                 self.log('CLOSE SHORT , %.2f' % self.data.close[0])
                 self.close()
-           
+
             self.log('BUY CREATE , %.2f' % self.data.close[0])
             self.buy(size=self.p.stake)
 
@@ -126,9 +125,6 @@ def runstrategy():
     # Create a cerebro
     cerebro = bt.Cerebro()
 
-
-    
-    
     # 获取本脚本文件所在路径
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     # 拼接得到数据文件全路径
@@ -149,7 +145,7 @@ def runstrategy():
 
     # Add the 1st data to cerebro
     cerebro.adddata(data)
-    
+
     # Add the strategy
     cerebro.addstrategy(LongShortStrategy,
                         period=5,
@@ -184,7 +180,7 @@ def runstrategy():
     cerebro.run()
 
     # Plot if requested
-    #if args.plot:
+    # if args.plot:
     # cerebro.plot(numfigs=args.numfigs, volume=False, zdown=False)
 
 

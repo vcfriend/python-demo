@@ -15,13 +15,12 @@ class SmaCross(bt.Strategy):
         '''日志函数'''
         dt = dt or self.datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
-      
 
     def __init__(self):
         # 移动平均线指标
         self.move_average = bt.ind.MovingAverageSimple(
             self.data, period=self.params.period)
-        self.count=0
+        self.count = 0
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -39,37 +38,32 @@ class SmaCross(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单 Canceled/Margin/Rejected')
 
-
-
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):
-     
+
         print()
         # status 0: 'Created', 1: 'Open', 2: 'Closed'
-        print(self.datetime.date(),'trade交易信息', 'ref', trade.ref,'tradeid', trade.tradeid ,'status', trade.status, 'juseopened',trade.justopened,
-               'isopen',trade.isopen, 'dtbar',bt.num2date(trade.baropen),'dtopen',bt.num2date(trade.dtopen))
+        print(self.datetime.date(), 'trade交易信息', 'ref', trade.ref, 'tradeid', trade.tradeid, 'status', trade.status,
+              'juseopened', trade.justopened,
+              'isopen', trade.isopen, 'dtbar', bt.num2date(trade.baropen), 'dtopen', bt.num2date(trade.dtopen))
         if trade.status == 2:
-            print( 'barclose',bt.num2date(trade.barclose))
-        
+            print('barclose', bt.num2date(trade.barclose))
+
         if trade.isclosed:
             print('毛收益 %0.2f, 扣佣后收益 % 0.2f, 佣金 %.2f' %
-                     (trade.pnl, trade.pnlcomm, trade.commission))
+                  (trade.pnl, trade.pnlcomm, trade.commission))
 
-
-    
     def next(self):
         if self.count <= 1:
             self.buy(size=100)
         elif self.count == 2:
-            self.sell(size=200) # 此句亦可改为self.close()
+            self.sell(size=200)  # 此句亦可改为self.close()
         elif self.count == 3:
             self.buy(size=100)
         elif self.count == 4:
             self.close()
 
-        self.count+=1
-        
-      
+        self.count += 1
 
 
 ##########################
@@ -78,7 +72,6 @@ class SmaCross(bt.Strategy):
 
 # 创建大脑引擎对象
 cerebro = bt.Cerebro()
-
 
 # 获取本脚本文件所在路径
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -94,7 +87,7 @@ data = bt.feeds.GenericCSVData(
     low=5,  # 最低价所在列
     close=6,  # 收盘价价所在列
     volume=10,  # 成交量所在列
-    openinterest=-1, # 无未平仓量列
+    openinterest=-1,  # 无未平仓量列
     dtformat=('%Y%m%d'),  # 日期格式
     fromdate=datetime(2019, 1, 1),  # 起始日
     todate=datetime(2020, 7, 8))  # 结束日
@@ -103,8 +96,8 @@ cerebro.adddata(data)  # 将行情数据对象注入引擎
 cerebro.addstrategy(SmaCross)  # 将策略注入引擎
 
 cerebro.broker.setcash(10000.0)  # 设置初始资金
-cerebro.broker.setcommission(0.001) # 佣金费率
- # 固定滑点，也可用cerebro.broker.set_slippage_perc()设置百分比滑点
+cerebro.broker.setcommission(0.001)  # 佣金费率
+# 固定滑点，也可用cerebro.broker.set_slippage_perc()设置百分比滑点
 cerebro.broker.set_slippage_fixed(0.05)
 
 print('初始市值: %.2f' % cerebro.broker.getvalue())

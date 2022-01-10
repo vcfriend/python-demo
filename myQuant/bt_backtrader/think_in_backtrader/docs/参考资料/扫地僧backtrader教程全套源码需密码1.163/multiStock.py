@@ -23,7 +23,7 @@ class SmaCross(bt.Strategy):
         }
 
     def next(self):
-        for d in self.datas:            
+        for d in self.datas:
             if not self.getposition(d).size:
                 if self.crossover[d] > 0:
                     self.buy(data=d, size=self.p.pstake)  # 买买买

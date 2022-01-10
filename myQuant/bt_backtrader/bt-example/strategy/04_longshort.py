@@ -10,12 +10,11 @@ import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
 
 
-
 class LongShortStrategy(bt.Strategy):
-    '''This strategy buys/sells upong the close price crossing
+    """This strategy buys/sells upong the close price crossing
     upwards/downwards a Simple Moving Average.
     It can be a long-only strategy by setting the param "onlylong" to True
-    '''
+    """
     params = dict(
         period=15,
         stake=1,
@@ -104,9 +103,9 @@ def runstrat():
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
         # Do not pass values before this date
-#         fromdate=datetime.datetime(2000, 1, 1),
+        #         fromdate=datetime.datetime(2000, 1, 1),
         # Do not pass values before this date
-#         todate=datetime.datetime(2000, 12, 31),
+        #         todate=datetime.datetime(2000, 12, 31),
         # Do not pass values after this date
         reverse=False)
 
@@ -118,6 +117,8 @@ def runstrat():
                         onlylong=args.onlylong,
                         stake=args.stake)
     cerebro.run()
+
+
 #     cerebro.plot()
 
 def parse_args():
@@ -134,5 +135,6 @@ def parse_args():
 
     return parser.parse_args()
 
+
 if __name__ == '__main__':
-	runstrat()
+    runstrat()

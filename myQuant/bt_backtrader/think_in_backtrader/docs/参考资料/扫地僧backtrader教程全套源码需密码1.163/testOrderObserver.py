@@ -73,7 +73,7 @@ class MyStrategy(bt.Strategy):
         elif self.crossover > 0:
             plimit = self.data.close[0] * (1.0 - self.p.limitperc / 100.0)
             valid = self.data.datetime.datetime(0) + \
-                datetime.timedelta(days=self.p.valid)
+                    datetime.timedelta(days=self.p.valid)
             self.log('BUY CREATE, %.2f' % plimit)
             self.order = self.buy(
                 exectype=bt.Order.Limit, price=plimit, valid=valid)

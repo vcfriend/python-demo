@@ -27,9 +27,11 @@ import backtrader as bt
 import backtrader.feeds as btfeeds
 from datetime import datetime
 
+
 class testStrategy(bt.Strategy):
     def next(self):
-        print(self.data0.datetime.datetime(0),len(self.data0), self.data0.open[0],self.data0.high[0],self.data0.low[0],self.data0.close[0],)
+        print(self.data0.datetime.datetime(0), len(self.data0), self.data0.open[0], self.data0.high[0],
+              self.data0.low[0], self.data0.close[0], )
 
 
 def runstrat():
@@ -42,9 +44,9 @@ def runstrat():
     cerebro.addstrategy(testStrategy)
 
     # Load the Data
-    datapath = args.dataname or 'D:/backtradertutorial/datas/2006-min-005.txt'  
+    datapath = args.dataname or 'D:/backtradertutorial/datas/2006-min-005.txt'
     data = btfeeds.BacktraderCSVData(
-        dataname=datapath, timeframe=bt.TimeFrame.Minutes,todate=datetime(2006, 1, 3))
+        dataname=datapath, timeframe=bt.TimeFrame.Minutes, todate=datetime(2006, 1, 3))
 
     # Handy dictionary for the argument timeframe conversion
     tframes = dict(
@@ -64,7 +66,7 @@ def runstrat():
         cerebro.adddata(data)
     else:
         # New resampler
-        print('new resample',tframes[args.timeframe],args.compression,)
+        print('new resample', tframes[args.timeframe], args.compression, )
         cerebro.resampledata(
             data,
             timeframe=bt.TimeFrame.Minutes,

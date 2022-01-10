@@ -7,10 +7,10 @@ def gen_dates(b_date, days):
     # print(day)
     for i in range(days):
         # print(b_date + day*i)
-        yield b_date + day*i
+        yield b_date + day * i
 
 
-def get_date_list(start_date, end_date):   #end_date=None
+def get_date_list(start_date, end_date):  # end_date=None
     """
     获取日期列表
     :param start: 开始日期
@@ -24,10 +24,11 @@ def get_date_list(start_date, end_date):   #end_date=None
     else:
         end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
     data = []
-    for d in gen_dates(start, ((end-start).days + 1)):    # 29 + 1
+    for d in gen_dates(start, ((end - start).days + 1)):  # 29 + 1
         # print(d)   # datetime.datetime  类型
         data.append(d.strftime("%Y-%m-%d"))
     return data
+
 
 def get_month_list(start_date, end_date):
     dates = get_date_list(start_date, end_date)
@@ -41,12 +42,10 @@ def get_month_list(start_date, end_date):
 if __name__ == '__main__':
     start_date = '2002-04-01'
     end_date = '2015-12-31'
-    datas=get_date_list(start_date, end_date)    # 两个日期之间的所有日期，包括开始日期， 包括 结束日期
+    datas = get_date_list(start_date, end_date)  # 两个日期之间的所有日期，包括开始日期， 包括 结束日期
     # for d in datas:
     #     print(d)
-    
-    with open('dates.txt','a') as file0:
+
+    with open('dates.txt', 'a') as file0:
         for d in datas:
-            print(d,file=file0)
-        
-   
+            print(d, file=file0)

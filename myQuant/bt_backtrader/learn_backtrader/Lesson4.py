@@ -10,7 +10,7 @@ Step5：经纪商 Broker 接收订单后，会按订单要求撮合成交 trade�
 Step6：Order 模块返回经纪商 Broker 中的订单执行结果。 
 '''
 # =============================================================================
-#%%
+# %%
 # 第1章 Broker 中的交易条件
 '''
 回测过程中涉及的交易条件设置，最常见的有初始资金、交易税费、滑点、期货保证金比率等，
@@ -28,19 +28,19 @@ Broker 默认的初始资金 cash 是 10000，可通过 “cash” 参数、set_
 cash 也会随着每次交易进行迭代更新用以匹配当前头寸。
 '''
 # 初始化时
-cerebro.broker.set_cash(100000000.0) # 设置初始资金
-cerebro.broker.get_cash() # 获取当前可用资金
+cerebro.broker.set_cash(100000000.0)  # 设置初始资金
+cerebro.broker.get_cash()  # 获取当前可用资金
 
 # 简写形式
-cerebro.broker.setcash(100000000.0) # 设置初始资金
-cerebro.broker.getcash() # 获取当前可用资金
+cerebro.broker.setcash(100000000.0)  # 设置初始资金
+cerebro.broker.getcash()  # 获取当前可用资金
 
 # 在 Strategy 中添加资金或获取当前资金
-self.broker.add_cash(10000) # 正数表示增加资金
-self.broker.add_cash(-10000) # 负数表示减少资金
-self.broker.getcash() # 获取当前可用资金
+self.broker.add_cash(10000)  # 正数表示增加资金
+self.broker.add_cash(-10000)  # 负数表示减少资金
+self.broker.getcash()  # 获取当前可用资金
 
-#%%
+# %%
 # 第1.2节 持仓查询
 '''
 Broker 在每次交易后更新 cash 外，还会同时更新当前总资产 value 和当前持仓 position，通常在 Strategy 中进行持仓查询操作;
@@ -50,6 +50,7 @@ Broker 在每次交易后更新 cash 外，还会同时更新当前总资产 val
 
 在计算当前可用资金时，除了考虑扣除购买标的时的费用外，还需要考虑扣除交易费用 。
 '''
+
 
 class TestStrategy(bt.Strategy):
     def next(self):
@@ -61,9 +62,10 @@ class TestStrategy(bt.Strategy):
         print('当前持仓量', self.getposition(self.data).size)
         print('当前持仓成本', self.getposition(self.data).price)
         # 注：getposition() 需要指定具体的标的数据集
-        
+
+
 # =============================================================================
-#%%
+# %%
 # 第2章 滑点管理
 '''
 在实际交易中，由于市场波动、网络延迟等原因，交易指令中指定的交易价格与实际成交价格会存在较大差别，出现滑点。
@@ -85,7 +87,7 @@ cerebro.broker = bt.brokers.BackBroker(slip_perc=0.0001)
 # 方式2：通过调用 brokers 的 set_slippage_perc 方法设置百分比滑点
 cerebro.broker.set_slippage_perc(perc=0.0001)
 
-#%%
+# %%
 # 第2.2节 固定滑点
 '''
 假设设置了大小为 n 的固定滑点，如果指定的买入价为 x，那实际成交时的买入价会提高至 x + n ；
@@ -97,7 +99,7 @@ cerebro.broker = bt.brokers.BackBroker(slip_fixed=0.001)
 # 方式2：通过调用 brokers 的 set_slippage_fixed 方法设置固定滑点
 cerebro.broker.set_slippage_fixed(fixed=0.001)
 
-#%%
+# %%
 # 第2.3节 有关滑点的其他设置
 
 '''
@@ -120,10 +122,12 @@ slip_limit：是否对限价单执行滑点;
             如果为 False，则不做价格匹配；
 '''
 # 方法1：
-cerebro.broker = bt.brokers.BackBroker(..., slip_perc=0, slip_fixed=0,  slip_open=False, slip_match=True, slip_out=False, slip_limit=True, ...)
+cerebro.broker = bt.brokers.BackBroker(..., slip_perc=0, slip_fixed=0, slip_open=False, slip_match=True, slip_out=False,
+                                       slip_limit=True, ...)
 
 # 方法2：
-cerebro.broker.set_slippage_fixed(..., fixed=..., slip_open=False, slip_match=True, slip_out=False, slip_limit=True, ...)
+cerebro.broker.set_slippage_fixed(..., fixed=..., slip_open=False, slip_match=True, slip_out=False, slip_limit=True,
+                                  ...)
 
 # 下面是将滑点设置为固定 0.35 ，对上述参数去不同的值，标的 600466.SH 在 2019-01-17 的成交情况做对比：
 # 情况1：
@@ -169,7 +173,7 @@ set_slippage_fixed(fixed=0.35,
                    slip_out=True)
 # =============================================================================
 
-#%%
+# %%
 # 第3章 交易税费管理
 '''
 【交易费收取规则】----------------------------------
@@ -205,9 +209,9 @@ set_slippage_fixed(fixed=0.35,
 # 第3.1节 通过 BackBroker() 设置
 
 # BackBroker 中有一个 commission 参数，用来全局设置交易手续费。如果是股票交易，可以简单的通过该方式设置交易佣金，但该方式无法满足期货交易费用的各项设置。
-cerebro.broker = bt.brokers.BackBroker(commission= 0.0002)  # 设置 0.0002 = 0.02% 的手续费
+cerebro.broker = bt.brokers.BackBroker(commission=0.0002)  # 设置 0.0002 = 0.02% 的手续费
 
-#%%
+# %%
 
 # 第3.2节 通过 setcommission() 设置
 # 如果想要完整又方便的设置交易费用，可以调用 broker 的 setcommission() 方法，该方法基本上可以满足大部分的交易费用设置需求
@@ -223,42 +227,42 @@ cerebro.broker = bt.brokers.BackBroker(commission= 0.0002)  # 设置 0.0002 = 0.
 '''
 
 cerebro.broker.setcommission(
-                            # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-                            commission=0.0,
-                            # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
-                            margin=None,
-                            # 乘数，盈亏会按该乘数进行放大
-                            mult=1.0,
-                            # 交易费用计算方式，取值有：
-                                # 1.CommInfoBase.COMM_PERC 百分比费用
-                                # 2.CommInfoBase.COMM_FIXED 固定费用
-                                # 3.None 根据 margin 取值来确定类型
-                            commtype=None,
-                            # 当交易费用处于百分比模式下时，commission 是否为 % 形式
-                                # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
-                            percabs=True,
-                            # 是否为股票模式，该模式通常由margin和commtype参数决定
-                                # margin=None或COMM_PERC模式时，就会stocklike=True，对应股票手续费；
-                                # margin设置了取值或COMM_FIXED模式时,就会stocklike=False，对应期货手续费
-                            stocklike=False,
-                            # 计算持有的空头头寸的年化利息
-                                # days * price * abs(size) * (interest / 365)
-                            interest=0.0,
-                            # 计算持有的多头头寸的年化利息
-                            interest_long=False,
-                            # 杠杆比率，交易时按该杠杆调整所需现金
-                            leverage=1.0,
-                            # 自动计算保证金
-                                # 如果False, 则通过margin参数确定保证金
-                                # 如果automargin<0, 通过mult*price确定保证金
-                                # 如果automargin>0, 如果automargin*price确定保证金
-                            automargin=False,
-                            # 交易费用设置作用的数据集(也就是作用的标的)
-                                # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
-                            name=None
-                            )
+    # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
+    commission=0.0,
+    # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
+    margin=None,
+    # 乘数，盈亏会按该乘数进行放大
+    mult=1.0,
+    # 交易费用计算方式，取值有：
+    # 1.CommInfoBase.COMM_PERC 百分比费用
+    # 2.CommInfoBase.COMM_FIXED 固定费用
+    # 3.None 根据 margin 取值来确定类型
+    commtype=None,
+    # 当交易费用处于百分比模式下时，commission 是否为 % 形式
+    # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
+    percabs=True,
+    # 是否为股票模式，该模式通常由margin和commtype参数决定
+    # margin=None或COMM_PERC模式时，就会stocklike=True，对应股票手续费；
+    # margin设置了取值或COMM_FIXED模式时,就会stocklike=False，对应期货手续费
+    stocklike=False,
+    # 计算持有的空头头寸的年化利息
+    # days * price * abs(size) * (interest / 365)
+    interest=0.0,
+    # 计算持有的多头头寸的年化利息
+    interest_long=False,
+    # 杠杆比率，交易时按该杠杆调整所需现金
+    leverage=1.0,
+    # 自动计算保证金
+    # 如果False, 则通过margin参数确定保证金
+    # 如果automargin<0, 通过mult*price确定保证金
+    # 如果automargin>0, 如果automargin*price确定保证金
+    automargin=False,
+    # 交易费用设置作用的数据集(也就是作用的标的)
+    # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
+    name=None
+)
 
-#%%
+# %%
 # 第3.3节 通过 addcommissioninfo() 设置
 # 如果想要更灵活的设置交易费用，可以在继承 CommInfoBase 基础类的基础上自定义交易费用子类 ，然后通过 addcommissioninfo() 方法将实例添加进 broker。
 '''
@@ -274,75 +278,84 @@ setcommission() 方法中的参数就是 CommInfoBase 类中 params 属性里包
 其中自定义时最常涉及的就是上面案例中显示的 _getcommission 和 get_margin
 '''
 
+
 # 在继承 CommInfoBase 基础类的基础上自定义交易费用
 class MyCommission(bt.CommInfoBase):
     # 对应 setcommission 中介绍的那些参数，也可以增添新的全局参数
     params = ((xxx, xxx),)
+
     # 自定义交易费用计算方式
     def _getcommission(self, size, price, pseudoexec):
         pass
+
     # 自定义佣金计算方式
     def get_margin(self, price):
         pass
+
     ...
-    
+
+
 # 实例化
 mycomm = MyCommission(...)
 cerebro = bt.Cerebro()
 # 添加进 broker
-cerebro.broker.addcommissioninfo(mycomm, name='xxx') # name 用于指定该交易费用函数适用的标的
+cerebro.broker.addcommissioninfo(mycomm, name='xxx')  # name 用于指定该交易费用函数适用的标的
 
-#%%
+# %%
 # 第3.3.1节 自定义交易费用的例子1：自定义期货百分比费用
 
 # 方法1：通过 setcommission 实现
-cerebro.broker.setcommission(commission=0.1, #0.1%
+cerebro.broker.setcommission(commission=0.1,  # 0.1%
                              mult=10,
                              margin=2000,
                              percabs=False,
                              commtype=bt.CommInfoBase.COMM_PERC,
                              stocklike=False)
 
+
 # 方法2：通过 addcommissioninfo 实现
 class CommInfo_Fut_Perc_Mult(bt.CommInfoBase):
     params = (
-                ('stocklike', False), # 指定为期货模式
-                ('commtype', bt.CommInfoBase.COMM_PERC), # 使用百分比费用
-                ('percabs', False), # commission 以 % 为单位
-             )
+        ('stocklike', False),  # 指定为期货模式
+        ('commtype', bt.CommInfoBase.COMM_PERC),  # 使用百分比费用
+        ('percabs', False),  # commission 以 % 为单位
+    )
 
     def _getcommission(self, size, price, pseudoexec):
         # 计算交易费用
-        return (abs(size) * price) * (self.p.commission/100) * self.p.mult
+        return (abs(size) * price) * (self.p.commission / 100) * self.p.mult
         # pseudoexec 用于提示当前是否在真实统计交易费用：如果只是试算费用，pseudoexec=False；如果是真实的统计费用，pseudoexec=True
 
-comminfo = CommInfo_Fut_Perc_Mult(commission=0.1, # 0.1%
+
+comminfo = CommInfo_Fut_Perc_Mult(commission=0.1,  # 0.1%
                                   mult=10,
-                                  margin=2000) 
-                                    
+                                  margin=2000)
 
 cerebro.broker.addcommissioninfo(comminfo)
-#%%
+
+
+# %%
 # 第3.3.2节 自定义交易费用的例子2：考虑佣金和印花税的股票百分比费用
 class StockCommission(bt.CommInfoBase):
     params = (
-                ('stocklike', True), # 指定为股票模式
-                ('commtype', bt.CommInfoBase.COMM_PERC), # 使用百分比费用模式
-                ('percabs', True), # commission 不以 % 为单位
-                ('stamp_duty', 0.001), # 印花税默认为 0.1%
-             ) 
-    
+        ('stocklike', True),  # 指定为股票模式
+        ('commtype', bt.CommInfoBase.COMM_PERC),  # 使用百分比费用模式
+        ('percabs', True),  # commission 不以 % 为单位
+        ('stamp_duty', 0.001),  # 印花税默认为 0.1%
+    )
+
     # 自定义费用计算公式
     def _getcommission(self, size, price, pseudoexec):
-            if size > 0: # 买入时，只考虑佣金
-                return abs(size) * price * self.p.commission
-            elif size < 0: # 卖出时，同时考虑佣金和印花税
-                return abs(size) * price * (self.p.commission + self.p.stamp_duty)
-            else:
-                return 0
+        if size > 0:  # 买入时，只考虑佣金
+            return abs(size) * price * self.p.commission
+        elif size < 0:  # 卖出时，同时考虑佣金和印花税
+            return abs(size) * price * (self.p.commission + self.p.stamp_duty)
+        else:
+            return 0
+
 
 # =============================================================================
-#%%
+# %%
 # 第4章 成交量限制管理
 '''
 默认情况下，Broker 在撮合成交订单时，不会将订单上的购买数量与成交当天 bar 的总成交量 volume 进行对比，
@@ -372,9 +385,9 @@ cerebro.broker.set_filler(bt.broker.fillers.FixedSize(size=xxx))
 
 # 输出案例（部分示例代码）
 ......
-self.order = self.buy(size=2000) # 每次买入 2000 股
+self.order = self.buy(size=2000)  # 每次买入 2000 股
 ......
-cerebro.broker.set_filler(bt.broker.fillers.FixedSize(size=3000)) # 固定最大成交量
+cerebro.broker.set_filler(bt.broker.fillers.FixedSize(size=3000))  # 固定最大成交量
 
 '''
 【输出】===================================================================================
@@ -401,7 +414,7 @@ cerebro.broker.set_filler(bt.broker.fillers.FixedSize(size=3000)) # 固定最大
     2019-01-18 这天，剩余订单会被取消，同时打印 notify_order。
 '''
 
-#%%
+# %%
 # 第4.2节 形式2：bt.broker.fillers.FixedBarPerc(perc)
 '''
 通过 FixedBarPerc(perc) 将 订单执行当天 bar 的总成交量 volume 的 perc % 设置为最大的固定成交量，该模式的成交量限制规则如下：
@@ -418,13 +431,13 @@ cerebro.broker = newbroker
 
 # 方法2：通过 set_filler 方法设置
 cerebro = Cerebro()
-cerebro.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=xxx)) # perc 以 % 为单位，取值范围为[0.0,100.0]
+cerebro.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=xxx))  # perc 以 % 为单位，取值范围为[0.0,100.0]
 
 # 输出案例（部分示例代码）
 ......
-self.order = self.buy(size=2000) # 以下一日开盘价买入2000股
+self.order = self.buy(size=2000)  # 以下一日开盘价买入2000股
 ......
-cerebro.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=50)) # perc=50 表示 50%
+cerebro.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=50))  # perc=50 表示 50%
 
 '''
 【输出】===================================================================================
@@ -442,7 +455,7 @@ cerebro.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=50)) # perc=50 表
 随后，在 2019-05-17 再次触发卖出信号，2019-05-20 剩余仓位 87 进行了平仓。
 '''
 
-#%%
+# %%
 # 第4.3节 形式3：bt.broker.fillers.BarPointPerc(minmov=0.01，perc=100.0)
 '''
 BarPointPerc() 在考虑了价格区间的基础上确定成交量，在订单执行当天，成交量确定规则为：
@@ -460,19 +473,19 @@ BarPointPerc() 在考虑了价格区间的基础上确定成交量，在订单�
 
 # 方法1：通过 BackBroker() 类直接设置
 cerebro = Cerebro()
-filler = bt.broker.fillers.BarPointPerc(minmov=0.01，perc=100.0)
+filler = bt.broker.fillers.BarPointPerc(minmov=0.01，perc = 100.0)
 newbroker = bt.broker.BrokerBack(filler=filler)
 cerebro.broker = newbroker
 
 # 方法2：通过 set_filler 方法设置
 cerebro = Cerebro()
-cerebro.broker.set_filler(bt.broker.fillers.BarPointPerc(minmov=0.01，perc=100.0)) # perc 以 % 为单位，取值范围为[0.0,100.0]
+cerebro.broker.set_filler(bt.broker.fillers.BarPointPerc(minmov=0.01，perc = 100.0))  # perc 以 % 为单位，取值范围为[0.0,100.0]
 
 # 输出案例（部分示例代码）
 ......
-self.order = self.buy(size=2000) # 以下一日开盘价买入2000股
+self.order = self.buy(size=2000)  # 以下一日开盘价买入2000股
 ......
-cerebro.broker.set_filler(bt.broker.fillers.BarPointPerc(minmov=0.1, perc=50)) # 表示 50%
+cerebro.broker.set_filler(bt.broker.fillers.BarPointPerc(minmov=0.1, perc=50))  # 表示 50%
 
 '''
 【输出】===================================================================================
@@ -483,7 +496,7 @@ cerebro.broker.set_filler(bt.broker.fillers.BarPointPerc(minmov=0.1, perc=50)) #
 【结果】原计划买入2000股，结果只能买入36股
 '''
 # =============================================================================
-#%%
+# %%
 # 第5章 交易时机管理
 '''
 对于交易订单生成和执行时间，Backtrader 默认是 “当日收盘后下单，次日以开盘价成交”，这种模式在回测过程中能有效避免使用未来数据。
@@ -504,8 +517,10 @@ Cheat-On-Open：当日下单，当日以开盘价成交
     方式3：BackBroker(coo=True)
 '''
 
+
 class TestStrategy(bt.Strategy):
     ......
+
     def next_open(self):
         # 取消之前未执行的订单
         if self.order:
@@ -514,15 +529,17 @@ class TestStrategy(bt.Strategy):
         if not self.position:
             # 10日均线上穿5日均线，买入
             if self.crossover > 0:
-                print('{} Send Buy, open {}'.format(self.data.datetime.date(),self.data.open[0]))
-                self.order = self.buy(size=100) # 以下一日开盘价买入100股
+                print('{} Send Buy, open {}'.format(self.data.datetime.date(), self.data.open[0]))
+                self.order = self.buy(size=100)  # 以下一日开盘价买入100股
         # # 10日均线下穿5日均线，卖出
         elif self.crossover < 0:
-            self.order = self.close() # 平仓，以下一日开盘价卖出
+            self.order = self.close()  # 平仓，以下一日开盘价卖出
+
     ......
 
+
 # 方法1：实例化大脑，开启：cheat_on_open
-cerebro= bt.Cerebro(cheat_on_open=True)
+cerebro = bt.Cerebro(cheat_on_open=True)
 .......
 # 方法2：当日下单，当日开盘价成交
 cerebro.broker.set_coo(True)
@@ -533,7 +550,7 @@ cerebro.broker.set_coo(True)
     2. 2019-01-17 发出的订单，在 2019-01-17 当日就以 开盘价 执行成交了。
 '''
 
-#%%
+# %%
 # 第5.2节 Cheat-On-Close
 '''
 Cheat-On-Close：当日下单，当日以收盘价成交
@@ -543,8 +560,11 @@ Cheat-On-Close：当日下单，当日以收盘价成交
     方式1：cerebro.broker.set_coc(True)
     方式2：BackBroker(coc=True)
 '''
+
+
 class TestStrategy(bt.Strategy):
     ......
+
     def next(self):
         # 取消之前未执行的订单
         if self.order:
@@ -553,15 +573,17 @@ class TestStrategy(bt.Strategy):
         if not self.position:
             # 10日均线上穿5日均线，买入
             if self.crossover > 0:
-                print('{} Send Buy, open {}'.format(self.data.datetime.date(),self.data.open[0]))
-                self.order = self.buy(size=100) # 以下一日开盘价买入100股
+                print('{} Send Buy, open {}'.format(self.data.datetime.date(), self.data.open[0]))
+                self.order = self.buy(size=100)  # 以下一日开盘价买入100股
         # # 10日均线下穿5日均线，卖出
         elif self.crossover < 0:
-            self.order = self.close() # 平仓，以下一日开盘价卖出
+            self.order = self.close()  # 平仓，以下一日开盘价卖出
+
     ......
 
+
 # 实例化大脑（不能在这里开启Cheat-On-Close）
-cerebro= bt.Cerebro()
+cerebro = bt.Cerebro()
 .......
 # 当日下单，当日收盘价成交
 cerebro.broker.set_coc(True)

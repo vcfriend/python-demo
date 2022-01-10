@@ -29,9 +29,9 @@ Backtrader CSV的格式要求如下：
 
 - csv文件
 - 按顺序包括以下列：
-  - datetime列，格式为%Y-%m-%d %H:%M:%S
-  - 数字列：open/high/low/close/volume/openinterest
-  - 0的数字用0.00
+    - datetime列，格式为%Y-%m-%d %H:%M:%S
+    - 数字列：open/high/low/close/volume/openinterest
+    - 0的数字用0.00
 
 如果有这样的文件，可以通过以下程序读取：
 
@@ -138,7 +138,7 @@ backtrader能支持所有可转换成pandas.Dataframe格式的数据源，这真
 - 时间列，必须是index；
 - 时间列，数据格式必须是datetime
 
- 所以，要么使用bt.feeds.PandasData，要么自己写一个bt.feeds.PandasData的子类，描述数据要求。
+所以，要么使用bt.feeds.PandasData，要么自己写一个bt.feeds.PandasData的子类，描述数据要求。
 
 以在线tushare A股日线数据接口为例，说明如何使用：
 

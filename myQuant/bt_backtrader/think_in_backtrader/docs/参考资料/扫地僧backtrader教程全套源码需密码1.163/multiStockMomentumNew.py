@@ -19,12 +19,13 @@ tickers = pd.read_csv(datapath, header=None)[1].tolist()
 maxtickersNum = 20
 tickers = tickers[0:maxtickersNum]  # 取前maxtickersNum支股票代码
 
+
 ####################################
 
 
 class Momentum(bt.Indicator):
-    lines = ('trend', )
-    params = (('period', 90), )
+    lines = ('trend',)
+    params = (('period', 90),)
 
     def __init__(self):
         self.addminperiod(self.params.period)
@@ -33,13 +34,13 @@ class Momentum(bt.Indicator):
         returns = np.log(self.data.get(size=self.p.period))
         x = np.arange(len(returns))
         slope, _, rvalue, _, _ = linregress(x, returns)
-        annualized = (1 + slope)**252
-        self.lines.trend[0] = annualized * (rvalue**2)
+        annualized = (1 + slope) ** 252
+        self.lines.trend[0] = annualized * (rvalue ** 2)
 
 
 class Strategy(bt.Strategy):
     params = dict(
-        momentum_period=90,  #动量计算周期
+        momentum_period=90,  # 动量计算周期
         idx_period=200,  # 标普指数200日均线
         stock_period=100,  # 股票100日均线
         vol_period=20,  # 平均真实波幅ATR计算周期
@@ -144,13 +145,10 @@ spy = bt.feeds.YahooFinanceCSVData(
     plot=False)
 cerebro.adddata(spy)  # 加入S&P 500指数
 
-
-
-
 for ticker in tickers:
     df = pd.read_csv(
         f"survivorship-free/{ticker}.csv", parse_dates=True, index_col=0)
-    
+
     data = bt.feeds.PandasData(
         dataname=df,
         datetime=None,  # 使用索引列作日期列

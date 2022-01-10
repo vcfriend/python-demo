@@ -21,7 +21,7 @@ class DemoStrategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        self.order = None   # 未决订单
+        self.order = None  # 未决订单
 
     def next(self):
         # 如果有未决订单则什么都不做
@@ -30,7 +30,7 @@ class DemoStrategy(bt.Strategy):
             return
 
         # 下单
-        self.order = self.buy(size=100)     # 买一手
+        self.order = self.buy(size=100)  # 买一手
         # self.buy()
         self.log("下买单")
 
@@ -44,7 +44,7 @@ class DemoStrategy(bt.Strategy):
             elif order.issell():
                 self.log("卖单执行, {p}".format(p=order.executed.price))
 
-        self.order = None   # 重置未决订单
+        self.order = None  # 重置未决订单
 
 
 # 启动回测

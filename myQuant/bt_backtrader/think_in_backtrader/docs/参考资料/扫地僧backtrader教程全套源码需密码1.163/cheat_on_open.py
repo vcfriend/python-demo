@@ -10,8 +10,8 @@ class St(bt.Strategy):
 
     def __init__(self):
         # 记录是否作弊，注意它是如何取得cerebro参数的
-        self.cheating = self.cerebro.p.cheat_on_open 
-        print('self.cheating',self.cheating)
+        self.cheating = self.cerebro.p.cheat_on_open
+        print('self.cheating', self.cheating)
         # 移动均线列表
         mas = [self.p.matype(period=x) for x in self.p.periods]
         self.signal = bt.ind.CrossOver(*mas)
@@ -24,7 +24,7 @@ class St(bt.Strategy):
         self.order = None
         print('{} {} Executed at price {},             size {}'.format(
             bt.num2date(order.executed.dt).date(),
-            'Buy' * order.isbuy() or 'Sell', order.executed.price,  order.executed.size)
+            'Buy' * order.isbuy() or 'Sell', order.executed.price, order.executed.size)
         )
 
     def operate(self, fromopen):
@@ -38,10 +38,9 @@ class St(bt.Strategy):
                 self.data.datetime.date(),
                 fromopen, self.data.close[0])
             )
-            self.order =  self.buy()
-          
+            self.order = self.buy()
 
-    def next(self):        
+    def next(self):
         print('{} next     , open {} close {}'.format(
             self.data.datetime.date(),
             self.data.open[0], self.data.close[0])
@@ -52,7 +51,7 @@ class St(bt.Strategy):
         self.operate(fromopen=False)
 
     def next_open(self):
-        
+
         if not self.cheating:
             return
         print('{} next_open, open {} close {}'.format(
@@ -61,12 +60,13 @@ class St(bt.Strategy):
         )
         self.operate(fromopen=True)
 
+
 ##################
 # 主程序开始
 #################
 
 # 启用开盘作弊模式
-cerebro = bt.Cerebro(cheat_on_open=True) 
+cerebro = bt.Cerebro(cheat_on_open=True)
 
 # Data feed
 data0 = bt.feeds.BacktraderCSVData(dataname='./samples/datas/2005-2006-day-001.txt')
@@ -80,9 +80,3 @@ cerebro.addstrategy(St)
 
 # Execute
 cerebro.run()
-
-
-
-
-
-

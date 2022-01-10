@@ -63,7 +63,7 @@ class DoulbeSMAStrategy(bt.Strategy):
         if size == 0 and self.short_ma[-1] < self.long_ma[-1] and self.short_ma[0] > self.long_ma[0]:
             # 开仓
             # self.order_target_value(self.datas[0]*, target=5)
-            order = self.buy(size=100*5)
+            order = self.buy(size=100 * 5)
             self.log("金叉，买{0}, Short SMA yes={1}, Long SMA today={2}".format(
                 order.size, self.short_ma[-1], self.long_ma[0]))
         # 平多
@@ -99,11 +99,11 @@ def printTradeAnalysis(cerebro, analyzers):
         openTotal = ta.total.open if exists(ta, 'total', 'open') else None
         closedTotal = ta.total.closed if exists(
             ta, 'total', 'closed') else None
-        wonTotal = ta.won.total if exists(ta, 'won',   'total') else None
-        lostTotal = ta.lost.total if exists(ta, 'lost',  'total') else None
+        wonTotal = ta.won.total if exists(ta, 'won', 'total') else None
+        lostTotal = ta.lost.total if exists(ta, 'lost', 'total') else None
 
         streakWonLongest = ta.streak.won.longest if exists(
-            ta, 'streak', 'won',  'longest') else None
+            ta, 'streak', 'won', 'longest') else None
         streakLostLongest = ta.streak.lost.longest if exists(
             ta, 'streak', 'lost', 'longest') else None
 
@@ -113,7 +113,7 @@ def printTradeAnalysis(cerebro, analyzers):
             ta, 'pnl', 'net', 'average') else None
 
         pretty_print(format, 'Open Positions', openTotal or NA)
-        pretty_print(format, 'Closed Trades',  closedTotal or NA)
+        pretty_print(format, 'Closed Trades', closedTotal or NA)
         pretty_print(format, 'Winning Trades', wonTotal or NA)
         pretty_print(format, 'Loosing Trades', lostTotal or NA)
         print('\n')
@@ -127,7 +127,7 @@ def printTradeAnalysis(cerebro, analyzers):
         print('\n')
 
         pretty_print(format, 'Net P/L',
-                     '${}'.format(round(pnlNetTotal,   2)) if pnlNetTotal else NA)
+                     '${}'.format(round(pnlNetTotal, 2)) if pnlNetTotal else NA)
         pretty_print(format, 'P/L Average per trade',
                      '${}'.format(round(pnlNetAverage, 2)) if pnlNetAverage else NA)
         print('\n')
@@ -165,13 +165,14 @@ if __name__ == '__main__':
     # cerebro.addanalyzer(btanalyzers.SharpeRatio, _name='mysharpe')
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='ta')
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, annualize=True, timeframe=bt.TimeFrame.Days)
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.0, annualize=True,
+                        timeframe=bt.TimeFrame.Days)
     cerebro.addanalyzer(bt.analyzers.VWR, _name='vwr')
     cerebro.addanalyzer(bt.analyzers.SQN, _name='sqn')
     cerebro.addanalyzer(bt.analyzers.Transactions, _name='txn')
 
     # 设置初始资金：
-    cerebro.broker.setcash(100000.0)    # 10万元
+    cerebro.broker.setcash(100000.0)  # 10万元
 
     # 从csv文件加载数据
     # 仅3天数据

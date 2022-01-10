@@ -27,7 +27,7 @@ class DemoStrategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        self.order = None   # 未决订单
+        self.order = None  # 未决订单
         self.sma_short = bt.ind.MovingAverageSimple(self.data, period=5)
         self.sma_long = bt.ind.MovingAverageSimple(self.data, period=60)
 
@@ -52,7 +52,7 @@ class DemoStrategy(bt.Strategy):
             elif order.issell():
                 self.log("卖单执行, {p}".format(p=order.executed.price))
 
-        self.order = None   # 重置未决订单
+        self.order = None  # 重置未决订单
 
 
 # 启动回测

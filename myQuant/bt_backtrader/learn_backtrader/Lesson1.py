@@ -1,7 +1,7 @@
 # Lesson1：Backtrader来啦
 # link: https://mp.weixin.qq.com/s/7S4AnbUfQy2kCZhuFN1dZw
 
-#%%
+# %%
 import backtrader as bt
 import pandas as pd
 import datetime
@@ -12,7 +12,7 @@ cerebro = bt.Cerebro()
 daily_price = pd.read_csv("Data/daily_price.csv", parse_dates=['datetime'])
 trade_info = pd.read_csv("Data/trade_info.csv", parse_dates=['trade_date'])
 
-#%%
+# %%
 
 # 按股票代码，依次循环传入数据
 for stock in daily_price['sec_code'].unique():
@@ -35,7 +35,8 @@ for stock in daily_price['sec_code'].unique():
 
 print("All stock Done !")
 
-#%%
+
+# %%
 
 # 回测策略
 class TestStrategy(bt.Strategy):
@@ -144,5 +145,3 @@ print("--------------- SharpeRatio -----------------")
 print(strat.analyzers._SharpeRatio.get_analysis())
 print("--------------- DrawDown -----------------")
 print(strat.analyzers._DrawDown.get_analysis())
-
-

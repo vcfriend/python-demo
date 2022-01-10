@@ -5,7 +5,7 @@ import sys  # 发现脚本名字(in argv[0])
 
 
 class LongOnly(bt.Sizer):
-    params = (('stake', 100), )
+    params = (('stake', 100),)
 
     def _getsizing(self, comminfo, cash, data, isbuy):
         if isbuy:  # 如果是买单，则下单量为self.p.stake
@@ -46,7 +46,6 @@ class SmaCross(bt.Strategy):
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('订单状态 %s' % order.getstatusname(order.status))
-
 
     # 记录交易收益情况（可省略，默认不输出结果）
     def notify_trade(self, trade):

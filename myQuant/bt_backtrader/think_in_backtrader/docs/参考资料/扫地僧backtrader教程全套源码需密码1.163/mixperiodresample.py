@@ -73,7 +73,6 @@ modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
 # 拼接得到数据文件全路径
 datapath = os.path.join(modpath, './600000d.csv')  # 日线数据
 
-
 # 日线行情数据对象，加载数据
 data = bt.feeds.GenericCSVData(
     dataname=datapath,
@@ -85,7 +84,7 @@ data = bt.feeds.GenericCSVData(
     volume=10,  # 成交量所在列
     openinterest=-1,  # 无未平仓量列
     dtformat=('%Y%m%d'),  # 日期格式
-    timeframe=bt.TimeFrame.Days, # 日线数据
+    timeframe=bt.TimeFrame.Days,  # 日线数据
     fromdate=datetime(2000, 1, 4),  # 起始日
     todate=datetime(2000, 12, 29))  # 结束日
 

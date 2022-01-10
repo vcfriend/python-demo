@@ -50,31 +50,31 @@ class PerformanceReport:
         drawdown = st.analyzers.myDrawDown.get_analysis()
         sharpe_ratio = st.analyzers.mySharpe.get_analysis()['sharperatio']
         sqn_score = st.analyzers.mySqn.get_analysis()['sqn']
-        kpi = {# PnL
-               'start_cash': self.get_startcash(),
-               'rpl': rpl,
-               'result_won_trades': trade_analysis.won.pnl.total,
-               'result_lost_trades': trade_analysis.lost.pnl.total,
-               'profit_factor': (-1 * trade_analysis.won.pnl.total / trade_analysis.lost.pnl.total),
-               'rpl_per_trade': rpl / trades_closed,
-               'total_return': 100 * total_return,
-               'annual_return': (100 * (1 + total_return)**(365.25 / bt_period_days) - 100),
-               'max_money_drawdown': drawdown['max']['moneydown'],
-               'max_pct_drawdown': drawdown['max']['drawdown'],
-               # trades
-               'total_number_trades': total_number_trades,
-               'trades_closed': trades_closed,
-               'pct_winning': 100 * trade_analysis.won.total / trades_closed,
-               'pct_losing': 100 * trade_analysis.lost.total / trades_closed,
-               'avg_money_winning': trade_analysis.won.pnl.average,
-               'avg_money_losing':  trade_analysis.lost.pnl.average,
-               'best_winning_trade': trade_analysis.won.pnl.max,
-               'worst_losing_trade': trade_analysis.lost.pnl.max,
-               #  performance
-               'sharpe_ratio': sharpe_ratio,
-               'sqn_score': sqn_score,
-               'sqn_human': self._sqn2rating(sqn_score)
-               }
+        kpi = {  # PnL
+            'start_cash': self.get_startcash(),
+            'rpl': rpl,
+            'result_won_trades': trade_analysis.won.pnl.total,
+            'result_lost_trades': trade_analysis.lost.pnl.total,
+            'profit_factor': (-1 * trade_analysis.won.pnl.total / trade_analysis.lost.pnl.total),
+            'rpl_per_trade': rpl / trades_closed,
+            'total_return': 100 * total_return,
+            'annual_return': (100 * (1 + total_return) ** (365.25 / bt_period_days) - 100),
+            'max_money_drawdown': drawdown['max']['moneydown'],
+            'max_pct_drawdown': drawdown['max']['drawdown'],
+            # trades
+            'total_number_trades': total_number_trades,
+            'trades_closed': trades_closed,
+            'pct_winning': 100 * trade_analysis.won.total / trades_closed,
+            'pct_losing': 100 * trade_analysis.lost.total / trades_closed,
+            'avg_money_winning': trade_analysis.won.pnl.average,
+            'avg_money_losing': trade_analysis.lost.pnl.average,
+            'best_winning_trade': trade_analysis.won.pnl.max,
+            'worst_losing_trade': trade_analysis.lost.pnl.max,
+            #  performance
+            'sharpe_ratio': sharpe_ratio,
+            'sqn_score': sqn_score,
+            'sqn_human': self._sqn2rating(sqn_score)
+        }
         return kpi
 
     def get_equity_curve(self):
@@ -170,7 +170,8 @@ class PerformanceReport:
             periodicity = ('Hourly', 'H')
         elif time_interval_days > 0.05:
             periodicity = ('Per 15 Min', '15M')
-        else: periodicity = ('Per minute', '1M')
+        else:
+            periodicity = ('Per minute', '1M')
         return periodicity
 
     def plot_return_curve(self, fname='return_curve.png'):
@@ -274,20 +275,20 @@ class Cerebro(bt.Cerebro):
         self.add_report_analyzers()
 
     def add_report_analyzers(self, riskfree=0.01):
-            """ Adds performance stats, required for report
-            """
-            self.addanalyzer(bt.analyzers.SharpeRatio,
-                             _name="mySharpe",
-                             riskfreerate=riskfree,
-                             timeframe=bt.TimeFrame.Months)
-            self.addanalyzer(bt.analyzers.DrawDown,
-                             _name="myDrawDown")
-            self.addanalyzer(bt.analyzers.AnnualReturn,
-                             _name="myReturn")
-            self.addanalyzer(bt.analyzers.TradeAnalyzer,
-                             _name="myTradeAnalysis")
-            self.addanalyzer(bt.analyzers.SQN,
-                             _name="mySqn")
+        """ Adds performance stats, required for report
+        """
+        self.addanalyzer(bt.analyzers.SharpeRatio,
+                         _name="mySharpe",
+                         riskfreerate=riskfree,
+                         timeframe=bt.TimeFrame.Months)
+        self.addanalyzer(bt.analyzers.DrawDown,
+                         _name="myDrawDown")
+        self.addanalyzer(bt.analyzers.AnnualReturn,
+                         _name="myReturn")
+        self.addanalyzer(bt.analyzers.TradeAnalyzer,
+                         _name="myTradeAnalysis")
+        self.addanalyzer(bt.analyzers.SQN,
+                         _name="mySqn")
 
     def get_strategy_backtest(self):
         return self.runstrats[0][0]
@@ -295,7 +296,7 @@ class Cerebro(bt.Cerebro):
     def report(self, outputdir,
                infilename=None, user=None, memo=None):
         bt = self.get_strategy_backtest()
-        rpt =PerformanceReport(bt, infilename=infilename,
-                               outputdir=outputdir, user=user,
-                               memo=memo)
+        rpt = PerformanceReport(bt, infilename=infilename,
+                                outputdir=outputdir, user=user,
+                                memo=memo)
         rpt.generate_pdf_report()

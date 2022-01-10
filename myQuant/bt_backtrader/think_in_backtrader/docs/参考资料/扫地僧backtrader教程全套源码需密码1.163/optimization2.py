@@ -30,14 +30,13 @@ class SmaCross(bt.Strategy):
               (self.p.period[0], self.p.period[1],
                self.broker.getvalue()))
 
+
 ##########################
 # 主程序开始
 #########################
 
 if __name__ == '__main__':
-
     cerebro = bt.Cerebro()  # 创建cerebro
-
 
     # 获取本脚本文件所在路径
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))

@@ -23,6 +23,7 @@ R-Breaker是一种短线日内交易策略
 3：本策略使用在15点收盘时全平的方式来处理不持有隔夜单的情况，实际使用中15点是无法平仓的。
 """
 
+
 def init(context):
     # 设置交易品种
     context.symbol = 'SHFE.ag'

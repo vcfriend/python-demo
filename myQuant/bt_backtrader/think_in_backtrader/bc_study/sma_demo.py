@@ -22,7 +22,6 @@ import bc_study.tushare_csv_datafeed as ts_df
 
 # 最简单的SMA策略
 class SMAStrategy(bt.Strategy):
-
     params = (
         ('sma_window', 25),
     )

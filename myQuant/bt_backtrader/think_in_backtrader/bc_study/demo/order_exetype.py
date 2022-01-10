@@ -75,9 +75,11 @@ class BaseOrderExetypeStrategy(bt.Strategy):
             return
         elif order.status in [order.Completed]:
             if order.isbuy():
-                self.log('买单(oid={oid})执行, 执行价={ep}，数量={ea}'.format(oid=order.ref, ep=order.executed.price, ea=order.executed.size))
+                self.log('买单(oid={oid})执行, 执行价={ep}，数量={ea}'.format(oid=order.ref, ep=order.executed.price,
+                                                                    ea=order.executed.size))
             elif order.issell():
-                self.log('卖单(oid={oid})执行, 执行价={ep}，数量={ea}'.format(oid=order.ref, ep=order.executed.price, ea=order.executed.size))
+                self.log('卖单(oid={oid})执行, 执行价={ep}，数量={ea}'.format(oid=order.ref, ep=order.executed.price,
+                                                                    ea=order.executed.size))
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order(oid={oid}) Canceled/Margin/Rejected'.format(oid=order.ref))
 
@@ -154,7 +156,8 @@ class StopLimitOrderStrategy(BaseOrderExetypeStrategy):
         if len(self) == 1:
             order = self.buy(size=10, price=19, plimit=20.14, exectype=Order.StopLimit)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}, plimit={pl}".format(id=order.ref, p=order.price, pl=order.plimit))
+                self.log(
+                    "下单BUY单(oid={id}), price={p}, plimit={pl}".format(id=order.ref, p=order.price, pl=order.plimit))
 
 
 # 启动回测

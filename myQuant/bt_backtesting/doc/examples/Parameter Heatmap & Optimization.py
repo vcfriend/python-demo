@@ -44,43 +44,42 @@ class Sma4Cross(Strategy):
     n2 = 100
     n_enter = 20
     n_exit = 10
-    
+
     def init(self):
         self.sma1 = self.I(SMA, self.data.Close, self.n1)
         self.sma2 = self.I(SMA, self.data.Close, self.n2)
         self.sma_enter = self.I(SMA, self.data.Close, self.n_enter)
         self.sma_exit = self.I(SMA, self.data.Close, self.n_exit)
-        
+
     def next(self):
-        
+
         if not self.position:
-            
+
             # On upwards trend, if price closes above
             # "entry" MA, go long
-            
+
             # Here, even though the operands are arrays, this
             # works by implicitly comparing the two last values
             if self.sma1 > self.sma2:
                 if crossover(self.data.Close, self.sma_enter):
                     self.buy()
-                    
+
             # On downwards trend, if price closes below
             # "entry" MA, go short
-            
+
             else:
                 if crossover(self.sma_enter, self.data.Close):
                     self.sell()
-        
+
         # But if we already hold a position and the price
         # closes back below (above) "exit" MA, close the position
-        
+
         else:
             if (self.position.is_long and
-                crossover(self.sma_exit, self.data.Close)
-                or
-                self.position.is_short and
-                crossover(self.data.Close, self.sma_exit)):
-                
+                    crossover(self.sma_exit, self.data.Close)
+                    or
+                    self.position.is_short and
+                    crossover(self.data.Close, self.sma_exit)):
                 self.position.close()
 
 
@@ -98,7 +97,6 @@ class Sma4Cross(Strategy):
 
 from backtesting import Backtest
 from backtesting.test import GOOG
-
 
 backtest = Backtest(GOOG, Sma4Cross, commission=.002)
 
@@ -141,7 +139,6 @@ hm
 
 import seaborn as sns
 
-
 sns.heatmap(hm[::-1], cmap='viridis')
 # -
 
@@ -155,7 +152,6 @@ sns.heatmap(hm[::-1], cmap='viridis')
 
 # +
 from backtesting.lib import plot_heatmaps
-
 
 plot_heatmaps(heatmap, agg='mean')
 # -
@@ -178,8 +174,8 @@ plot_heatmaps(heatmap, agg='mean')
 # %%time
 
 stats_skopt, heatmap, optimize_result = backtest.optimize(
-    n1=[10, 100],      # Note: For method="skopt", we
-    n2=[20, 200],      # only need interval end-points
+    n1=[10, 100],  # Note: For method="skopt", we
+    n2=[20, 200],  # only need interval end-points
     n_enter=[10, 40],
     n_exit=[10, 30],
     constraint=lambda p: p.n_exit < p.n_enter < p.n1 < p.n2,

@@ -28,10 +28,8 @@ result = rs.get_data()
 # 删除股票停牌的行记录
 result = result[result.tradestatus == '1']  # tradestatus 1 正常交易， 0 停牌
 
-
 #### 结果集输出到csv文件 ####
 result.to_csv("E:/backtradertutorial/600000Baohfq.csv", index=False)
-
 
 #### 登出系统 ####
 bs.logout()

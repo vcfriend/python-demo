@@ -194,7 +194,6 @@ def runstrat(args=None):
 
 
 def parse_args(pargs=None):
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for pivot point and cross plotting')
