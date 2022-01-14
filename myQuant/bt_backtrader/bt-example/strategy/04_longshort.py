@@ -66,7 +66,7 @@ class LongShortStrategy(bt.Strategy):
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
-            return  # Await further notifications
+            return  # 等待进一步通知
 
         if order.status == order.Completed:
             if order.isbuy():

@@ -46,7 +46,7 @@ if __name__ == '__main__':
         reverse=False)
 
     # Add the Data Feed to Cerebro
-    cerebro.adddata(data)
+    cerebro.adddata(data, name="orcl-1995-2014")
 
     # Set our desired cash start
     cerebro.broker.setcash(100000.0)

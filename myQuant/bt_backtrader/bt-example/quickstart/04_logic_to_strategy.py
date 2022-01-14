@@ -13,16 +13,16 @@ import backtrader as bt
 class TestStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        """ 此策略的日志功能"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # Keep a reference to the "close" line in the data[0] dataseries
+        # 保持对datas[0]数据系列中的“close”行的引用
         self.dataclose = self.datas[0].close
 
     def next(self):
-        # Simply log the closing price of the series from the reference
+        # 简单地从参考记录该系列的收盘价
         self.log('Close, %.2f' % self.dataclose[0])
 
         if self.dataclose[0] < self.dataclose[-1]:

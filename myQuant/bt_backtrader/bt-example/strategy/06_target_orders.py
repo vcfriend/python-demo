@@ -8,20 +8,17 @@ import backtrader as bt
 
 
 class TargetStrategy(bt.Strategy):
-    '''
-    This strategy is loosely based on some of the examples from the Van
-    K. Tharp book: *Trade Your Way To Financial Freedom*. The logic:
-      - Enter the market if:
-        - The MACD.macd line crosses the MACD.signal line to the upside
-        - The Simple Moving Average has a negative direction in the last x
-          periods (actual value below value x periods ago)
-     - Set a stop price x times the ATR value away from the close
-     - If in the market:
-       - Check if the current close has gone below the stop price. If yes,
-         exit.
-       - If not, update the stop price if the new stop price would be higher
-         than the current
-    '''
+    """
+    这个策略大体上是基于Van K. Tharp书中的一些例子:*交易你的财务自由之路*。逻辑:
+    -进入市场的条件:
+            - MACD.macd线穿过macd.signal线向上
+    -简单移动平均线在最近x个周期内呈负方向(实际值低于x个周期之前的值)
+    -设置一个离收盘价x倍的止损价格
+    -如果在市场上:
+    检查当前收盘价是否低于停止价格。如果是的,
+    退出。
+    -如果不是，更新停止价格，如果新的停止价格将高于当前的价格
+    """
 
     params = (
         ('use_target_size', False),
