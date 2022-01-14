@@ -13,8 +13,8 @@ def init(context):
     # 初始化保存数据的pandas
     context.data = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume']
     # 1d 为1天，5m 为5分钟周期
-    context.rule_type = '1d'
-    context.date_start = '10220101'
+    context.rule_type = '1m'
+    context.date_start = '20220101'
     context.date_end = '20220111'
     bars = history_bars_date(context.run_info.base_book_id, context.date_start, context.date_end, context.rule_type,
                                 context.data)
@@ -26,6 +26,7 @@ def init(context):
     # 时间格式转换
     df['Datetime'] = pd.to_datetime(df['Datetime'], format="%Y%m%d%H%M%S")  # date转为时间格式
     df.set_index("Datetime", inplace=True, drop=True)  # 将date设置为索引列
+    df[''] = pd.Series()  # 增加空列，为了后续读取文件方便识别
 
     filename = r"D:\Users\yalin\Weisoft Stock\%s-%s.csv" % (context.run_info.base_book_id, context.rule_type)
     df.to_csv(
