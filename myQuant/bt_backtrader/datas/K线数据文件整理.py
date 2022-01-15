@@ -16,5 +16,5 @@ df.to_csv(
     sep=',',  # 分隔符
     header=True,  # 导出列标签
     date_format='%Y%m%d%H%M%S',  # 时期格式化字符串
-    float_format='%.0f',  # 浮点数格式化字符串
+    float_format='%.0f',  # 浮点数格式化字符串保留的小数位数
 )

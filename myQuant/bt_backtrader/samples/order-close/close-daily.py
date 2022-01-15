@@ -62,27 +62,20 @@ class St(bt.Strategy):
 
 
 class SessionEndFiller(with_metaclass(bt.metabase.MetaParams, object)):
-    '''This data filter simply adds the time given in param ``endtime`` to the
-    current data datetime
-
-    It is intended for daily bars which come from sources with no time
-    indication and can be used to signal the bar is passed the end of the
-    session
-
-    The default value for ``endtime`` is 1 second before midnight 23:59:59
-    '''
+    """这个数据过滤器只是将参数' ' endtime ' '中给出的时间添加到当前数据datetime中
+    它用于来自没有时间指示的源的每日条形图，可以用来表示条形图已通过会话结束
+    ''endtime''的默认值是在午夜23:59:59前1秒
+    """
     params = (('endtime', datetime.time(23, 59, 59)),)
 
     def __call__(self, data):
-        '''
-        Params:
-          - data: the data source to filter/process
-
-        Returns:
-          - False (always) because this filter does not remove bars from the
-            stream
-        '''
-        # Get time of current (from data source) bar
+        """
+        参数:
+        — data:需要过滤/处理的数据源
+        返回:
+        - False(总是)，因为这个过滤器不会从流中删除条
+        """
+        # 获取当前时间(从数据源)bar
         dtime = datetime.combine(data.datetime.date(), self.p.endtime)
         data.datetime[0] = data.date2num(dtime)
         return False
@@ -119,7 +112,7 @@ def getdata(args):
         dfkwargs['fromdate'] = fromdate
 
     if args.todate:
-        fromdate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
+        todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         dfkwargs['todate'] = todate
 
     if args.tend is not None:
