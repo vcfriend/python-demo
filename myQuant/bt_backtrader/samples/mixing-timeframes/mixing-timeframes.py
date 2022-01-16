@@ -37,7 +37,7 @@ class St(bt.Strategy):
         pp.plotinfo.plot = False  # deactivate plotting
 
         if self.p.multi:
-            pp1 = pp()  # couple the entire indicators
+            pp1 = pp()  # 结合整个指标
             self.sellsignal = self.data0.close < pp1.s1
         else:
             self.sellsignal = self.data0.close < pp.s1()
@@ -83,6 +83,7 @@ def parse_args():
                         help='Couple all lines of the indicator')
 
     parser.add_argument('--plot', required=False, action='store_true',
+                        default='True',
                         help=('Plot the result'))
 
     return parser.parse_args()

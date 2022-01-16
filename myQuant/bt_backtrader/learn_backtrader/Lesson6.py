@@ -1,5 +1,6 @@
 # Lesson6：Backtrader来啦：策略篇
 # link: https://mp.weixin.qq.com/s/WBZAt7Uiddu9LjPEqtb7nQ
+import backtrader as bt
 
 # =============================================================================
 # %%

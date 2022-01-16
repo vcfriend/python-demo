@@ -2,20 +2,11 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""版权所有 (C) 2015-2020 Daniel Rodriguez 此程序是免费软件：
+您可以根据自由软件基金会发布的 GNU 通用公共许可证（许可证的第 3 版）或（在您的选项）任何更高版本。
+分发此程序的目的是希望它有用，但不提供任何保证；甚至没有对适销性或特定用途适用性的默示保证。
+有关详细信息，请参阅 GNU 通用公共许可证。您应该已经收到了一份 GNU 通用公共许可证的副本以及该程序。
+如果没有，请参阅 <http:www.gnu.orglicenses>。"""
 #
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,
@@ -41,7 +32,7 @@ def runstrat():
     # Get a pandas dataframe
     datapath = ('../../datas/2006-day-001.txt')
 
-    # Simulate the header row isn't there if noheaders requested
+    # 如果没有请求标题，则模拟标题行不存在
     skiprows = 1 if args.noheaders else 0
     header = None if args.noheaders else 0
 
@@ -59,7 +50,7 @@ def runstrat():
         print(dataframe)
         print('--------------------------------------------------')
 
-    # Pass it to the backtrader datafeed and add it to the cerebro
+    # 将其传递给 backtrader 数据馈送并将其添加到 cerebro
     data = bt.feeds.PandasData(dataname=dataframe,
                                # datetime='Date',
                                nocase=True,

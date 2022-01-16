@@ -66,7 +66,7 @@ class St(bt.Strategy):
         print(','.join(txtfields))
 
         if len(self.data) > self.lcontrol:
-            print('- I could issue a buy order during the Opening')
+            print('- 我可以在开市期间发出买单')
 
         self.lcontrol = len(self.data)
 
@@ -91,7 +91,7 @@ def runstrat():
 def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Sample for pivot point and cross plotting')
+        description='枢轴点和交叉绘图的示例')
 
     parser.add_argument('--data', required=False,
                         default='../../datas/2005-2006-day-001.txt',
@@ -102,7 +102,7 @@ def parse_args(pargs=None):
 
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const='{}',
-                        help=('Plot (with additional args if passed'))
+                        help=('绘图（如果通过，则带有附加参数'))
 
     return parser.parse_args(pargs)
 

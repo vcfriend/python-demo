@@ -113,7 +113,7 @@ class St(bt.Strategy):
                     order.executed.size,
                     order.executed.comm,
                 ]
-                )))
+                                   )))
 
     def notify_trade(self, trade):
         if not self.p.prtrade:
@@ -127,7 +127,7 @@ class St(bt.Strategy):
                 trade.pnl,
                 trade.commission,
             ]
-            )))
+                               )))
         elif trade.justopened:
             print(','.join(map(str, [
                 'TRADE', 'OPEN',
@@ -136,7 +136,7 @@ class St(bt.Strategy):
                 trade.pnl,
                 trade.commission,
             ]
-            )))
+                               )))
 
 
 def runstrat(args=None):
@@ -188,7 +188,7 @@ def parse_args(pargs=None):
             'http://dark-bid.com/BTFD-only-strategy-that-matters.html',
             ('https://www.reddit.com/r/algotrading/comments/5jez2b/'
              'can_anyone_replicate_this_strategy/')]))
-        )
+    )
 
     parser.add_argument('--offline', required=False, action='store_true',
                         help='Use offline file with ticker name')

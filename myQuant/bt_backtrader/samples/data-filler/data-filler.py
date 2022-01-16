@@ -44,8 +44,7 @@ def runstrategy():
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Get the session times to pass them to the indicator
-    # datetime.time has no strptime ...
+    # 获取会话时间以将它们传递给指标 datetime.time 没有 strptime ...
     dtstart = datetime.datetime.strptime(args.tstart, '%H:%M')
     dtend = datetime.datetime.strptime(args.tend, '%H:%M')
 
@@ -56,8 +55,8 @@ def runstrategy():
         todate=todate,
         timeframe=bt.TimeFrame.Minutes,
         compression=1,
-        sessionstart=dtstart,  # internally just the "time" part will be used
-        sessionend=dtend,  # internally just the "time" part will be used
+        sessionstart=dtstart,  # 内部只有“时间”部分将被使用
+        sessionend=dtend,  # 内部只有“时间”部分将被使用
     )
 
     if args.filter:
@@ -70,8 +69,7 @@ def runstrategy():
     cerebro.adddata(data)
 
     if args.relvol:
-        # Calculate backward period - tend tstart are in same day
-        # + 1 to include last moment of the interval dstart <-> dtend
+        # 计算向后 period - tend tstart在相同的一天+ 1,包括间隔的最后时刻 dstart <-> dtend
         td = ((dtend - dtstart).seconds // 60) + 1
         cerebro.addindicator(RelativeVolume,
                              period=td,
@@ -134,9 +132,11 @@ def parse_args():
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--writer', '-w', action='store_true',
+                        # default='True',
                         help='Add a writer to cerebro')
 
     parser.add_argument('--wrcsv', '-wc', action='store_true',
+                        # default='./data-filler.txt',
                         help='Enable CSV Output in the writer')
 
     parser.add_argument('--plot', '-p', action='store_true',

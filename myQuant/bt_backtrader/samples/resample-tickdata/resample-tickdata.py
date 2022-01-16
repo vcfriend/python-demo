@@ -45,7 +45,7 @@ def runstrat():
         timeframe=bt.TimeFrame.Ticks,
     )
 
-    # Handy dictionary for the argument timeframe conversion
+    # 参数时间框架转换的方便字典
     tframes = dict(
         ticks=bt.TimeFrame.Ticks,
         microseconds=bt.TimeFrame.MicroSeconds,
@@ -77,34 +77,34 @@ def runstrat():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Resampling script down to tick data')
+        description='重新采样脚本以标记数据')
 
     parser.add_argument('--dataname', default='', required=False,
-                        help='File Data to Load')
+                        help='要加载的文件数据')
 
-    parser.add_argument('--timeframe', default='ticks', required=False,
+    parser.add_argument('--timeframe', default='seconds', required=False,
                         choices=['ticks', 'microseconds', 'seconds',
                                  'minutes', 'daily', 'weekly', 'monthly'],
-                        help='Timeframe to resample to')
+                        help='重新采样到的时间范围')
 
-    parser.add_argument('--compression', default=1, required=False, type=int,
-                        help=('Compress n bars into 1'))
+    parser.add_argument('--compression', default=5, required=False, type=int,
+                        help=('将 n 条压缩为 1'))
 
     parser.add_argument('--nobar2edge', required=False, action='store_true',
-                        help=('Do not Resample IntraDay Timed Bars to edges'))
+                            help=('不要将 IntraDay 定时条重新采样到边缘'))
 
     parser.add_argument('--noadjbartime', required=False,
                         action='store_true',
-                        help=('Do not adjust the time bar to meet the edges'))
+                        help=('不要调整时间栏以符合边缘'))
 
     parser.add_argument('--rightedge', required=False, action='store_true',
-                        help=('Resample to right edge of boundary'))
+                        help=('重新采样到边界的右边缘'))
 
     parser.add_argument('--writer', required=False, action='store_true',
                         help=('Add a Writer'))
 
     parser.add_argument('--wrcsv', required=False, action='store_true',
-                        help=('Add CSV to the Writer'))
+                        help=('将 CSV 添加到 Writer'))
 
     return parser.parse_args()
 

@@ -54,9 +54,9 @@ class TheStrategy(bt.Strategy):
 
 
 def checkdate(dt, d):
-    # Check if the date is in the week where the 3rd friday of Mar/Jun/Sep/Dec
+    # 检查日期是否在 MarJunSepDec 的第三个星期五所在的那一周
 
-    # EuroStoxx50 expiry codes: MY
+    # EuroStoxx50 到期代码：MY
     # M -> H, M, U, Z (Mar, Jun, Sep, Dec)
     # Y -> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 -> year code. 5 -> 2015
     MONTHS = dict(H=3, M=6, U=9, Z=12)
@@ -81,7 +81,7 @@ def checkdate(dt, d):
     # print('dt {} vs {} exp_dt'.format(dt, exp_dt))
     # print('dt_week {} vs {} exp_week'.format(dt_week, exp_week))
 
-    # can switch if in same week
+    # 如果在同一周可以切换
     return (dt_year, dt_week) == (exp_year, exp_week)
 
 
@@ -119,8 +119,8 @@ def runstrat(args=None):
 
     if args.plot:
         pkwargs = dict(style='bar')
-        if args.plot is not True:  # evals to True but is not True
-            npkwargs = eval('dict(' + args.plot + ')')  # args were passed
+        if args.plot is not True:  # 评估为 True 但不是 True
+            npkwargs = eval('dict(' + args.plot + ')')  # args 已通过
             pkwargs.update(npkwargs)
 
         cerebro.plot(**pkwargs)
@@ -130,28 +130,28 @@ def parse_args(pargs=None):
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Sample for Roll Over of Futures')
+        description='期货展期样本')
 
     parser.add_argument('--no-cerebro', required=False, action='store_true',
-                        help='Use RollOver Directly')
+                        help='直接使用翻转')
 
     parser.add_argument('--rollover', required=False, action='store_true')
 
     parser.add_argument('--checkdate', required=False, action='store_true',
-                        help='Change during expiration week')
+                        help='到期周内的变化')
 
     parser.add_argument('--checkcondition', required=False,
                         action='store_true',
-                        help='Change when a given condition is met')
+                        help='满足给定条件时更改')
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
-                        help=('Plot the read data applying any kwargs passed\n'
+                        help=('绘制应用传递的任何 kwarg 的读取数据\n'
                               '\n'
-                              'For example:\n'
+                              '例如：\n'
                               '\n'
-                              '  --plot style="candle" (to plot candles)\n'))
+                              '--plot style="candle"（绘制蜡烛图）\n'))
 
     if pargs is not None:
         return parser.parse_args(pargs)

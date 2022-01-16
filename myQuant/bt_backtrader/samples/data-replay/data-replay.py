@@ -42,7 +42,7 @@ class SMAStrategy(bt.Strategy):
 
     def prenext(self):
         self.counter += 1
-        print('prenext len %d - counter %d' % (len(self), self.counter))
+        print('prenext len%d - counter %d' % (len(self), self.counter))
 
     def next(self):
         self.counter += 1
@@ -71,8 +71,7 @@ def runstrat():
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Handy dictionary for the argument timeframe conversion
-    # Resample the data
+    # 用于参数时间帧转换的方便字典重新采样数据
     if args.oldrp:
         data = bt.DataReplayer(
             dataname=data,
@@ -83,7 +82,7 @@ def runstrat():
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
-    # First add the original data - smaller timeframe
+    # 首先添加原始数据 - 更小的时间范围
     cerebro.adddata(data)
 
     # Run over everything
@@ -98,20 +97,20 @@ def parse_args():
         description='Pandas test script')
 
     parser.add_argument('--dataname', default='', required=False,
-                        help='File Data to Load')
+                        help='要加载的文件数据')
 
     parser.add_argument('--oldrp', required=False, action='store_true',
-                        help='Use deprecated DataReplayer')
+                        help='使用已弃用的 DataReplayer')
 
     parser.add_argument('--timeframe', default='weekly', required=False,
                         choices=['daily', 'weekly', 'monthly'],
-                        help='Timeframe to resample to')
+                        help='重新采样到的时间范围')
 
     parser.add_argument('--compression', default=1, required=False, type=int,
-                        help='Compress n bars into 1')
+                        help='将 n 条压缩为 1')
 
     parser.add_argument('--period', default=10, required=False, type=int,
-                        help='Period to apply to indicator')
+                        help='适用于指标的时期')
 
     return parser.parse_args()
 

@@ -41,24 +41,24 @@ def runstrat():
     data = btfeeds.BacktraderCSVData(
         dataname=datapath)
 
-    # Handy dictionary for the argument timeframe conversion
+    # 参数时间框架转换的方便字典
     tframes = dict(
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Resample the data
+    # 重新采样数据
     if args.oldrs:
-        # Old resampler, fully deprecated
+        # 旧的重采样器，完全弃用
         data = bt.DataResampler(
             dataname=data,
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
-        # Add the resample data instead of the original
+        # 添加重采样数据而不是原始数据
         cerebro.adddata(data)
     else:
-        # New resampler
+        # 新的重采样器
         cerebro.resampledata(
             data,
             timeframe=tframes[args.timeframe],
@@ -73,20 +73,20 @@ def runstrat():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Resample down to minutes')
+        description='重新采样到几分钟')
 
     parser.add_argument('--dataname', default='', required=False,
-                        help='File Data to Load')
+                        help='要加载的文件数据')
 
     parser.add_argument('--oldrs', required=False, action='store_true',
-                        help='Use deprecated DataResampler')
+                        help='使用已弃用的 DataResampler')
 
     parser.add_argument('--timeframe', default='weekly', required=False,
                         choices=['daily', 'weekly', 'monthly'],
-                        help='Timeframe to resample to')
+                        help='重新采样到的时间范围')
 
     parser.add_argument('--compression', default=1, required=False, type=int,
-                        help='Compress n bars into 1')
+                        help='将 n 条压缩为 1')
 
     return parser.parse_args()
 

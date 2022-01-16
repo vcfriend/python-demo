@@ -4,18 +4,12 @@
 #
 # Copyright (C) 2015-2020 Daniel Rodriguez
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# 本程序是免费软件：您可以根据自由软件基金会发布的 GNU 通用公共许可条款
+# （许可的第 3 版或（由您选择）任何更高版本）重新分发和修改它。
+# 分发此程序的目的是希望它有用，但不提供任何保证；甚至没有对适销性或特定用途适用性的默示保证。
+# 有关详细信息，请参阅 GNU 通用公共许可证。
+# 您应该已经收到了一份 GNU 通用公共许可证的副本以及该程序。如果没有，
+# 请参阅 <http:www.gnu.orglicenses>。
 #
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,)
@@ -45,10 +39,10 @@ def runstrat():
     data = btfeeds.GenericCSVData(
         dataname=args.data,
         dtformat='%d/%m/%y',
-        # tmformat='%H%M%S',  # already the default value
-        # datetime=0,  # position at default
-        time=1,  # position of time
-        open=5,  # position of open
+        # tmformat='%H%M%S',  # 已经是默认值
+        # datetime=0,  # 默认位置
+        time=1,  # 时间位置
+        open=5,  # 打开位置
         high=5,
         low=5,
         close=5,

@@ -103,7 +103,7 @@ def runstrat():
         cerebro.addstrategy(
             SMAStrategy,
 
-            # args for the strategy
+            # 策略参数
             period=args.period,
             onlydaily=args.onlydaily,
         )
@@ -118,8 +118,7 @@ def runstrat():
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Handy dictionary for the argument timeframe conversion
-    # Resample the data
+    # 用于参数时间帧转换的方便字典重新采样数据
     if args.noresample:
         datapath = args.dataname2 or '../../datas/2006-week-001.txt'
         data2 = btfeeds.BacktraderCSVData(
@@ -154,10 +153,10 @@ def runstrat():
                 elif args.timeframe == 'monthly':
                     data2.addfilter(ResamplerMonthly)
 
-    # First add the original data - smaller timeframe
+    # 首先添加原始数据 - 更小的时间范围
     cerebro.adddata(data)
 
-    # And then the large timeframe
+    # 然后是大时间范围
     cerebro.adddata(data2)
 
     # Run over everything
@@ -216,6 +215,7 @@ def parse_args():
                         help='Period to apply to indicator')
 
     parser.add_argument('--plot', required=False, action='store_true',
+                        default='True',
                         help='Plot the chart')
 
     return parser.parse_args()

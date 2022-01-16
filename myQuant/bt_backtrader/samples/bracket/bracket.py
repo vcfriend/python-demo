@@ -4,18 +4,11 @@
 #
 # Copyright (C) 2015-2020 Daniel Rodriguez
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+""":arg本程序是免费软件：您可以根据自由软件基金会发布的 GNU
+ 通用公共许可条款（许可的第 3 版或（由您选择）任何更高版本）重新分发和修改它。
+ 分发此程序的目的是希望它有用，但不提供任何保证；甚至没有对适销性或特定用途适用性的默示保证。
+ 有关详细信息，请参阅 GNU 通用公共许可证。您应该已经收到了一份 GNU 通用公共许可证的副本以及该程序。
+ 如果没有，请参阅 <http:www.gnu.orglicenses>。"""
 #
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,
@@ -38,7 +31,7 @@ class St(bt.Strategy):
         limdays2=1000,
         hold=10,
         usebracket=False,  # use order_target_size
-        switchp1p2=False,  # switch prices of order1 and order2
+        switchp1p2=False,  # 交换订单 1 和订单 2 的价格
     )
 
     def notify_order(self, order):
@@ -64,7 +57,7 @@ class St(bt.Strategy):
 
     def next(self):
         if self.orefs:
-            return  # pending orders do nothing
+            return  # 挂单什么都不做
 
         if not self.position:
             if self.cross > 0.0:  # crossing up
@@ -118,9 +111,9 @@ class St(bt.Strategy):
 
                     self.orefs = [o.ref for o in os]
 
-        else:  # in the market
+        else:  # 在市场上
             if (len(self) - self.holdstart) >= self.p.hold:
-                pass  # do nothing in this case
+                pass  # 在这种情况下什么也不做
 
 
 def runstrat(args=None):
@@ -128,10 +121,10 @@ def runstrat(args=None):
 
     cerebro = bt.Cerebro()
 
-    # Data feed kwargs
+    # 数据馈送 kwargs
     kwargs = dict()
 
-    # Parse from/to-date
+    # 从现在开始解析
     dtfmt, tmfmt = '%Y-%m-%d', 'T%H:%M:%S'
     for a, d in ((getattr(args, x), x) for x in ['fromdate', 'todate']):
         if a:
