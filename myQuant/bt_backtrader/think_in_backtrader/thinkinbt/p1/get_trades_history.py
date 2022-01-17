@@ -83,16 +83,16 @@ class DemoStrategy(bt.Strategy):
     def notify_trade(self, trade):
         self.log("Trade id = {0} (size={1})".format(trade.ref, trade.size))
 
-        print(trade.status)
-        print(trade.getstatusname())
+        # print(trade.status)
+        print('trade.status:', trade.status, trade.status_names[trade.status])
 
         if trade.isclosed:
             self.log("毛收益 %0.2f" % trade.pnl)
             # 历史明细：
             for idx, h in enumerate(trade.history):
                 print("操作{0}".format(idx + 1))
-                print("Trade状态:{0}".format(h.status))
-                print("Trade事件:{0}".format(h.event))
+                print("TradeHistory状态:{0}".format(h.status))
+                print("TradeHistory事件:{0}".format(h.event))
 
 
 # 启动回测

@@ -16,7 +16,7 @@ import thinkinbt.p1.data_tl as data_tl
 class DemoStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
-        ''' Logging function for this strategy'''
+        """ 此策略的日志记录功能"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 

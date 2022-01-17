@@ -41,9 +41,15 @@ def engine_run():
     # 给Cebro引擎添加策略
     cerebro.addstrategy(DemoStrategy)
     # 从csv文件加载数据
-    data = data_tl.get_stock_daily(stock_id="600016.SH", start="20190101", end="20190103")
+    data = data_tl.get_stock_daily(
+        stock_id="600016.SH",
+        start="20190101",
+        end="20190103")
     cerebro.adddata(data, name="民生")
-    data = data_tl.get_stock_daily(stock_id="000001.SZ", start="20190101", end="20190103")
+    data = data_tl.get_stock_daily(
+        stock_id="000001.SZ",
+        start="20190101",
+        end="20190103")
     cerebro.adddata(data, name="平安")
     # 回测启动运行
     cerebro.run()

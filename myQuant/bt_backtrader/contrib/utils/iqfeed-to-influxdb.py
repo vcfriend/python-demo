@@ -31,7 +31,7 @@ class IQFeedTool(object):
         self._recv_buf = ""
         self._ndf = pd.DataFrame()
 
-        # Open a streaming socket to the IQFeed daemon
+        # 打开 IQFeed 守护程序的流式套接字
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((self._iqhost, self._iqport))
         self._sock.settimeout(timeout)
@@ -61,11 +61,11 @@ class IQFeedTool(object):
         self._sock.sendall(cmd.encode(encoding='latin-1', errors='strict'))
 
     def iq_query(self, message: str):
-        """Send data query to IQFeed API."""
+        """向 IQFeed API 发送数据查询。"""
         end_msg = '!ENDMSG!'
         recv_buffer = 4096
 
-        # Send the historical data request message and buffer the data
+        # 发送历史数据请求报文并缓存数据
         self._send_cmd(message)
 
         chunk = ""
@@ -82,7 +82,7 @@ class IQFeedTool(object):
             elif end_msg in chunk:
                 break
 
-        # Clean up the data.
+        # 清理数据。
         data = data[:-1 * (len(end_msg) + 3)]
         data = "".join(data.split("\r"))
         data = data.replace(",\n", ",")[:-1]
@@ -90,7 +90,7 @@ class IQFeedTool(object):
         return data
 
     def get_historical_minute_data(self, ticker: str):
-        """Request historical 5 minute data from DTN."""
+        """从 DTN 请求历史 5 分钟数据。"""
         start = self._start
         stop = self._stop
 
@@ -128,10 +128,10 @@ class IQFeedTool(object):
 
         df.index = pd.to_datetime(df.index)
 
-        # Sort the dataframe based on ascending dates.
+        # 根据升序对数据框进行排序。
         df.sort_index(ascending=True, inplace=True)
 
-        # Convert dataframe columns to float and ints.
+        # 将数据框列转换为浮点数和整数。
         df[['high_p', 'low_p', 'open_p', 'close_p']] = df[
             ['high_p', 'low_p', 'open_p', 'close_p']].astype(float)
         df[['volume', 'oi']] = df[['volume', 'oi']].astype(int)
@@ -142,7 +142,7 @@ class IQFeedTool(object):
             self._ndf = self._ndf.append(df)
 
     def get_tickers_from_file(self, filename):
-        """Load ticker list from txt file"""
+        """从 txt 文件加载代码列表"""
         if not os.path.exists(filename):
             log.error("Ticker List file does not exist: %s", filename)
 

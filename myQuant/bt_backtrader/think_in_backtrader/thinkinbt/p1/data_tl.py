@@ -33,7 +33,7 @@ def get_stock_daily(stock_id="600016.SH", start="20190101", end="20190115"):
         dt_end = datetime.strptime(end, "%Y%m%d")
 
         # 数据文件
-        data_file = os.path.join('fd_data/' + stock_id + ".csv")
+        data_file = os.path.join('../../fd_data/' + stock_id + ".csv")
         if not os.path.exists(data_file):
             print("数据源文件未找到！" + data_file)
             raise Exception("数据源文件未找到！" + data_file)

@@ -40,7 +40,7 @@ class PairTradingStrategy(bt.Strategy):
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
-            return  # Await further notifications
+            return  # 等待进一步通知
 
         if order.status == order.Completed:
             if order.isbuy():
@@ -58,7 +58,7 @@ class PairTradingStrategy(bt.Strategy):
         self.orderid = None
 
     def __init__(self):
-        # To control operation entries
+        # 控制操作条目
         self.orderid = None
         self.qty1 = self.p.qty1
         self.qty2 = self.p.qty2
@@ -69,12 +69,12 @@ class PairTradingStrategy(bt.Strategy):
         self.status = self.p.status
         self.portfolio_value = self.p.portfolio_value
 
-        # Signals performed with PD.OLS :
+        # 使用 PD.OLS 执行的信号 :
         self.transform = btind.OLS_TransformationN(self.data0, self.data1,
                                                    period=self.p.period)
         self.zscore = self.transform.zscore
 
-        # Checking signals built with StatsModel.API :
+        # 检查使用 StatsModel.API 构建的信号 :
         # self.ols_transfo = btind.OLS_Transformation(self.data0, self.data1,
         #                                             period=self.p.period,
         #                                             plot=True)
@@ -82,7 +82,7 @@ class PairTradingStrategy(bt.Strategy):
     def next(self):
 
         if self.orderid:
-            return  # if an order is active, no new orders are allowed
+            return  # 如果订单处于活动状态，则不允许新订单
 
         if self.p.printout:
             print('Self  len:', len(self))
@@ -97,14 +97,14 @@ class PairTradingStrategy(bt.Strategy):
         print('status is', self.status)
         print('zscore is', self.zscore[0])
 
-        # Step 2: Check conditions for SHORT & place the order
-        # Checking the condition for SHORT
+        # 第 2 步：检查 SHORT 条件并下订单
+        # 检查 SHORT 的条件
         if (self.zscore[0] > self.upper_limit) and (self.status != 1):
 
-            # Calculating the number of shares for each stock
-            value = 0.5 * self.portfolio_value  # Divide the cash equally
-            x = int(value / (self.data0.close))  # Find the number of shares for Stock1
-            y = int(value / (self.data1.close))  # Find the number of shares for Stock2
+            # 计算每只股票的股数
+            value = 0.5 * self.portfolio_value  # 平分现金
+            x = int(value / (self.data0.close))  # 查找 Stock1 的股票数量
+            y = int(value / (self.data1.close))  # 查找 Stock2 的股票数量
             print('x + self.qty1 is', x + self.qty1)
             print('y + self.qty2 is', y + self.qty2)
 
@@ -114,17 +114,17 @@ class PairTradingStrategy(bt.Strategy):
             self.log('BUY CREATE %s, price = %.2f, qty = %d' % ("KO", self.data1.close[0], y + self.qty2))
             self.buy(data=self.data1, size=(y + self.qty2))  # Place an order for selling x + qty1 shares
 
-            # Updating the counters with new value
-            self.qty1 = x  # The new open position quantity for Stock1 is x shares
-            self.qty2 = y  # The new open position quantity for Stock2 is y shares
+            # 用新值更新计数器
+            self.qty1 = x  # Stock1 的新开仓数量为 x 股
+            self.qty2 = y  # Stock2 的新开仓数量为 y 股
 
-            self.status = 1  # The current status is "short the spread"
+            self.status = 1  # 目前的状态是“做空点差”
 
-            # Step 3: Check conditions for LONG & place the order
-            # Checking the condition for LONG
+            # 第 3 步：检查 LONG 条件并下订单
+            # 检查 LONG 的条件
         elif (self.zscore[0] < self.lower_limit) and (self.status != 2):
 
-            # Calculating the number of shares for each stock
+            # 计算每只股票的股数
             value = 0.5 * self.portfolio_value  # Divide the cash equally
             x = int(value / (self.data0.close))  # Find the number of shares for Stock1
             y = int(value / (self.data1.close))  # Find the number of shares for Stock2
@@ -137,14 +137,13 @@ class PairTradingStrategy(bt.Strategy):
             self.log('SELL CREATE %s, price = %.2f, qty = %d' % ("KO", self.data1.close[0], y + self.qty2))
             self.sell(data=self.data1, size=(y + self.qty2))  # Place an order for selling y + qty2 shares
 
-            # Updating the counters with new value
+            # 用新值更新计数器
             self.qty1 = x  # The new open position quantity for Stock1 is x shares
             self.qty2 = y  # The new open position quantity for Stock2 is y shares
             self.status = 2  # The current status is "long the spread"
 
-
-            # Step 4: Check conditions for No Trade
-            # If the z-score is within the two bounds, close all
+            # 第 4 步：检查禁止交易的条件
+            # 如果 z-score 在两个范围内，则关闭所有
         """
         elif (self.zscore[0] < self.up_medium and self.zscore[0] > self.low_medium):
             self.log('CLOSE LONG %s, price = %.2f' % ("PEP", self.data0.close[0]))
@@ -193,10 +192,10 @@ def runstrategy():
                         period=args.period,
                         stake=args.stake)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加佣金 - 每项操作仅提供类似 a 的股票
     cerebro.broker.setcash(args.cash)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加佣金 - 每项操作仅提供类似 a 的股票
     cerebro.broker.setcommission(commission=args.commperc)
 
     # And run it
@@ -204,7 +203,7 @@ def runstrategy():
                 preload=not args.nopreload,
                 oldsync=args.oldsync)
 
-    # Plot if requested
+    # 如果要求绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=False, zdown=False)
 
