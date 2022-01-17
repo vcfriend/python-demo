@@ -1,22 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
-#
-# Copyright (C) 2015-2020 Daniel Rodriguez
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+"""
+https://www.backtrader.com/docu/data-rollover/rolling-futures-over/
+
+展期期货
+并非每个提供商都为可以交易的工具提供连续的未来。有时提供的数据是仍然有效的到期日期的数据，即：仍在交易的数据
+
+当涉及到回溯测试时，这并不是那么有用，因为数据分散在几个不同的工具上，此外......时间重叠。
+
+能够正确地将这些工具的数据从过去合并到连续的流中，可以减轻痛苦。问题：
+
+没有关于如何最好地将不同的到期日加入到连续的未来的法律
+一些文献，由SierraChart提供：
+
+http://www.sierrachart.com/index.php?page=doc/ChangingFuturesContract.html
+翻转数据馈送
+backtrader增加了将不同到期日的期货数据合并到连续期货的可能性：1.8.10.99
+"""
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
