@@ -9,6 +9,7 @@
     <orderEntry type="jdk" jdkName="Python 3.9 (py39)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="Python" />
+    <orderEntry type="module" module-name="backtrader_ctp_example" />
   </component>
   <component name="PackageRequirementsSettings">
     <option name="requirementsPath" value="" />

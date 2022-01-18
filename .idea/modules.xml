@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../../Weisoft Stock(x64)/Document/Python/.idea/Python.iml" filepath="$PROJECT_DIR$/../../Weisoft Stock(x64)/Document/Python/.idea/Python.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../Users/yalin/PycharmProjects/backtrader/backtrader_ctp_example/.idea/backtrader_ctp_example.iml" filepath="$PROJECT_DIR$/../../Users/yalin/PycharmProjects/backtrader/backtrader_ctp_example/.idea/backtrader_ctp_example.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/python-demo.iml" filepath="$PROJECT_DIR$/.idea/python-demo.iml" />
     </modules>
   </component>

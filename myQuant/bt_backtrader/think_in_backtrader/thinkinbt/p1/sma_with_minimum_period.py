@@ -39,8 +39,9 @@ class DemoStrategy(bt.Strategy):
         if not self.position:
             if self.sma_short[-1] <= self.sma_long[-1] and self.sma_short[0] >= self.sma_long[0]:
                 self.buy(size=1000)
-        if self.sma_short[-1] > self.sma_long[-1] and self.sma_short[0] < self.sma_long[0]:
-            self.close()
+        if self.position:
+            if self.sma_short[-1] > self.sma_long[-1] and self.sma_short[0] < self.sma_long[0]:
+                self.close()
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
