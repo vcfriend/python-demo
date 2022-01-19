@@ -84,12 +84,12 @@ class TestStrategy(bt.Strategy):
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
 
-        # if self.position:
-        #     print("{0}".format(self.position))
+        if self.position:
+            print("{0}".format(self.position))
 
         # 打印交易后的资金市值
         # next中只是下单，还未成交
-        # print('Portfolio Value: %.2f' % self.cerebro.broker.getvalue())
+        print('Portfolio Value: %.2f' % self.cerebro.broker.getvalue())
 
 
 # 启动回测

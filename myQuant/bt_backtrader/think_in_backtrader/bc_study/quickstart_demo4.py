@@ -31,13 +31,12 @@ class TestStrategy(bt.Strategy):
         print("TestStrategy init function called")
 
     def notify_order(self, order):
-        # self.log("func notify_order :")
+        self.log("func notify_order :")
         if order.status in [order.Submitted, order.Accepted]:
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enough cash
+        # 检查订单是否已完成注意：如果没有足够的现金，经纪人可能会拒绝订单
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log('BUY EXECUTED, %.2f' % order.executed.price)
@@ -60,16 +59,16 @@ class TestStrategy(bt.Strategy):
         if not self.position:
             if self.dataopen[0] < self.dataopen[-1]:
                 if self.dataopen[-1] < self.dataopen[-2]:
-                    # BUY, BUY, BUY!!! (with all possible default parameters)
+                    # 买买买！！！ （带有所有可能的默认参数）
                     self.log('BUY CREATE, %.2f' % self.dataopen[0])
                     self.buy()
         else:
-            # Already in the market ... we might sell
+            # 已经在市场上......我们可能会出售
             self.log('len(self)={0}, bar_executed={1}'.format(len(self), self.bar_executed))
             if len(self) >= (self.bar_executed + 5):
-                # SELL, SELL, SELL!!! (with all possible default parameters)
+                # 卖，卖，卖！！！ （带有所有可能的默认参数）
                 self.log('SELL CREATE, %.2f' % self.dataopen[0])
-                # Keep track of the created order to avoid a 2nd order
+                # 跟踪创建的订单以避免第二个订单
                 self.order = self.sell()
 
 

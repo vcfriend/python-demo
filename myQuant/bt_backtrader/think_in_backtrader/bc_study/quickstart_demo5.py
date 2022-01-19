@@ -21,7 +21,7 @@ import bc_study.tushare_csv_datafeed as ts_df
 class TestStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
-        ''' Logging function for this strategy'''
+        """此策略的日志记录功能"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
@@ -64,6 +64,7 @@ class TestStrategy(bt.Strategy):
         self.log('Open, %.2f' % self.dataopen[0])
         # self.log('LEN OF STY = {0}'.format( len(self) ))
         self.log('position = {0}'.format(self.position))
+        # print(self.position)
 
         if not self.position:
             if self.dataopen[0] < self.dataopen[-1]:
@@ -101,7 +102,7 @@ def engine_run():
     cerebro.broker.setcommission(commission=0.001)
 
     # 从csv文件加载数据
-    data = ts_df.get_csv_daily_data(stock_id="600016.SH")
+    data = ts_df.get_csv_GenericCSVData(stock_id="600016.SH")
     cerebro.adddata(data)
 
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())

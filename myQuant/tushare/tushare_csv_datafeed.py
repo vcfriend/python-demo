@@ -78,9 +78,9 @@ def get_csv_GenericCSVData(stock_id="600016.SH", start="20190101", end="20191231
         nullvalue=0.0,
         dtformat=('%Y%m%d'),
         datetime=1,
-        open=2,
         high=3,
         low=4,
+        open=2,
         close=5,
         volume=9,
         openinterest=-1
@@ -134,13 +134,13 @@ def get_tushare_online_daily_data():
 
 if __name__ == "__main__":
     # # 读取从tushare下载的日线数据文件：
-    data = get_csv_daily_data()
+    # data = get_csv_daily_data()
 
     # # 读取csv文件
     # data = get_csv_GenericCSVData()
 
     # 读取在线数据
-    # data = get_tushare_online_daily_data()
+    data = get_tushare_online_daily_data()
 
     print(data)
     print(type(data))

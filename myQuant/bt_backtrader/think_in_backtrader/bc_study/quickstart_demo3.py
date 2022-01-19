@@ -20,7 +20,7 @@ import tushare_csv_datafeed as ts_df
 class TestStrategy(bt.Strategy):
 
     def log(self, text, dt=None):
-        ''' Logging function for this strategy'''
+        """此策略的日志记录功能"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), text))
 
@@ -39,8 +39,8 @@ class TestStrategy(bt.Strategy):
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enough cash
+        # 检查订单是否已完成
+        # 注意：如果没有足够的现金，经纪人可能会拒绝订单
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log('BUY EXECUTED, 执行价=%.2f' % order.executed.price)
@@ -52,7 +52,7 @@ class TestStrategy(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
 
-        # Write down: no pending order
+        # 写下：无挂单
         self.order = None
 
     def next(self):
