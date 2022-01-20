@@ -12,7 +12,7 @@
 
 '''
 import backtrader as bt
-import tushare_csv_datafeed as ts_df
+from myQuant.tushare import tushare_csv_datafeed as ts_df
 
 
 # 演示用策略，每日输出开盘价

@@ -23,7 +23,7 @@ OUTPUT:
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 class PositionStrategy(bt.Strategy):
@@ -56,7 +56,7 @@ class PositionStrategy(bt.Strategy):
 
     def next(self):
         if len(self) == 1:
-            self.log("头寸，单价={p}，规模={s}".format(p=self.position.price, s=self.position.size))  # 空头寸
+            self.log("len={l} 头寸，单价={p}，规模={s}".format(l=1, p=self.position.price, s=self.position.size))  # 空头寸
             order = self.buy(size=10, exectype=bt.Order.Market)
             if order:
                 self.log("第1天，下市场买单10")

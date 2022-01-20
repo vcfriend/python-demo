@@ -18,6 +18,7 @@ import backtrader as bt
 import datetime
 import tushare as ts
 import pandas as pd
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 class MyCsvFileData(bt.feeds.GenericCSVData):
@@ -27,8 +28,8 @@ class MyCsvFileData(bt.feeds.GenericCSVData):
         ('fromdate', datetime.datetime(2000, 1, 1)),
         ('todate', datetime.datetime(2000, 12, 31)),
         ('nullvalue', 0.0),
-        ('dtformat', ('%Y-%m-%d %H:%M:%S')),
-        # ('tmformat', ('%H.%M.%S')),
+        ('dtformat', '%Y-%m-%d %H:%M:%S'),
+        # ('tmformat', '%H.%M.%S'),
         ('nullvalue', 0.00),
         ('datetime', 0),
         ('high', 1),
@@ -68,18 +69,18 @@ class TusharePdData(bt.feeds.PandasData):
     )
 
 
-def get_bt_csv_data(start="20000104", end="20000110"):
+def get_bt_csv_data(start="20000104", end="20001230"):
     # 取得csv文件
 
-    dt_start = datetime.datetime.strptime(start, "%Y%m%d")
-    dt_end = datetime.datetime.strptime(end, "%Y%m%d")
+    dt_start = bt.datetime.datetime.strptime(start, "%Y%m%d")
+    dt_end = bt.datetime.datetime.strptime(end, "%Y%m%d")
 
     data = bt.feeds.GenericCSVData(
-        dataname='bc_study/demo/bt_csv_file.csv',
+        dataname='./bt_csv_file.csv',
         fromdate=dt_start,
         todate=dt_end,
         nullvalue=0.0,
-        dtformat=('%Y-%m-%d'),
+        dtformat='%Y-%m-%d %H:%M:%S',
         datetime=0,
         high=1,
         low=2,
@@ -91,12 +92,9 @@ def get_bt_csv_data(start="20000104", end="20000110"):
     return data
 
 
-def get_tushare_data(start="20200101", end="20200131"):
+def get_tushare_data(stock_id="000001.SZ", start="20200101", end="20200131"):
     # 从tushare在线读取数据
 
-    stock_id = "000001.SZ"
-    start = "20190101"
-    end = "20191231"
     dt_start = datetime.datetime.strptime(start, "%Y%m%d")
     dt_end = datetime.datetime.strptime(end, "%Y%m%d")
     TOKEN = '341d66d4586929fa56f3f987e6c0d5bd23fb2a88f5a48b83904d134b'
@@ -132,19 +130,15 @@ def engine_run():
 
     # # 从csv文件加载数据
     # data = get_bt_csv_data(start="20001219", end="20001225")
-    # cerebro.adddata(data)
 
     # # 从自定义类加载数据
-    # data = MyCsvFileData(dataname='bc_study/demo/bt_csv_file.csv', start="20001219", end="20001225")
-    # cerebro.adddata(data)
+    # data = MyCsvFileData(dataname='./bt_csv_file.csv', start="20001219", end="20001225")
 
     # 从tushare读取
     # data = get_tushare_data(start="20200101", end="20200131")
-    # cerebro.adddata(data)
-    # cerebro.adddata(ts_df.get_tushare_online_daily_data())
-    data = get_tushare_data()
-    cerebro.adddata(data)
+    data = ts_df.get_tushare_online_daily_data()
 
+    cerebro.adddata(data)
     # 回测启动运行
     cerebro.run()
 

@@ -11,8 +11,21 @@
 在Demo0基础上，增加DataFeed数据源的使用
 
 '''
+import sys
+import os
+
+# PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))  # 获取项目根目录
+# path = os.path.join(PROJECT_ROOT,"data\\edge\\0_fuse.txt") #文件路径
+# print(PROJECT_ROOT)
+# print(os.path.realpath("../../../../"))
+sys.path.append(os.path.realpath("../../../../"))  # 加入根目录
+# module_path = os.path.abspath(os.getcwd())
+# print(module_path)
+# if module_path not in sys.path:
+#     sys.path.append(module_path)
+
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 if __name__ == '__main__':
     # 初始化引擎

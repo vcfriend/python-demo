@@ -17,7 +17,7 @@ ibs = (Pc - Pl) / (Ph - Pl)
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 import backtrader.analyzers as btanalyzers
 
 

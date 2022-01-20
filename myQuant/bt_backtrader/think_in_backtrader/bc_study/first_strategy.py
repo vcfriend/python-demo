@@ -9,7 +9,7 @@
 @Desc    :   第一个测试用策略，打印当日收盘价
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 class MyStrategy(bt.Strategy):

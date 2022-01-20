@@ -14,7 +14,7 @@
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 # 演示用策略，每日输出开盘价
@@ -102,7 +102,7 @@ def engine_run():
     cerebro.broker.setcommission(commission=0.001)
 
     # 从csv文件加载数据
-    data = ts_df.get_csv_GenericCSVData(stock_id="600016.SH")
+    data = ts_df.get_csv_daily_data(stock_id="600016.SH")
     cerebro.adddata(data)
 
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())

@@ -52,12 +52,13 @@ StopLimit，停止限价单
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 from backtrader.order import Order
 
 
 # 基策略
 class BaseOrderExetypeStrategy(bt.Strategy):
+
     def log(self, txt, dt=None):
         ''' Logging function for this strategy'''
         dt = dt or self.datas[0].datetime.date(0)
@@ -75,11 +76,15 @@ class BaseOrderExetypeStrategy(bt.Strategy):
             return
         elif order.status in [order.Completed]:
             if order.isbuy():
-                self.log('买单(oid={oid})执行, 执行价={ep}，数量={ea}'.format(oid=order.ref, ep=order.executed.price,
-                                                                    ea=order.executed.size))
+                self.log('BaseOrder 买单(oid={oid})执行, 执行价={ep}，数量={ea}'
+                         .format(oid=order.ref,
+                                 ep=order.executed.price,
+                                 ea=order.executed.size))
             elif order.issell():
-                self.log('卖单(oid={oid})执行, 执行价={ep}，数量={ea}'.format(oid=order.ref, ep=order.executed.price,
-                                                                    ea=order.executed.size))
+                self.log('BaseOrder 卖单(oid={oid})执行, 执行价={ep}，数量={ea}'
+                         .format(oid=order.ref,
+                                 ep=order.executed.price,
+                                 ea=order.executed.size))
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order(oid={oid}) Canceled/Margin/Rejected'.format(oid=order.ref))
 
@@ -95,7 +100,7 @@ class MarketOrderStrategy(BaseOrderExetypeStrategy):
         if len(self) == 1:
             order = self.buy(size=10, price=100, exectype=Order.Market)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("MarketOrder 下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
 
 
 # 演示Close Order策略
@@ -106,11 +111,12 @@ class CloseOrderStrategy(BaseOrderExetypeStrategy):
         if len(self) == 1:
             order = self.buy(size=10, price=100, exectype=Order.Close)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("CloseOrder 下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
 
 
 # 演示Limit Order策略
 class LimitOrderStrategy(BaseOrderExetypeStrategy):
+
     # TODO 添加valid参数，
     # valid = self.data.datetime.date(0) + datetime.timedelta(days=self.p.valid)
 
@@ -119,15 +125,15 @@ class LimitOrderStrategy(BaseOrderExetypeStrategy):
         if len(self) == 1:
             order = self.buy(size=10, price=17.60, exectype=Order.Limit)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("LimitOrder 下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
         if len(self) == 2:
             order = self.buy(size=10, price=20.00, exectype=Order.Limit)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("LimitOrder 下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
         if len(self) == 3:
             order = self.sell(size=10, price=20.30, exectype=Order.Limit)
             if order:
-                self.log("下单SELL单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("LimitOrder 下单SELL单(oid={id}), price={p}".format(id=order.ref, p=order.price))
 
 
 # 演示Stop Order策略
@@ -138,14 +144,14 @@ class StopOrderStrategy(BaseOrderExetypeStrategy):
         if len(self) == 1:
             order = self.buy(size=10, price=19, exectype=Order.Stop)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("StopOrder 下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
             order = self.buy(size=10, price=25, exectype=Order.Stop)
             if order:
-                self.log("下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("StopOrder 下单BUY单(oid={id}), price={p}".format(id=order.ref, p=order.price))
         if len(self) == 3:
             order = self.sell(size=10, price=18, exectype=Order.Stop)
             if order:
-                self.log("下单SELL单(oid={id}), price={p}".format(id=order.ref, p=order.price))
+                self.log("StopOrder 下单SELL单(oid={id}), price={p}".format(id=order.ref, p=order.price))
 
 
 # 演示StopLimit Order策略
@@ -157,7 +163,8 @@ class StopLimitOrderStrategy(BaseOrderExetypeStrategy):
             order = self.buy(size=10, price=19, plimit=20.14, exectype=Order.StopLimit)
             if order:
                 self.log(
-                    "下单BUY单(oid={id}), price={p}, plimit={pl}".format(id=order.ref, p=order.price, pl=order.plimit))
+                    "StopLimitOrder 下单BUY单(oid={id}), price={p}, plimit={pl}".format(id=order.ref, p=order.price,
+                                                                                     pl=order.plimit))
 
 
 # 启动回测

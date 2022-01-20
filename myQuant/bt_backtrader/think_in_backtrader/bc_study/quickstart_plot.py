@@ -16,7 +16,7 @@ from __future__ import (absolute_import, division, print_function,
 
 # Import the backtrader platform
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 # Create a Stratey

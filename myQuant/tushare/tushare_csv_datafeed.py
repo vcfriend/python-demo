@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- encoding: utf-8 -*-
+# coding=utf8
 '''
 @File    :   tushare_csv_datafeed.py
 @Time    :   2020/11/11 00:04:27
@@ -28,6 +28,9 @@ def get_csv_daily_data(stock_id="600016.SH", start="20190101", end="20191231"):
 
     Returns:
         [type]: backtrader.feeds.pandafeed.PandasData对象
+        :param stock_id:
+        :param end:
+        :param start:
     """
     # 日期格式转换
     dt_start = datetime.datetime.strptime(start, "%Y%m%d")
@@ -78,22 +81,24 @@ def get_csv_GenericCSVData(stock_id="600016.SH", start="20190101", end="20191231
         nullvalue=0.0,
         dtformat=('%Y%m%d'),
         datetime=1,
+        open=2,
         high=3,
         low=4,
-        open=2,
         close=5,
         volume=9,
         openinterest=-1
     )
     return data
 
-
-def get_tushare_online_daily_data():
+# 从tushare在线读取数据
+def get_tushare_online_daily_data(
+        stock_id="000001.SZ",
+        start="20190101",
+        end="20191231",
+):
     """将A股票日线数据返回BT Data
     """
-    stock_id = "000001.SZ"
-    start = "20190101"
-    end = "20191231"
+
     dt_start = datetime.datetime.strptime(start, "%Y%m%d")
     dt_end = datetime.datetime.strptime(end, "%Y%m%d")
     TOKEN = '341d66d4586929fa56f3f987e6c0d5bd23fb2a88f5a48b83904d134b'
@@ -134,14 +139,15 @@ def get_tushare_online_daily_data():
 
 if __name__ == "__main__":
     # # 读取从tushare下载的日线数据文件：
-    # data = get_csv_daily_data()
+    data = get_csv_daily_data()
 
     # # 读取csv文件
     # data = get_csv_GenericCSVData()
 
     # 读取在线数据
-    data = get_tushare_online_daily_data()
+    # data = get_tushare_online_daily_data()
 
     print(data)
     print(type(data))
     # os.system("pause")
+

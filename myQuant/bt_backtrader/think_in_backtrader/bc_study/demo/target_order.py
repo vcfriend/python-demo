@@ -24,7 +24,7 @@ T3，目标3
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 class DemoForTargetOrderStrategy(bt.Strategy):
@@ -47,14 +47,14 @@ class DemoForTargetOrderStrategy(bt.Strategy):
         elif order.status in [order.Completed]:
             self.log('Order(oid={oid})执行, 方向={dir}, 数量={size}'.format(
                 oid=order.ref, dir=order.ordtype, size=order.size))
-            self.log("头寸：size={0}".format(self.position.size))
+            self.log("len={len}头寸：size={size}".format(len=len(self), size=self.position.size))
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             pass
 
     def next(self):
         if len(self) == 1:
             # 初始状态
-            self.log("头寸：size={0}".format(self.position.size))
+            self.log("len=1 头寸：size={0}".format(self.position.size))
             # 下单：
             self.order_target_size(target=7)
         elif len(self) == 2:
@@ -75,8 +75,7 @@ if __name__ == '__main__':
 
     # 从csv文件加载数据
     # 仅3天数据
-    data = ts_df.get_csv_daily_data(
-        stock_id="000001.SZ", start="20150101", end="20150110")
+    data = ts_df.get_csv_daily_data(stock_id="000001.SZ", start="20150101", end="20150110")
     cerebro.adddata(data)
 
     # 回测启动运行

@@ -8,6 +8,7 @@
 @Contact :   shwangjj@163.com
 @Desc    :   官方QuickStart第一个示例
 '''
+import os
 import backtrader as bt
 
 if __name__ == '__main__':
@@ -24,3 +25,5 @@ if __name__ == '__main__':
     print("回测运行返回值 = {0}".format(result))
 
     print('期末市值: %.2f' % cerebro.broker.getvalue())
+
+    # os.system("pause")

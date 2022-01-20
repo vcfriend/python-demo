@@ -9,7 +9,7 @@
 @Desc    :   分析器Analyzer的执行逻辑探索
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 from backtrader import Analyzer
 
 

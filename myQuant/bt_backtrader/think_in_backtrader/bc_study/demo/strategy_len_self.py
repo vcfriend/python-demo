@@ -14,7 +14,7 @@ len(self)返回目前是第几个周期？
 
 '''
 import backtrader as bt
-import bc_study.tushare_csv_datafeed as ts_df
+import myQuant.tushare.tushare_csv_datafeed as ts_df
 
 
 class DoulbeSMAStrategy(bt.Strategy):
