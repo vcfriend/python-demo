@@ -24,7 +24,7 @@ def runstrat():
     data = bt.feeds.BacktraderCSVData(
         dataname=datapath)
 
-    # Handy dictionary for the argument timeframe conversion
+    # 参数时间框架转换的方便字典
     tframes = dict(
         second=bt.TimeFrame.Seconds,
         minute=bt.TimeFrame.Minutes,
@@ -33,20 +33,24 @@ def runstrat():
         monthly=bt.TimeFrame.Months
     )
 
+    # Add the Data Feed to Cerebro
+    cerebro.adddata(data)
+
     # Resample the data
     if args.oldrs:
-        # Old resampler, fully deprecated
+        # 旧的重采样器，完全弃用
         data = bt.DataResampler(
             dataname=data,
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
-        # Add the resample data instead of the original
+        # 添加重采样数据而不是原始数据
         cerebro.adddata(data)
     else:
         # New resampler
         cerebro.resampledata(
             data,
+            name='data_{0}'.format(args.timeframe),
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
@@ -67,7 +71,7 @@ def parse_args():
     parser.add_argument('--oldrs', required=False, action='store_true',
                         help='Use deprecated DataResampler')
 
-    parser.add_argument('--timeframe', default='weekly', required=False,
+    parser.add_argument('--timeframe', default='daily', required=False,
                         choices=['second', 'minute', 'daily', 'weekly', 'monthly'],
                         help='Timeframe to resample to')
 

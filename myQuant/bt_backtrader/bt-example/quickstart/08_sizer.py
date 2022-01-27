@@ -34,8 +34,7 @@ class TestStrategy(bt.Strategy):
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enough cash
+        # 检查订单是否已完成注意：如果没有足够的现金，经纪人可能会拒绝订单
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
@@ -129,7 +128,7 @@ if __name__ == '__main__':
     # Set our desired cash start
     cerebro.broker.setcash(100000.0)
 
-    # Set the commission - 0.1% ... divide by 100 to remove the %
+    # 设置佣金 - 0.1% ... 除以 100 以删除 %
     cerebro.broker.setcommission(commission=0.001)
 
     # Print out the starting conditions

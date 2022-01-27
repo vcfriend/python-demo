@@ -26,7 +26,7 @@ class TestStrategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # Keep a reference to the "open" line in the data[0] dataseries
+        # 保留对 data[0] 数据系列中“open”行的引用
         self.dataopen = self.datas[0].open
         print("TestStrategy init function called")
 
@@ -36,8 +36,7 @@ class TestStrategy(bt.Strategy):
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enough cash
+        # 检查订单是否已完成注意：如果没有足够的现金，经纪人可能会拒绝订单
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log('BUY EXECUTED, %.2f' % order.executed.price)
@@ -67,11 +66,10 @@ class TestStrategy(bt.Strategy):
         # print(self.position)
 
         if not self.position:
-            if self.dataopen[0] < self.dataopen[-1]:
-                if self.dataopen[-1] < self.dataopen[-2]:
-                    # BUY, BUY, BUY!!! (with all possible default parameters)
-                    self.log('BUY CREATE, %.2f' % self.dataopen[0])
-                    self.buy()
+            if self.dataopen[0] < self.dataopen[-1] < self.dataopen[-2]:
+                # BUY, BUY, BUY!!! (with all possible default parameters)
+                self.log('BUY CREATE, %.2f' % self.dataopen[0])
+                self.buy()
         else:
             # Already in the market ... we might sell
             if len(self) >= (self.bar_executed + 5):

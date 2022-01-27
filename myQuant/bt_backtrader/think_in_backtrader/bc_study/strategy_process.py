@@ -45,8 +45,7 @@ class ProcessDemoStrategy(bt.Strategy):
         self.log("init()")
         # 建立对于DataFeed的Open价格的引用参数
         self.dataopen = self.datas[0].open
-        self.sma = bt.indicators.SimpleMovingAverage(
-            self.datas[0], period=5)
+        self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=5)
 
     def start(self):
         self.log("start()")

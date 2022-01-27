@@ -34,6 +34,11 @@ class SMAStrategy(bt.Strategy):
         ('onlydaily', False),
     )
 
+    def log(self, txt, dt=None):
+        """ Logging function for this strategy"""
+        dt = dt or self.datas[0].datetime
+        print('%s, %s: %s' % (dt._owner._name, dt.datetime(0).isoformat(), txt))
+
     def __init__(self):
         self.sma = btind.SMA(self.data, period=self.p.period)
 
@@ -46,7 +51,8 @@ class SMAStrategy(bt.Strategy):
 
     def next(self):
         self.counter += 1
-        print('---next len %d - counter %d' % (len(self), self.counter))
+        self.log('---next len %d - counter %d' % (len(self), self.counter))
+
 
 
 def runstrat():
@@ -73,6 +79,7 @@ def runstrat():
 
     # 用于参数时间帧转换的方便字典重新采样数据
     if args.oldrp:
+        # 旧的重采样器，完全弃用
         data = bt.DataReplayer(
             dataname=data,
             timeframe=tframes[args.timeframe],

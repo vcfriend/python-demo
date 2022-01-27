@@ -48,6 +48,7 @@ def runstrat():
     # Add original data - smaller timeframe
     cerebro.replaydata(
         data,
+        name='data_week',
         timeframe=bt.TimeFrame.Weeks,
         compression=1)
 
@@ -55,8 +56,8 @@ def runstrat():
     cerebro.run()
 
 
-# Plot the result
-#	cerebro.plot(style='bar')
+    # Plot the result
+    cerebro.plot(style='bar')
 
 
 def parse_args():

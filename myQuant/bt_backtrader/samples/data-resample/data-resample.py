@@ -61,6 +61,7 @@ def runstrat():
         # 新的重采样器
         cerebro.resampledata(
             data,
+            name='data_{0}'.format(args.timeframe),
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
