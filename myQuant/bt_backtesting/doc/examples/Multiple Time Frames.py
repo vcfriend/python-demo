@@ -12,25 +12,24 @@
 #     name: python3
 # ---
 
-# Multiple Time Frames
+# 多个时间框架
 # ============
 #
-# Best trading strategies that rely on technical analysis might take into account price action on multiple time frames.
-# This tutorial will show how to do that with _backtesting.py_, offloading most of the work to
+# 依赖技术分析的最佳交易策略可能会考虑多个时间范围内的价格行为。本教程将展示如何使用 _backtesting.py_ 来做到这一点，将大部分工作卸载到
 # [pandas resampling](http://pandas.pydata.org/pandas-docs/stable/timeseries.html#resampling).
-# It is assumed you're already familiar with
+# 假设您已经熟悉
 # [basic framework usage](https://kernc.github.io/backtesting.py/doc/examples/Quick Start User Guide.html).
 #
-# We will put to the test this long-only, supposed
+# 我们将对此进行测试
 # [400%-a-year trading strategy](http://jbmarwood.com/stock-trading-strategy-300/),
-# which uses daily and weekly
+# 每天和每周使用
 # [relative strength index](https://en.wikipedia.org/wiki/Relative_strength_index)
 # (RSI) values and moving averages (MA).
 #
-# In practice, one should use functions from an indicator library, such as
+# 在实践中，应该使用指标库中的函数，例如
 # [TA-Lib](https://github.com/mrjbq7/ta-lib) or
 # [Tulipy](https://tulipindicators.org),
-# but among us, let's introduce the two indicators we'll be using.
+# 但在我们中间，让我们介绍一下我们将使用的两个指标。
 
 # +
 import pandas as pd
@@ -42,8 +41,8 @@ def SMA(array, n):
 
 
 def RSI(array, n):
-    """Relative strength index"""
-    # Approximate; good enough
+    """相对强度指数"""
+    # 近似;够好了
     gain = pd.Series(array).diff()
     loss = gain.copy()
     gain[gain < 0] = 0
@@ -54,18 +53,17 @@ def RSI(array, n):
 
 # -
 
-# The strategy roughly goes like this:
+# 策略大致是这样的:
 #
 # Buy a position when:
 # * weekly RSI(30) $\geq$ daily RSI(30) $>$ 70
 # * Close $>$ MA(10) $>$ MA(20) $>$ MA(50) $>$ MA(100)
 #
 # Close the position when:
-# * Daily close is more than 2% _below_ MA(10)
-# * 8% fixed stop loss is hit
+# * 每日收盘价超过 2%_below_ MA(10)
+# * 8% 固定止损被击中
 #
-# We need to provide bars data in the _lowest time frame_ (i.e. daily) and resample it to any higher time frame (i.e. weekly) that our strategy requires.
-
+# 我们需要在最低时间范围内（即每天）提供柱数据，并将其重新采样到我们的策略所需的任何更高时间范围（即每周）。
 # +
 from backtesting import Strategy, Backtest
 from backtesting.lib import resample_apply
@@ -77,45 +75,40 @@ class System(Strategy):
     level = 70
 
     def init(self):
-        # Compute moving averages the strategy demands
+        # 计算策略要求的移动平均线
         self.ma10 = self.I(SMA, self.data.Close, 10)
         self.ma20 = self.I(SMA, self.data.Close, 20)
         self.ma50 = self.I(SMA, self.data.Close, 50)
         self.ma100 = self.I(SMA, self.data.Close, 100)
 
-        # Compute daily RSI(30)
+        # 计算每日 RSI(30)
         self.daily_rsi = self.I(RSI, self.data.Close, self.d_rsi)
 
-        # To construct weekly RSI, we can use `resample_apply()`
-        # helper function from the library
+        # 要构建每周 RSI，我们可以使用库中的 `resample_apply()` 辅助函数
         self.weekly_rsi = resample_apply(
             'W-FRI', RSI, self.data.Close, self.w_rsi)
 
     def next(self):
         price = self.data.Close[-1]
 
-        # If we don't already have a position, and
-        # if all conditions are satisfied, enter long.
+        # 如果我们还没有持仓，并且满足所有条件，则输入多头。
         if (not self.position and
                 self.daily_rsi[-1] > self.level and
                 self.weekly_rsi[-1] > self.level and
                 self.weekly_rsi[-1] > self.daily_rsi[-1] and
-                self.ma10[-1] > self.ma20[-1] > self.ma50[-1] > self.ma100[-1] and
-                price > self.ma10[-1]):
+                self.ma100[-1] < self.ma50[-1] < self.ma20[-1] < self.ma10[-1] < price):
 
-            # Buy at market price on next open, but do
-            # set 8% fixed stop loss.
+            # 下次开盘时以市价买入，但要设置 8% 的固定止损。
             self.buy(sl=.92 * price)
 
-        # If the price closes 2% or more below 10-day MA
-        # close the position, if any.
+        # 如果价格收盘价低于 10 日均线 2% 或更多，则平仓（如果有）。
         elif price < .98 * self.ma10[-1]:
             self.position.close()
 
 
 # -
 
-# Let's see how our strategy fares replayed on nine years of Google stock data.
+# 让我们看看我们的策略票价如何在九年的谷歌股票数据上重现。
 
 # +
 from backtesting.test import GOOG
@@ -124,22 +117,22 @@ backtest = Backtest(GOOG, System, commission=.002)
 backtest.run()
 # -
 
-# Meager four trades in the span of nine years and with zero return? How about if we optimize the parameters a bit?
+# 九年的四笔交易零回报？如果我们稍微优化一下参数呢？
 
 # +
 # %%time
 
-backtest.optimize(d_rsi=range(10, 35, 5),
-                  w_rsi=range(10, 35, 5),
-                  level=range(30, 80, 10))
+# backtest.optimize(d_rsi=range(10, 35, 5),
+#                   w_rsi=range(10, 35, 5),
+#                   level=range(30, 80, 10))
 # -
 
 backtest.plot()
 
-# Better. While the strategy doesn't perform as well as simple buy & hold, it does so with significantly lower exposure (time in market).
+# 更好的。虽然该策略的表现不如简单的买入并持有，但它的曝光率（上市时间）显着降低。
 #
-# In conclusion, to test strategies on multiple time frames, you need to pass in OHLC data in the lowest time frame, then resample it to higher time frames, apply the indicators, then resample back to the lower time frame, filling in the in-betweens.
-# Which is what the function [`backtesting.lib.resample_apply()`](https://kernc.github.io/backtesting.py/doc/backtesting/lib.html#backtesting.lib.resample_apply) does for you.
+# 总之，要在多个时间框架上测试策略，您需要传入最低时间框架的 OHLC 数据，然后将其重新采样到更高的时间框架，应用指标，然后重新采样回更低的时间框架，填写 in-之间。
+# 这就是函数 [`backtesting.lib.resample_apply()`](https:kernc.github.iobacktesting.pydocbacktestinglib.htmlbacktesting.lib.resample_apply) 为您所做的。
 
 # Learn more by exploring further
 # [examples](https://kernc.github.io/backtesting.py/doc/backtesting/index.html#tutorials)

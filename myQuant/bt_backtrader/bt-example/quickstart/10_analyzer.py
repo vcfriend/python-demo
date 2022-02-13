@@ -143,3 +143,6 @@ if __name__ == '__main__':
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
     print('SQN:', result[0].analyzers.mysqn.get_analysis())
+
+    cerebro.plot(style='bar')
+

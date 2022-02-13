@@ -8,7 +8,8 @@ import backtrader as bt
 
 class DataStrategy(bt.Strategy):
     params = (
-        ('dtfmt', '%Y-%m-%dT%H:%M:%S.%f'),
+        ('dtfmt', '%Y-%m-%d'),
+        # ('dtfmt', '%Y-%m-%dT%H:%M:%S.%f'),
     )
 
     def __init__(self):
@@ -66,7 +67,7 @@ def runstrat():
     cerebro.addstrategy(DataStrategy)
 
     # Load the Data
-    datapath = '../datas/2006-day-001.txt'
+    datapath = '../datas/2006-min-005.txt'
     data = bt.feeds.BacktraderCSVData(
         dataname=datapath)
 
@@ -74,7 +75,7 @@ def runstrat():
 
     # Resample the data
     if args.noresample:
-        datapath = '../datas/2006-week-001.txt'
+        datapath = '../datas/2006-day-001.txt'
         data2 = bt.feeds.BacktraderCSVData(
             dataname=datapath)
         cerebro.adddata(data2)
@@ -82,16 +83,16 @@ def runstrat():
         # New resampler
         cerebro.resampledata(
             dataname=data,
-            name="data_resa_1W",
-            timeframe=bt.TimeFrame.Weeks,
+            name="data_resa_1D",
+            timeframe=bt.TimeFrame.Days,
             compression=1)
 
     # Run over everything
     cerebro.run()
 
 
-# Plot the result
-#	cerebro.plot(style='bar')
+    # Plot the result
+    # cerebro.plot(style='bar')
 
 
 def parse_args():

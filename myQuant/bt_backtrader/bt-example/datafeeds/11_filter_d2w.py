@@ -36,7 +36,7 @@ class St(bt.Strategy):
         self.lcontrol = 0  # control if 1st or 2nd call
         self.inmarket = 0
 
-        # Get the highest but delayed 1 ... to avoid "today"
+        # 获取最高但延迟的 1 ......以避免“今天”
         self.highest = bt.indicators.Highest(self.data.high,
                                              period=self.p.highperiod,
                                              subplot=False)
@@ -92,7 +92,7 @@ def runstrat():
 
     cerebro = bt.Cerebro()
     cerebro.broker.set_cash(args.cash)
-    # intra day consider a bar with the same time as the end of session to be the end of session
+    # 日内将与会话结束时间相同的柱视为会话结束
     cerebro.broker.set_eosbar(True)
 
     dkwargs = dict()

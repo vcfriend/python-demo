@@ -17,7 +17,7 @@ class RollStrategy(bt.Strategy):
         txt = list()
         txt.append('%04d' % len(self.data0))
         txt.append('{}'.format(self.data0._dataname))
-        # Internal knowledge ... current expiration in use is in _d
+        # 内部知识...当前使用期限在_d
         txt.append('{}'.format(self.data0._d._name))
         txt.append('{}'.format(self.data.datetime.date()))
         txt.append('{}'.format(self.data.datetime.date().strftime('%a')))
@@ -31,7 +31,7 @@ class RollStrategy(bt.Strategy):
 
 
 def checkdate(dt, d):
-    # check if date is in the week where the 3rd friday of Mar/Jun/Sep/Dec
+    # 检查日期是否在“Mar/Jun/Sep/Dec”的第三个星期五所在的星期
 
     # Future expiry codes: MYY
     # M -> H, M, U, Z (Mar, Jun, Sep, Dec)
@@ -75,8 +75,10 @@ def runstrat():
     # 	rollkwargs['checkdate'] = checkdate
     # 	rollkwargs['checkcondition'] = checkvolume
 
-    datas = [bt.feeds.GenericCSVData(dataname=os.path.join(datapath, f"{f}.csv"), name=f, dtformat='%Y-%m-%d', volume=8,
-                                     openinterest=9) for f in fcon]
+    datas = [bt.feeds.GenericCSVData(
+        dataname=os.path.join(datapath, f"{f}.csv"),
+        name=f, dtformat='%Y-%m-%d', volume=8,
+        openinterest=9) for f in fcon]
 
     data_con = bt.feeds.RollOver(*datas, dataname="S50_COI", **rollkwargs)
     cerebro.adddata(data_con)
