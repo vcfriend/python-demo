@@ -46,10 +46,10 @@ class SlipSt(bt.SignalStrategy):
         if order.status == bt.Order.Completed:
             t = ''
             t += '{:02d}'.format(next(self.opcounter))
-            t += ' {}'.format(order.data.datetime.datetime())
+            t += ' {:%Y-%m-%d %H:%M:%S}'.format(order.data.datetime.datetime())
             t += ' BUY ' * order.isbuy() or ' SELL'
-            t += ' Size: {:+d} / Price: {:.2f}'
-            print(t.format(order.executed.size, order.executed.price))
+            t += ' Size: {:+d} / Price: {:.2f}'.format(order.executed.size, order.executed.price)
+            print(t)
 
 
 def runstrat(args=None):
@@ -78,13 +78,13 @@ def runstrat(args=None):
         stype = bt.signal.SIGNAL_LONG
 
     cerebro.add_signal(stype, SMACrossOver, p1=args.period1, p2=args.period2)
-
+    # 将滑点配置为基于百分比
     if args.slip_perc is not None:
         cerebro.broker.set_slippage_perc(args.slip_perc,
                                          slip_open=args.slip_open,
                                          slip_match=not args.no_slip_match,
                                          slip_out=args.slip_out)
-
+    # 将滑点配置为基于固定点
     elif args.slip_fixed is not None:
         cerebro.broker.set_slippage_fixed(args.slip_fixed,
                                           slip_open=args.slip_open,
@@ -102,7 +102,6 @@ def runstrat(args=None):
 
 
 def parse_args(pargs=None):
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for Slippage')

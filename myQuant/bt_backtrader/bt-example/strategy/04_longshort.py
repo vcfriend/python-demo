@@ -11,9 +11,8 @@ import backtrader.indicators as btind
 
 
 class LongShortStrategy(bt.Strategy):
-    """This strategy buys/sells upong the close price crossing
-    upwards/downwards a Simple Moving Average.
-    It can be a long-only strategy by setting the param "onlylong" to True
+    """该策略在收盘价向上向下穿过简单移动平均线时买入。
+    通过将参数“onlylong”设置为True，它可以是一个只做多的策略
     """
     params = dict(
         period=15,
@@ -35,7 +34,7 @@ class LongShortStrategy(bt.Strategy):
             print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # To control operation entries
+        # 控制操作条目
         self.orderid = None
 
         # Create SMA on 2nd data
@@ -45,7 +44,7 @@ class LongShortStrategy(bt.Strategy):
 
     def next(self):
         if self.orderid:
-            return  # if an order is active, no new orders are allowed
+            return  # 如果订单处于活动状态，则不允许新订单
 
         if self.signal > 0.0:  # cross upwards
             if self.position:

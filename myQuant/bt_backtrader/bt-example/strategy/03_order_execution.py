@@ -68,12 +68,12 @@ class OrderExecutionStrategy(bt.Strategy):
 
     def next(self):
         if self.order:
-            # An order is pending ... nothing can be done
+            # 订单待处理...无能为力
             return
 
-        # Check if we are in the market
+        # 检查我们是否在市场上
         if self.position:
-            # In the maerket - check if it's the time to sell
+            # 在市场上 - 检查是否是时候出售
             if self.buysell < 0:
                 self.log('SELL CREATE, %.2f' % self.data.close[0])
                 self.sell()
@@ -85,17 +85,17 @@ class OrderExecutionStrategy(bt.Strategy):
             else:
                 valid = None
 
-            # Not in the market and signal to buy
+            # 不在市场上并发出买入信号
             if self.p.exectype == 'Market':
                 self.buy(exectype=bt.Order.Market)  # default if not given
 
-                self.log('BUY CREATE, exectype Market, price %.2f' %
+                self.log('BUY CREATE, execType Market, price %.2f' %
                          self.data.close[0])
 
             elif self.p.exectype == 'Close':
                 self.buy(exectype=bt.Order.Close)
 
-                self.log('BUY CREATE, exectype Close, price %.2f' %
+                self.log('BUY CREATE, execType Close, price %.2f' %
                          self.data.close[0])
 
             elif self.p.exectype == 'Limit':
@@ -173,28 +173,24 @@ def runstrat():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Showcase for Order Execution Types')
+        description='订单执行类型展示')
 
     parser.add_argument('--smaperiod', '-s', required=False, default=15,
                         help='Simple Moving Average Period')
 
     parser.add_argument('--exectype', '-e', required=False, default='Market',
-                        help=('Execution Type: Market (default), Close, Limit,'
-                              ' Stop, StopLimit'))
+                        help='执行类型: Market (default), Close, Limit,' 'Stop, Stop Limit')
 
     parser.add_argument('--valid', '-v', required=False, default=0, type=int,
-                        help='Validity for Limit sample: default 0 days')
+                        help='限样有效期：默认0天')
 
     parser.add_argument('--perc1', '-p1', required=False, default=0.0,
                         type=float,
-                        help=('%% distance from close price at order creation'
-                              ' time for the limit/trigger price in Limit/Stop'
-                              ' orders'))
+                        help='订单创建时与收盘价的 %% 距离' '限价止损触发价格的时间' '订单')
 
     parser.add_argument('--perc2', '-p2', required=False, default=0.0,
                         type=float,
-                        help=('%% distance from close price at order creation'
-                              ' time for the limit price in StopLimit orders'))
+                        help='订单创建时与收盘价的 %% 距离' ' StopLimit 订单中的限价时间')
 
     return parser.parse_args()
 

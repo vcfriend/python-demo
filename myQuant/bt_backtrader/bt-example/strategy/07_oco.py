@@ -17,8 +17,8 @@ class St(bt.Strategy):
         limdays2=1000,
         hold=10,
         usetarget=False,  # use order_target_size
-        switchp1p2=False,  # switch prices of order1 and order2
-        oco1oco2=False,  # False - use order1 as oco for order3, else order2
+        switchp1p2=False,  # 交换订单 1 和订单 2 的价格
+        oco1oco2=False,  # False - 使用 order1 作为 order3 的 oco，否则使用 order2
         do_oco=True,  # use oco or not
     )
 

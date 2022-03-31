@@ -31,10 +31,10 @@ class TargetStrategy(bt.Strategy):
             pass
 
         if not order.alive():
-            self.order = None  # indicate no order is pending
+            self.order = None  # 表示没有订单待处理
 
     def start(self):
-        self.order = None  # sentinel to avoid operrations on pending order
+        self.order = None  # 哨兵避免挂单操作
 
     def next(self):
         dt = self.data.datetime.date()
@@ -55,7 +55,7 @@ class TargetStrategy(bt.Strategy):
                   (len(self), dt.isoformat(), port_perc))
 
         if self.order:
-            return  # pending order execution
+            return  # 挂单执行
 
         size = dt.day
         if (dt.month % 2) == 0:
@@ -63,7 +63,7 @@ class TargetStrategy(bt.Strategy):
 
         if self.p.use_target_size:
             target = size
-            print('%04d - %s - Order Target Size: %02d' %
+            print('%04d - %s - 订单目标大小: %02d' %
                   (len(self), dt.isoformat(), size))
 
             self.order = self.order_target_size(target=size)
@@ -71,7 +71,7 @@ class TargetStrategy(bt.Strategy):
         elif self.p.use_target_value:
             value = size * 1000
 
-            print('%04d - %s - Order Target Value: %.2f' %
+            print('%04d - %s - 订单目标值: %.2f' %
                   (len(self), dt.isoformat(), value))
 
             self.order = self.order_target_value(target=value)
@@ -79,7 +79,7 @@ class TargetStrategy(bt.Strategy):
         elif self.p.use_target_percent:
             percent = size / 100.0
 
-            print('%04d - %s - Order Target Percent: %.2f' %
+            print('%04d - %s - 订单目标百分比: %.2f' %
                   (len(self), dt.isoformat(), percent))
 
             self.order = self.order_target_percent(target=percent)
@@ -110,8 +110,8 @@ def runstrat(args=None):
 
     if args.plot:
         pkwargs = dict(style='bar')
-        if args.plot is not True:  # evals to True but is not True
-            npkwargs = eval('dict(' + args.plot + ')')  # args were passed
+        if args.plot is not True:  # 评估为 True 但不是 True
+            npkwargs = eval('dict(' + args.plot + ')')  # args 已通过
             pkwargs.update(npkwargs)
 
         cerebro.plot(**pkwargs)
@@ -120,7 +120,7 @@ def runstrat(args=None):
 def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Sample for Order Target')
+        description='订单目标样本')
 
     parser.add_argument('--fromdate', required=False,
                         default='2005-01-01',
@@ -143,15 +143,15 @@ def parse_args(pargs=None):
                         help=('Use order_target_value'))
 
     pgroup.add_argument('--target-percent', required=False,
-                        action='store_true',
+                        action='store_true', default=True,
                         help=('Use order_target_percent'))
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
-                        help=('Plot the read data applying any kwargs passed\n'
+                        help=('绘制应用传递的任何 kwargs 的读取数据\n'
                               '\n'
-                              'For example:\n'
+                              '例如:\n'
                               '\n'
                               '  --plot style="candle" (to plot candles)\n'))
 

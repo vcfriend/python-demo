@@ -16,7 +16,7 @@ class TestStrategy(bt.Strategy):
     )
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        """此策略的日志记录功能"""
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
@@ -24,7 +24,7 @@ class TestStrategy(bt.Strategy):
         # Keep a reference to the "close" line in the data[0] dataseries
         self.dataclose = self.datas[0].close
 
-        # To keep track of pending orders and buy price/commission
+        # 跟踪挂单和买入价格佣金
         self.order = None
         self.buyprice = None
         self.buycomm = None
@@ -66,7 +66,7 @@ class TestStrategy(bt.Strategy):
                  (trade.pnl, trade.pnlcomm))
 
     def next(self):
-        # Simply log the closing price of the series from the reference
+        # 只需从参考记录该系列的收盘价
         self.log('Close, %.2f' % self.dataclose[0])
 
         # Check if an order is pending ... if yes, we cannot send a 2nd one

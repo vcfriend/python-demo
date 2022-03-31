@@ -36,14 +36,14 @@ import backtrader.indicators as btind
 class OrderExecutionStrategy(bt.Strategy):
     params = (
         ('smaperiod', 15),
-        ('exectype', 'Market'),
+        ('exectype', 'Close'),
         ('perc1', 3),
         ('perc2', 1),
         ('valid', 4),
     )
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        """ Logging function fot this strategy"""
         dt = dt or self.data.datetime[0]
         if isinstance(dt, float):
             dt = bt.num2date(dt)
@@ -94,7 +94,7 @@ class OrderExecutionStrategy(bt.Strategy):
 
         # Check if we are in the market
         if self.position:
-            # In the maerket - check if it's the time to sell
+            # 在市场上 - 检查是否是时候出售
             if self.buysell < 0:
                 self.log('SELL CREATE, %.2f' % self.data.close[0])
                 self.sell()
@@ -106,9 +106,9 @@ class OrderExecutionStrategy(bt.Strategy):
             else:
                 valid = None
 
-            # Not in the market and signal to buy
+            # 不在市场上并发出买入信号
             if self.p.exectype == 'Market':
-                self.buy(exectype=bt.Order.Market)  # default if not given
+                self.buy(exectype=bt.Order.Market)  # 如果没有给出默认值
 
                 self.log('BUY CREATE, exectype Market, price %.2f' %
                          self.data.close[0])
@@ -245,17 +245,14 @@ def parse_args():
                         help='Simple Moving Average Period')
 
     parser.add_argument('--exectype', '-e', required=False, default='Market',
-                        help=('Execution Type: Market (default), Close, Limit,'
-                              ' Stop, StopLimit'))
+                        help='Execution Type: Market (default), Close, Limit,' ' Stop, StopLimit')
 
     parser.add_argument('--valid', '-v', required=False, default=0, type=int,
-                        help='Validity for Limit sample: default 0 days')
+                        help='限样有效期：默认0天')
 
     parser.add_argument('--perc1', '-p1', required=False, default=0.0,
                         type=float,
-                        help=('%% distance from close price at order creation'
-                              ' time for the limit/trigger price in Limit/Stop'
-                              ' orders'))
+                        help='%% 订单创建时与收盘价的  距离 限价止损触发价格的时间 订单')
 
     parser.add_argument('--perc2', '-p2', required=False, default=0.0,
                         type=float,

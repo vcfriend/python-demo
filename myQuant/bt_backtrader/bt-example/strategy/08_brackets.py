@@ -31,7 +31,7 @@ class BracketsStrategy(bt.Strategy):
 
         if not self.position:
             if date == datetime.datetime(2005, 3, 3).date():
-                # Enter with a limit order to go short to try and catch price near top
+                # 输入限价单做空以尝试在顶部附近捕捉价格
                 entry = close + (0.005 * close)
                 short_tp = entry - (0.02 * entry)
                 short_stop = entry + (0.02 * entry)

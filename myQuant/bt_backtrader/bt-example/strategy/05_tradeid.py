@@ -5,7 +5,7 @@ import argparse
 import datetime
 import itertools
 
-# The above could be sent to an independent module
+# 以上可以发送到一个独立的模块
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
@@ -14,9 +14,8 @@ from observers.mtradeobserver import MTradeObserver
 
 
 class MultiTradeStrategy(bt.Strategy):
-    """This strategy buys/sells upong the close price crossing
-    upwards/downwards a Simple Moving Average.
-    It can be a long-only strategy by setting the param "onlylong" to True
+    """该策略在收盘价向上向下穿过简单移动平均线时买入。
+    通过将参数“onlylong”设置为True，它可以是一个只做多的策略
     """
     params = dict(
         period=15,
@@ -36,12 +35,12 @@ class MultiTradeStrategy(bt.Strategy):
         # To control operation entries
         self.order = None
 
-        # Create SMA on 2nd data
+        # 在第二个数据上创建 SMA
         sma = btind.MovAv.SMA(self.data, period=self.p.period)
-        # Create a CrossOver Signal from close an moving average
+        # 从关闭移动平均线创建交叉信号
         self.signal = btind.CrossOver(self.data.close, sma)
 
-        # To alternate amongst different tradeids
+        # 在不同的贸易之间交替
         if self.p.mtrade:
             self.tradeid = itertools.cycle([0, 1, 2])
         else:
@@ -49,9 +48,9 @@ class MultiTradeStrategy(bt.Strategy):
 
     def next(self):
         if self.order:
-            return  # if an order is active, no new orders are allowed
+            return  # 如果订单处于活动状态，则不允许新订单
 
-        if self.signal > 0.0:  # cross upwards
+        if self.signal > 0.0:  # 向上交叉
             if self.position:
                 self.log('CLOSE SHORT , %.2f' % self.data.close[0])
                 self.close(tradeid=self.curtradeid)
@@ -72,7 +71,7 @@ class MultiTradeStrategy(bt.Strategy):
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
-            return  # Await further notifications
+            return  # 等待进一步通知
 
         if order.status == order.Completed:
             if order.isbuy():
@@ -109,11 +108,11 @@ def runstrat():
     # Create a Data Feed
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
-        # Do not pass values before this date
+        # 不要在此日期之前传递值
         #         fromdate=datetime.datetime(2000, 1, 1),
-        # Do not pass values before this date
+        # 不要在此日期之前传递值
         #         todate=datetime.datetime(2000, 12, 31),
-        # Do not pass values after this date
+        # 在此日期之后不要传递值
         reverse=False)
 
     # Add the 1st data to cerebro

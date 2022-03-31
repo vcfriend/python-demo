@@ -93,7 +93,7 @@ class ManualStopOrStopTrailCheat(BaseStrategy):
 
     def next(self):
         if not self.position and self.crossup > 0:
-            # not in the market and signal triggered
+            # 不在市场中并触发信号
             self.buy()
 
             if not self.p.trail:
@@ -134,17 +134,17 @@ class AutoStopOrStopTrail(BaseStrategy):
             if self.buy_order:  # something was pending
                 self.cancel(self.buy_order)
 
-            # not in the market and signal triggered
+            # 不在市场中并触发信号
             if not self.p.buy_limit:
                 self.buy_order = self.buy(transmit=False)
             else:
                 price = self.data.close[0] * (1.0 - self.p.buy_limit)
 
-                # transmit = False ... await child order before transmission
+                # transmit = False ... 传输前等待子订单
                 self.buy_order = self.buy(price=price, exectype=bt.Order.Limit,
                                           transmit=False)
 
-            # Setting parent=buy_order ... sends both together
+            # Setting parent=buy_order ... 一起发送
             if not self.p.trail:
                 stop_price = self.data.close[0] * (1.0 - self.p.stop_loss)
                 self.sell(exectype=bt.Order.Stop, price=stop_price,

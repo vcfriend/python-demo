@@ -1,5 +1,6 @@
 import backtrader as bt
 import backtrader.indicators as btind
+from backtrader_plotting import Bokeh
 import inspect
 
 
@@ -8,9 +9,9 @@ class St(bt.Strategy):
 
     def __init__(self):
         self.pp = pp = btind.PivotPoint(self.data1)
-        pp.plotinfo.plot = False  # deactivate plotting
+        pp.plotinfo.plot = False  # 停用绘图
         if self.p.multi:
-            pp1 = pp()  # couple the entire indicators
+            pp1 = pp()  # 耦合整个指标
             self.sellsignal = self.data0.close < pp1.s1
         else:
             self.sellsignal = self.data0.close < pp.s1()
@@ -45,3 +46,4 @@ cerebro.broker.set_cash(1000000)
 cerebro.addstrategy(St, multi=False)
 cerebro.run()
 cerebro.plot(style='bar', iplot=False)
+# cerebro.plot(Bokeh(style='bar'))

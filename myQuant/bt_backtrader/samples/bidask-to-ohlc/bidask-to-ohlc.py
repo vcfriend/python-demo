@@ -39,8 +39,9 @@ def runstrat():
     data = btfeeds.GenericCSVData(
         dataname=args.data,
         dtformat='%d/%m/%y',
-        # tmformat='%H%M%S',  # 已经是默认值
+        # tmformat='%H:%M:%S',  # 已经是默认值
         # datetime=0,  # 默认位置
+        date=0,  # 日期位置
         time=1,  # 时间位置
         open=5,  # 打开位置
         high=5,

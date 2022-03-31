@@ -296,8 +296,8 @@ def parse_args():
                         help=('Do not Use TWS/System time offset for non '
                               'timestamped prices and to align resampling'))
 
-    parser.add_argument('--data0', default=None,
-                        required=True, action='store',
+    parser.add_argument('--data0', default='../../datas/2005-2006-day-001.txt',
+                        required=False, action='store',
                         help='data 0 into the system')
 
     parser.add_argument('--tradename', default=None,

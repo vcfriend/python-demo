@@ -125,7 +125,7 @@ def parse_args(pargs=None):
                         help=('Period for the exit control SMA'))
 
     parser.add_argument('--signal', required=False, action='store',
-                        default=MAINSIGNALS.keys()[0], choices=MAINSIGNALS,
+                        default=list(MAINSIGNALS.keys())[0], choices=MAINSIGNALS,
                         help=('Signal type to use for the main signal'))
 
     parser.add_argument('--exitsignal', required=False, action='store',
@@ -134,6 +134,7 @@ def parse_args(pargs=None):
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
+                        default='style="candle"',
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'
                               '\n'

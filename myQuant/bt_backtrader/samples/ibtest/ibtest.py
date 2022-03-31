@@ -120,7 +120,7 @@ class TestStrategy(bt.Strategy):
             txt.append('{}'.format(float('NaN')))
             print(', '.join(txt))
 
-        if self.counttostop:  # stop after x live lines
+        if self.counttostop:  # 在 x 行后停止
             self.counttostop -= 1
             if not self.counttostop:
                 self.env.runstop()
@@ -136,7 +136,7 @@ class TestStrategy(bt.Strategy):
             self.order = self.buy(size=self.p.stake,
                                   exectype=exectype,
                                   price=price,
-                                  valid=self.p.valid,
+                                  valid=self.p.valid,  # 订单生效时间
                                   transmit=not self.p.bracket)
 
             self.orderid.append(self.order)
@@ -164,7 +164,7 @@ class TestStrategy(bt.Strategy):
                          price=round(self.data0.close[0] * 0.80, 2),
                          oco=self.order)
 
-            elif self.p.stoptrail:
+            elif self.p.stoptrail:  # 追踪止损
                 self.sell(size=self.p.stake,
                           exectype=bt.Order.StopTrail,
                           # price=round(self.data0.close[0] * 0.90, 2),
@@ -172,7 +172,7 @@ class TestStrategy(bt.Strategy):
                           trailamount=self.p.trailamount,
                           trailpercent=self.p.trailpercent)
 
-            elif self.p.stoptraillimit:
+            elif self.p.stoptraillimit:  # 限价追踪止损
                 p = round(self.data0.close[0] - self.p.trailamount, 2)
                 # p = self.data0.close[0]
                 self.sell(size=self.p.stake,
@@ -199,7 +199,7 @@ class TestStrategy(bt.Strategy):
     def start(self):
         if self.data0.contractdetails is not None:
             print('Timezone from ContractDetails: {}'.format(
-                  self.data0.contractdetails.m_timeZoneId))
+                self.data0.contractdetails.m_timeZoneId))
 
         header = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume',
                   'OpenInterest', 'SMA']
@@ -267,7 +267,7 @@ def runstrategy():
         tz=args.timezone
     )
 
-    if not args.usestore and not args.broker:   # neither store nor broker
+    if not args.usestore and not args.broker:  # neither store nor broker
         datakwargs.update(storekwargs)  # pass the store args over the data
 
     data0 = IBDataFactory(dataname=args.data0, **datakwargs)

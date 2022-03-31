@@ -10,10 +10,76 @@
 '''
 import backtrader as bt
 import os
+import sys
 import datetime
 import pandas as pd
 import backtrader.feeds as btfeeds
 import tushare as ts
+
+
+# 获得根路径
+def getRootPath(dirName):
+    # 获取文件目录
+    curPath = os.path.abspath(os.path.dirname('__file__'))
+
+    # 获取项目根路径，内容为当前项目的名字
+    # rootPath = curPath[:curPath.find("项目名\\") + len("项目名\\")]
+    rootPath = os.getcwd()[:os.getcwd().find(dirName + "\\") + len(dirName + "\\")]  # 获取项目中相对根路径
+    return rootPath
+
+
+# 从根目录下开始获取其他路径
+def getOtherPath(abspath):
+    rootPath = getRootPath('')
+    dataPath = os.path.abspath(rootPath + abspath)
+    return dataPath
+
+
+# 获得路径，当前文件所在路径
+# resource_path方法说明了如何使用sys._MEIPASS变量来访问临时文件夹中的资源。我是在打包exe的时候使用了该功能
+def resource_path(relative_path):
+    # 是否Bundle Resource
+    if getattr(sys, 'frozen', False):
+        # running in a bundle
+        base_path = sys._MEIPASS
+        print('true', base_path)
+    else:
+        # running live
+        base_path = os.path.abspath(".")
+        print('false ', base_path)
+
+
+# 加载本地csv文件数据
+def get_csv_pandas_data(filename="orcl-1995-2014.txt", start="20190101", end="20191231"):
+    """使用pandas从本地csv文件加载文件数据"""
+    # 日期格式转换
+    dt_start = datetime.datetime.strptime(start, "%Y%m%d")
+    dt_end = datetime.datetime.strptime(end, "%Y%m%d")
+    # 获取项目所在根目录
+    rootPath = getRootPath('myQuant')
+    # 拼接加载路径
+    datapath = os.path.join(rootPath + 'bt_backtrader/datas/' + filename)
+    print(datapath)
+
+    df = pd.read_csv(
+        # Date,Open,High,Low,Close,Adj Close,Volume
+        # 1995-01-03,2.179012,2.191358,2.117284,2.117284,1.22,36301200
+        filepath_or_buffer=datapath,
+        sep=',',  # 分隔符
+        # nrows=500,  # 读取行数
+        index_col=0,  # 设置行索引
+        parse_dates=True,  # 解析时间
+        date_parser=lambda x: pd.to_datetime(x, format='%Y%m%d%H%M%S'),  # 时间解析的格式
+        usecols=['datetime', 'open', 'high', 'low', 'close', 'volume'],  # 使用的列
+    )
+    print('df.shape', df.shape)
+    # print(df.info())
+    # print(df.head())
+
+    # 使用pandas数据源创建交易数据集
+    # 把它传递给backtrader数据源，然后添加到cerebro
+    data = bt.feeds.PandasData(dataname=df, fromdate=dt_start, todate=dt_end)
+    return data
 
 
 # 加载本地csv文件数据
@@ -90,6 +156,7 @@ def get_csv_GenericCSVData(stock_id="600016.SH", start="20190101", end="20191231
     )
     return data
 
+
 # 从tushare在线读取数据
 def get_tushare_online_daily_data(
         stock_id="000001.SZ",
@@ -138,8 +205,11 @@ def get_tushare_online_daily_data(
 
 
 if __name__ == "__main__":
+    # 从pandas文件读取数据
+    data = get_csv_pandas_data(filename='SQRB13-5m-20180702-20220319.csv', start='20220101', end='20220322')
+
     # # 读取从tushare下载的日线数据文件：
-    data = get_csv_daily_data()
+    # data = get_csv_daily_data()
 
     # # 读取csv文件
     # data = get_csv_GenericCSVData()
@@ -150,4 +220,3 @@ if __name__ == "__main__":
     print(data)
     print(type(data))
     # os.system("pause")
-
