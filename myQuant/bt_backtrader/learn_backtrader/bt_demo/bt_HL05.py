@@ -190,11 +190,11 @@ class TestStrategy(bt.Strategy):
 
     params = dict(
 
-        RPP=2,  # 盈利千分比
-        SPP=3,  # 亏损千分比
+        RPP=1,  # 盈利千分比
+        SPP=19,  # 亏损千分比
         RSPP=5,  # 盈亏千分比
         OCJK=1,  # CLOSE与OPEN的间隔
-        POSMIN=10,  # 最小开仓单位 按(数量,金额,百分比)下单
+        POSKK=10,  # 最小开仓单位 按(数量,金额,百分比)下单
         POSMAX=100,  # 最大开仓单位
         SSPP=0,  # 最大回撤千分比
         addLongOrShort=0,  # 加仓方向addLongOrShort=0无限制,>0时只有多头加仓,<0时只有空头加仓
@@ -208,8 +208,8 @@ class TestStrategy(bt.Strategy):
         self.mprs = self.p.RSPP / 1000  # 盈亏千分比
         self.mpr = self.p.RPP / 1000  # 盈利千分比
         self.mps = self.p.SPP / 1000  # 亏损千分比
-        self.mposkk = self.p.POSMIN  # 开仓单位
-        self.mpposmin = self.p.POSMIN  # 最小开仓单位
+        self.mposkk = self.p.POSKK  # 开仓单位
+        self.mpposmin = self.p.POSKK  # 最小开仓单位
         self.mpposmax = self.p.POSMAX  # 最大开仓单位
         self.myentryprice = 0.0  # 入场价格
         self.myexitprice = 0.0  # 离场价格
@@ -401,6 +401,7 @@ class TestStrategy(bt.Strategy):
                 # self.log(t_enter)
         # 有持仓时
         else:
+            rn = 1  # 加仓幅度
             # 盈利加仓
             if self.sig_longa1 or self.sig_shorta1:
 
@@ -412,8 +413,8 @@ class TestStrategy(bt.Strategy):
             if self.sig_longa1:
                 t_add += ',买入'
                 # self.mposkk = abs(self.mposkk * (1 + self.mpposmin / 100))
-                self.mposkk += self.mpposmin * 0.99
-                # self.mposkk += self.mposkk * 0.15
+                # self.mposkk += self.mpposmin * rn
+                self.mposkk += self.mposkk * rn
                 # self.mposkk = abs(self.mposkk)
                 self.radd = self.myentryprice * (1 + self.mpr)
                 self.sexit = self.myentryprice / (1 + self.mps)
@@ -421,8 +422,8 @@ class TestStrategy(bt.Strategy):
             if self.sig_shorta1:
                 t_add += ',卖出'
                 # self.mposkk = -abs(self.mposkk * (1 + self.mpposmin / 100))
-                self.mposkk -= abs(self.mpposmin * 0.99)
-                # self.mposkk -= abs(self.mposkk * 0.15)
+                # self.mposkk -= abs(self.mpposmin * rn)
+                self.mposkk -= abs(self.mposkk * rn)
                 # self.mposkk = -abs(self.mposkk)
                 # self.radd = self.myentryprice * (1 - self.mpr)
                 # self.sexit = self.myentryprice * (1 + self.mps)
