@@ -206,7 +206,7 @@ def get_tushare_online_daily_data(
 
 if __name__ == "__main__":
     # 从pandas文件读取数据
-    data = get_csv_pandas_data(filename='SQRB13-5m-20180702-20220319.csv', start='20220101', end='20220322')
+    data = get_csv_pandas_data(filename='SQRB13-5m-20180102-20220330.csv', start='20220101', end='20220322')
 
     # # 读取从tushare下载的日线数据文件：
     # data = get_csv_daily_data()

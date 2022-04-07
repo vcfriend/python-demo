@@ -77,27 +77,26 @@ class TestStrategy(bt.Strategy):
         if not self.position:
 
             # Not yet ... we MIGHT BUY if ...
-            if self.dataclose[0] < self.dataclose[-1]:
+            if self.dataclose[0] > self.dataclose[-1]:
                 # current close less than previous close
-
-                if self.dataclose[-1] < self.dataclose[-2]:
-                    # previous close less than the previous close
-
-                    # BUY, BUY, BUY!!! (with default parameters)
-                    self.log('BUY CREATE, %.2f' % self.dataclose[0])
-
-                    # Keep track of the created order to avoid a 2nd order
-                    self.order = self.buy()
+                # BUY, BUY, BUY!!! (with default parameters)
+                self.log('BUY CREATE, %.2f' % self.dataclose[0])
+                # Keep track of the created order to avoid a 2nd order
+                self.order = self.buy()
+            elif self.dataclose[0] < self.dataclose[-1]:
+                self.log('SEHLL CREATE, %.2f' % self.dataclose[0])
+                # Keep track of the created order to avoid a 2nd order
+                self.order = self.sell()
 
         else:
 
             # Already in the market ... we might sell
             if len(self) >= (self.bar_executed + self.params.exitbars):
                 # SELL, SELL, SELL!!! (with all possible default parameters)
-                self.log('SELL CREATE, %.2f' % self.dataclose[0])
+                self.log('close CREATE, %.2f' % self.dataclose[0])
 
                 # Keep track of the created order to avoid a 2nd order
-                self.order = self.sell()
+                self.order = self.close()
 
 
 if __name__ == '__main__':

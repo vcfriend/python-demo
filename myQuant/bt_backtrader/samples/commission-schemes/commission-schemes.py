@@ -45,8 +45,7 @@ class SMACrossOver(bt.Strategy):
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enougth cash
+        # 检查订单是否已完成注意：如果没有足够的现金，经纪人将拒绝订单
         if order.status in [order.Completed, order.Canceled, order.Margin]:
             if order.isbuy():
                 self.log(
@@ -110,7 +109,7 @@ def runstrategy():
         perc=bt.CommInfoBase.COMM_PERC,
         fixed=bt.CommInfoBase.COMM_FIXED)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加佣金 - 每项操作仅提供类似 a 的股票
     cerebro.broker.setcommission(commission=args.comm,
                                  mult=args.mult,
                                  margin=args.margin,

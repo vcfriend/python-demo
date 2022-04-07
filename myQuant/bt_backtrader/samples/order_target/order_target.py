@@ -58,10 +58,10 @@ class TheStrategy(bt.Strategy):
             pass
 
         if not order.alive():
-            self.order = None  # indicate no order is pending
+            self.order = None  # 表示没有订单待处理
 
     def start(self):
-        self.order = None  # sentinel to avoid operrations on pending order
+        self.order = None  # 哨兵避免挂单操作
 
     def next(self):
         dt = self.data.datetime.date()
@@ -167,7 +167,7 @@ def parse_args(pargs=None):
                         type=float, default=1000000,
                         help='Ending date in YYYY-MM-DD format')
 
-    pgroup = parser.add_mutually_exclusive_group(required=True)
+    pgroup = parser.add_mutually_exclusive_group(required=False)
 
     pgroup.add_argument('--target-size', required=False, action='store_true',
                         help=('Use order_target_size'))
@@ -175,7 +175,7 @@ def parse_args(pargs=None):
     pgroup.add_argument('--target-value', required=False, action='store_true',
                         help=('Use order_target_value'))
 
-    pgroup.add_argument('--target-percent', required=False,
+    pgroup.add_argument('--target-percent', required=False, default='True',
                         action='store_true',
                         help=('Use order_target_percent'))
 

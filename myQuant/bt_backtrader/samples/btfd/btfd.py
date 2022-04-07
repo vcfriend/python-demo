@@ -32,7 +32,7 @@ import backtrader as bt
 
 
 class ValueUnlever(bt.observers.Value):
-    '''Extension of regular Value observer to add leveraged view'''
+    """扩展常规价值观察者以添加杠杆视图"""
     lines = ('value_lever', 'asset')
     params = (('assetstart', 100000.0), ('lever', True),)
 
@@ -193,7 +193,7 @@ def parse_args(pargs=None):
     parser.add_argument('--offline', required=False, action='store_true',
                         help='Use offline file with ticker name')
 
-    parser.add_argument('--data', required=False, default='^GSPC',
+    parser.add_argument('--data', required=False, default='../../datas/ticksample.csv',
                         metavar='TICKER', help='Yahoo ticker to download')
 
     parser.add_argument('--fromdate', required=False, default='1990-01-01',
