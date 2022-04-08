@@ -204,7 +204,7 @@ class TestStrategy(bt.Strategy):
         SPP=19,  # 亏损千分比
         RSPP=5,  # 盈亏千分比
         POSKK=10,  # 入场开仓单位 按(数量,金额,百分比)下单
-        POSADP=10,  # 加减仓幅度百分比
+        POSADP=0,  # 加减仓幅度百分比
         POSMAX=100,  # 最大开仓单位
         OCJK=1,  # CLOSE与OPEN的间隔
         SSPP=0,  # 最大回撤千分比
@@ -331,70 +331,83 @@ class TestStrategy(bt.Strategy):
 
         return poscash
 
-    def order_target(self, size=None):
+    def order_target(self, size=None, data=None):
         """订单开仓头寸管理"""
         size = size if size else self.mposkk
         dt = self.data.datetime[0]
+        # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
         if isinstance(dt, float):
             dt = bt.num2date(dt)
 
+        # data = data if data else self.data
         # if isinstance(data, str):
-        #     data = self.getdatabyname(self.data)
+        #     data = self.getdatabyname(data)
         # elif data is None:
-        #     data = self.databyname(self.data)
-        # print('%04d - %s - Order Target Size: %02d' % (len(self), dt.isoformat(), size))
+        #     data = self.databyname(data)
+        # # print('%04d - %s - Order Target Size: %02d' % (len(self), dt.isoformat(), size))
 
-        poskkcash = 0.0  # 开仓金额
-        posmincash = 0.0  # 最小开仓金额
-        posmaxcash = 0.0  # 最大开仓金额
+        poskkcash = 0.0  # 开仓单位
+        posmincash = 0.0  # 最小开仓单位
+        posmaxcash = 0.0  # 最大开仓单位
         comminfo = self.broker.getcommissioninfo(self.data)
         margin = comminfo.get_margin(self.dtclose[0]) * 1.01  # 最低开仓保证金
         margin_cash = self.broker.getvalue(datas=[self.data])  # 持仓头寸占用资金
         # margin = bt.Order.comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
         get_cash = abs(self.broker.getcash())  # 可用资金
         sign = np.sign(self.mposkk)  # 取正负符号
+        open_profit = self.position.size * self.position.price
+
         # 按成交量下单
         if self.p.use_target == UseTarget.USE_TARGET_SIZE:
-            # self.mposkk = (abs(self.mposkk) + self.mpposmin)
+            poskkcash = margin * abs(size)  # 开仓金额
+            posmincash = min(1, int(round((get_cash // margin))))  # 最小开仓金额
+            posmaxcash = min(max(1, (margin * self.mpposmax)), int(round((get_cash // margin))))  # 最大开仓金额
             if size > 0:
                 size = (abs(self.position.size) + self.mpposmin)
             elif size < 0:
                 size = -(abs(self.position.size) + self.mpposmin)
-            poskkcash = margin * abs(size)  # 开仓金额
-            posmincash = min(margin * abs(self.mpposmin), get_cash)  # 最小开仓金额
-            posmaxcash = min(margin * abs(self.mpposmax), get_cash)  # 最大开仓金额
+
             # 限定使用资金的范围
-            poskkcash = (posmincash * sign if (abs(poskkcash) <= posmincash) else
-                         (max(posmincash, posmaxcash) * sign if (abs(poskkcash) > max(posmincash, posmaxcash)) else poskkcash))
+            poskkcash = sign * (  # sign 为开仓方向
+                get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
+                else (  # 最小开仓金额<可用金额时
+                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                    else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
+                          else poskkcash)))
             target = int(round(poskkcash // margin))
 
             self.myorder = self.order_target_size(target=target)
             self.mposkk = size
 
         else:
-            posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额 最低一手交易金额
-            posmaxcash = get_cash  # 最大开仓金额 可用资金
 
             # 按目标金额下单
             if self.p.use_target == UseTarget.USE_TARGET_VALUE:
-                poskkcash = self.mposkk  # 开仓金额
+                poskkcash = (margin_cash // self.turtleunits) + self.mposkk if self.turtleunits > 1 else margin_cash + self.mposkk  # 开仓金额
+                posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
+                posmaxcash = min(max(margin * 1.1, self.mpposmax), get_cash)  # 最大开仓金额
                 # 限定使用资金的范围
-                poskkcash = (posmincash * sign if (abs(poskkcash) <= posmincash) else
-                             (max(posmincash, posmaxcash) * sign if (abs(poskkcash) > max(posmincash, posmaxcash)) else poskkcash))
+                poskkcash = sign * (  # sign 为开仓方向
+                    get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
+                    else (  # 最小开仓金额<可用金额时
+                        posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                        else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
+                              else poskkcash)))
                 self.myorder = self.order_target_value(target=poskkcash)
                 self.mposkk = poskkcash
 
             # 按目标百分比下单
             elif self.p.use_target == UseTarget.USE_TARGET_PERCENT:
-                # self.mposkk = abs(self.mposkk * (1 + self.mpposmin / 100))
-                # self.mposkk += self.mpposmin * self.mpposad
-                # self.mposkk += self.mposkk * self.mpposad
+                posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
+                posmaxcash = min(max(margin * 1.1, (get_cash * self.mpposmax)), get_cash)  # 最大开仓金额
                 percent = (margin_cash / get_cash)  # 持仓头寸占用总资金比率
                 percent = percent if percent else (size / 100)  # 首次开仓使用size%参数
-                if size > 0:
+                if size > 0:  # 开多仓
                     percent = (abs(percent) * (1 + self.mpposad))
-                elif size < 0:
+                elif size < 0:  # 开空仓
                     percent = -(abs(percent) * (1 + self.mpposad))
+                else:  # 不开仓
+                    pass
 
                 poskkcash = percent * get_cash  # 可用资金百分比交易
                 # poskkcash = percent * self.broker.getvalue()  # 帐户总资金百分比交易
@@ -410,7 +423,7 @@ class TestStrategy(bt.Strategy):
                 percent = sign * ((abs(poskkcash) + margin_cash) / self.broker.getvalue())  # 计算占用账户总资金的百分比
                 # percent = sign * (abs(poskkcash) / get_cash)  # 计算占可用资金百分比 self.myorder = self.order_target_percent(target=percent)
                 self.myorder = self.order_target_percent(target=percent)
-                # self.mposkk = percent * 100
+                self.mposkk = percent * 100
 
         return self.myorder
 
@@ -461,7 +474,6 @@ class TestStrategy(bt.Strategy):
             if self.sig_long:  # 买入
                 t_enter += ',买入'
                 self.sig_ref1 = self.positionflag = 1  # 记录开仓信号
-                # self.myorder = self.order_target_percent(target=abs(self.mposkk / 100))  # 百分比开仓
                 self.mposkk = abs(self.mposkk + 0.0001)
 
                 self.radd = self.myentryprice * (1 + self.mpr)
@@ -470,7 +482,6 @@ class TestStrategy(bt.Strategy):
             elif self.sig_short:  # 卖出
                 t_enter += ',卖出'
                 self.sig_ref1 = self.positionflag = -1  # 记录开仓信号
-                # self.myorder = self.order_target_percent(target=-abs(self.mposkk / 100))  # 百分比开仓
                 self.mposkk = -abs(self.mposkk * 1 + 0.0001)
 
                 # self.radd = self.myentryprice * (1 - self.mpr)
@@ -502,10 +513,6 @@ class TestStrategy(bt.Strategy):
             # 多头加仓
             if self.sig_longa1:
                 t_add += ',买入'
-                # self.mposkk = abs(self.mposkk * (1 + self.mpposmin / 100))
-                # self.mposkk += self.mpposmin * self.mpposad
-                # self.mposkk += self.mposkk * self.mpposad
-                # self.mposkk = (abs(self.mposkk) + self.mpposmin)
                 self.mposkk = abs(self.mposkk)
 
                 self.radd = self.myentryprice * (1 + self.mpr)
@@ -514,10 +521,6 @@ class TestStrategy(bt.Strategy):
             # 空头加仓
             if self.sig_shorta1:
                 t_add += ',卖出'
-                # self.mposkk = -abs(self.mposkk * (1 + self.mpposmin / 100))
-                # self.mposkk -= abs(self.mpposmin * self.mpposad)
-                # self.mposkk -= abs(self.mposkk * self.mpposad)
-                # self.mposkk = -(abs(self.mposkk) + self.mpposmin)
                 self.mposkk = -abs(self.mposkk)
 
                 # self.radd = self.myentryprice * (1 - self.mpr)
