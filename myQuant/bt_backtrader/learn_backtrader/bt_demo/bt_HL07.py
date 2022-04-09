@@ -4,16 +4,19 @@ import argparse
 import pandas as pd
 import numpy as np
 
+DT_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
+DT_DTFORMAT = '%Y%m%d%H%M%S'
+DT_START, DT_END = '20120101', '20130201'
+DT_TIMEFRAME = 'minutes'
+DT_COMPRESSION = 15
+
 
 def runstrat(args=None):
     args = parse_args(args)
     dkwargs = dict()
 
-    file_path = "datas\\SQRB13-5m-20180102-20220330.csv"
-    dt_start, dt_end = '20180702', '20180703'
-    dt_dtformat = '%Y%m%d%H%M%S'
-    dt_date_format = '%Y%m%d'
-    dt_tmformat = 'H%M%S'
+    file_path = dt_start = dt_end = dt_dtformat = dt_date_format = dt_tmformat = ""
+
     if args.dtformat is not None:
         dt_dtformat = args.dtformat
         dt_date_format = dt_dtformat[:dt_dtformat.find('%H')]
@@ -26,11 +29,12 @@ def runstrat(args=None):
         file_path = args.data
 
     myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
-    file_path = os.path.join(myQuant_ROOT, file_path)  # 文件路径
-    print(file_path)
-    if not os.path.exists(file_path):
-        print("数据源文件未找到！" + file_path)
-        raise Exception("数据源文件未找到！" + file_path)
+    file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
+    print(file_path_abs)
+    print("dt_date_format:", dt_date_format, "dt_start:", dt_start, "dt_end:", dt_end)
+    if not os.path.exists(file_path_abs):
+        print("数据源文件未找到！" + file_path_abs)
+        raise Exception("数据源文件未找到！" + file_path_abs)
 
     dkwargs['fromdate'] = dt_start
     dkwargs['todate'] = dt_end
@@ -39,7 +43,7 @@ def runstrat(args=None):
 
     print(dkwargs)
     # 加载数据
-    df = pd.read_csv(filepath_or_buffer=file_path, )
+    df = pd.read_csv(filepath_or_buffer=file_path_abs, )
     # 按日期先后排序
     df.sort_values(by=["datetime"], ascending=True, inplace=True)
     # 将日期列，设置成index
@@ -53,9 +57,18 @@ def runstrat(args=None):
     # 列名修改成指定的
     df.rename(columns={"volume": "vol"}, inplace=True)
 
+    tframes = dict(
+        minutes=bt.TimeFrame.Minutes,
+        daily=bt.TimeFrame.Days,
+        weekly=bt.TimeFrame.Weeks,
+        monthly=bt.TimeFrame.Months)
     # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)
     # 使用pandas数据源创建交易数据集
-    data = bt.feeds.PandasData(dataname=df, fromdate=dt_start, todate=dt_end)
+    data = (bt.feeds.PandasData(dataname=df, fromdate=dt_start, todate=dt_end))
+    # 重采样到更大时间框架
+    if args.timeframe and args.compression:
+        data.resample(timeframe=tframes[args.timeframe], compression=args.compression)
+
     cerebro = bt.Cerebro(stdstats=False)
     # 观测器
     cerebro.addobserver(bt.observers.Broker)
@@ -154,14 +167,20 @@ def parse_args(pargs=None):
         description='Sample for Order Target')
 
     parser.add_argument('--data', required=False,
-                        default="datas\\DQC13-5m-20120709-20220330.csv",
+                        default=DT_FILE_PATH,
                         help='Specific data to be read in')
-    parser.add_argument('--dtformat', required=False, default='%Y%m%d%H%M%S',
+    parser.add_argument('--dtformat', required=False, default=DT_DTFORMAT,
                         help='Ending date in data datetime format')
-    parser.add_argument('--fromdate', required=False, default='20120101',
+    parser.add_argument('--fromdate', required=False, default=DT_START,
                         help='Starting date in `dtformat` format')
-    parser.add_argument('--todate', required=False, default='20150301',
+    parser.add_argument('--todate', required=False, default=DT_END,
                         help='Ending date in `dtformat` format')
+    parser.add_argument('--timeframe', required=False, default=DT_TIMEFRAME,
+                        choices=['minutes', 'daily', 'weekly', 'monthly'],
+                        help='重新采样到的时间范围')
+    parser.add_argument('--compression', required=False, type=int, default=DT_COMPRESSION,
+                        help='将 n 条压缩为 1, 最小周期为原数据周期')
+
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
@@ -248,8 +267,6 @@ class TestStrategy(bt.Strategy):
         self.dtclose = self.datas[0].close
         self.dthigh = self.datas[0].high
         self.dtlow = self.datas[0].low
-        self.jOpen = self.dtopen  # 开仓条件
-        self.jOpen = self.jOpen if abs(self.dtopen[0] - self.jOpen[0]) <= self.p.OCJK else self.dtopen
 
         # 跟踪挂单
         self.myorder = None
