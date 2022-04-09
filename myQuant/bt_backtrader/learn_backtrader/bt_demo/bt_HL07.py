@@ -7,38 +7,38 @@ import numpy as np
 DT_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
 DT_DTFORMAT = '%Y%m%d%H%M%S'
 DT_START, DT_END = '20120101', '20130201'
-DT_TIMEFRAME = 'minutes'
-DT_COMPRESSION = 15
+DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
+DT_COMPRESSION = 15  # 合成周期的bar数
 
 
 def runstrat(args=None):
     args = parse_args(args)
     dkwargs = dict()
 
-    file_path = dt_start = dt_end = dt_dtformat = dt_date_format = dt_tmformat = ""
+    file_path = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = ""
 
     if args.dtformat is not None:
-        dt_dtformat = args.dtformat
-        dt_date_format = dt_dtformat[:dt_dtformat.find('%H')]
-        dt_tmformat = dt_dtformat[dt_dtformat.find('%H'):]
+        dt_format = args.dtformat
+        dt_dtformat = dt_format[:dt_format.find('%H')]
+        dt_tmformat = dt_format[dt_format.find('%H'):]
     if args.fromdate is not None:
-        dt_start = bt.datetime.datetime.strptime(args.fromdate, dt_date_format)
+        dt_start = bt.datetime.datetime.strptime(args.fromdate, dt_dtformat)
     if args.todate is not None:
-        dt_end = bt.datetime.datetime.strptime(args.todate, dt_date_format)
+        dt_end = bt.datetime.datetime.strptime(args.todate, dt_dtformat)
     if args.data is not None:
         file_path = args.data
 
     myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
     file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
     print(file_path_abs)
-    print("dt_date_format:", dt_date_format, "dt_start:", dt_start, "dt_end:", dt_end)
+    print("dt_format:", dt_format, "dt_start:", dt_start, "dt_end:", dt_end)
     if not os.path.exists(file_path_abs):
         print("数据源文件未找到！" + file_path_abs)
         raise Exception("数据源文件未找到！" + file_path_abs)
 
     dkwargs['fromdate'] = dt_start
     dkwargs['todate'] = dt_end
-    dkwargs['dtformat'] = dt_dtformat
+    dkwargs['dtformat'] = dt_format
     # dkwargs['tmformat'] = dt_tmformat
 
     print(dkwargs)
@@ -47,7 +47,7 @@ def runstrat(args=None):
     # 按日期先后排序
     df.sort_values(by=["datetime"], ascending=True, inplace=True)
     # 将日期列，设置成index
-    df.index = pd.to_datetime(df.datetime, format=dt_dtformat)
+    df.index = pd.to_datetime(df.datetime, format=dt_format)
     # 截取时间段内样本数据
     df = df[dt_start:dt_end]
     # 增加一列openinterest
