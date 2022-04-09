@@ -160,7 +160,7 @@ def parse_args(pargs=None):
                         help='Ending date in data datetime format')
     parser.add_argument('--fromdate', required=False, default='20120101',
                         help='Starting date in `dtformat` format')
-    parser.add_argument('--todate', required=False, default='20130301',
+    parser.add_argument('--todate', required=False, default='20150301',
                         help='Ending date in `dtformat` format')
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
@@ -205,7 +205,7 @@ class TestStrategy(bt.Strategy):
         RSPP=5,  # 盈亏千分比
         POSKK=10,  # 入场开仓单位 按(数量,金额,百分比)下单
         POSADP=0,  # 加减仓幅度百分比
-        POSMAX=100,  # 最大开仓单位
+        POSMAX=50,  # 最大开仓单位
         OCJK=1,  # CLOSE与OPEN的间隔
         SSPP=0,  # 最大回撤千分比
         addLongOrShort=0,  # 加仓方向addLongOrShort=0无限制,>0时只有多头加仓,<0时只有空头加仓
@@ -354,8 +354,9 @@ class TestStrategy(bt.Strategy):
         margin_cash = self.broker.getvalue(datas=[self.data])  # 持仓头寸占用资金
         # margin = bt.Order.comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
         get_cash = abs(self.broker.getcash())  # 可用资金
+        get_cash_value = abs(self.broker.getvalue())  # 帐户总资金
         sign = np.sign(self.mposkk)  # 取正负符号
-        open_profit = self.position.size * self.position.price
+        open_profit = sign * self.position.size * (self.position.price - self.dtclose[0])  # 浮动盈亏
 
         # 按成交量下单
         if self.p.use_target == UseTarget.USE_TARGET_SIZE:
@@ -400,7 +401,8 @@ class TestStrategy(bt.Strategy):
             elif self.p.use_target == UseTarget.USE_TARGET_PERCENT:
                 posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
                 posmaxcash = min(max(margin * 1.1, (get_cash * self.mpposmax)), get_cash)  # 最大开仓金额
-                percent = (margin_cash / get_cash)  # 持仓头寸占用总资金比率
+                percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
+                # percent = (margin_cash / get_cash_value)  # 持仓头寸占总资金比率
                 percent = percent if percent else (size / 100)  # 首次开仓使用size%参数
                 if size > 0:  # 开多仓
                     percent = (abs(percent) * (1 + self.mpposad))
@@ -409,8 +411,8 @@ class TestStrategy(bt.Strategy):
                 else:  # 不开仓
                     pass
 
-                poskkcash = percent * get_cash  # 可用资金百分比交易
-                # poskkcash = percent * self.broker.getvalue()  # 帐户总资金百分比交易
+                poskkcash = percent * (get_cash - open_profit)  # 可用资金百分比交易
+                # poskkcash = percent * (get_cash_value - open_profit)  # 帐户总资金百分比交易
 
                 # 限定使用资金的范围
                 poskkcash = sign * (  # sign 为开仓方向
@@ -420,7 +422,7 @@ class TestStrategy(bt.Strategy):
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
 
-                percent = sign * ((abs(poskkcash) + margin_cash) / self.broker.getvalue())  # 计算占用账户总资金的百分比
+                percent = sign * ((abs(poskkcash) + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
                 # percent = sign * (abs(poskkcash) / get_cash)  # 计算占可用资金百分比 self.myorder = self.order_target_percent(target=percent)
                 self.myorder = self.order_target_percent(target=percent)
                 self.mposkk = percent * 100
