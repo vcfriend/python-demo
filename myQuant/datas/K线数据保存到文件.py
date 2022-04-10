@@ -3,7 +3,12 @@
 from PythonApi import *
 import pandas as pd
 import numpy as np
+import sys
 import matplotlib.pyplot as plt
+
+print(pd.show_versions())  # 查看系统和包版本信息
+print(sys.version)  # 查看python版本信息
+print(pd._version)  # 查看包安装路径
 
 
 #  在这个方法中编写任何的初始化逻辑。context对象将会在你的算法策略的任何方法之间做传递。--(必须实现)
@@ -15,25 +20,35 @@ def init(context):
     # 1d 为1天，5m 为5分钟周期
     context.rule_type = '5m'
     context.date_start = '20220101'
-    context.date_end = '20220111'
+    context.date_end = '20220401'
     bars = history_bars_date(context.run_info.base_book_id, context.date_start, context.date_end, context.rule_type,
-                                context.data)
+                             context.data)
+    print("-------------")
     print(type(bars))
     print(bars.shape)
     print(bars.dtype.name)
     df = pd.DataFrame(bars, columns=context.data)
-    print('datetime: %s, %s' % (df['datetime'].dtype,df['datetime'].loc[0]))
+    print('datetime1: %s, %s' % (df['datetime'].dtype, df['datetime'].loc[0]))
+
     # 时间格式转换
     df['datetime'] = pd.to_datetime(df['datetime'], format="%Y%m%d%H%M%S")  # date转为时间格式
-    df.set_index("datetime", inplace=True, drop=True)  # 将date设置为索引列
-    df[''] = pd.Series()  # 增加空列，为了后续读取文件方便识别
+    # df['date'] = df['datetime'].dt.date
+    # df['time'] = df['datetime'].dt.time
+    df['date'] = df['datetime'].apply(lambda x: x.strftime('%Y-%m-%d'))
+    df['time'] = df['datetime'].apply(lambda x: x.strftime('%H:%M:%S'))
+    df.set_index("datetime", drop=True, inplace=False, append=False)  # 将datetime设置为索引列,删除原有列
+    # 取出特定列保存
+    df2 = df[['date', 'time', 'open', 'high', 'low', 'close', 'volume']]
+    df2[''] = pd.Series()  # 增加空列，为了后续读取文件方便识别
+    print(df2.info)
+    print("++++++++++++++++")
 
     filename = r"D:\Users\yalin\Weisoft Stock\%s-%s.csv" % (context.run_info.base_book_id, context.rule_type)
-    df.to_csv(
+    df2.to_csv(
         path_or_buf=filename,  # 文件保存路径
         sep=',',  # 分隔符
         header=True,  # 导出列标签
-        date_format='%Y%m%d%H%M%S',  # 时期格式化字符串
+        date_format='%Y-%m-%d %H:%M:%S',  # 时期格式化字符串
         float_format='%.0f',  # 浮点数格式化字符串保留的小数位数
     )
 

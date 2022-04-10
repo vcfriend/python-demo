@@ -21,11 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-
 import argparse
 import collections
 import datetime
-
 
 import backtrader as bt
 
@@ -98,12 +96,16 @@ def runstrat(args=None):
     cerebro.broker.set_cash(args.cash)
 
     dkwargs = dict()
+    dt_format = "%Y-%m-%d %H:%M:%S"
+    dt_dtformat = dt_format[:dt_format.find(' %H')]
+    dt_tmformat = dt_format[dt_format.find(' %H'):]
+
     if args.fromdate:
-        fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
+        fromdate = datetime.datetime.strptime(args.fromdate, "%Y-%m-%d")
         dkwargs['fromdate'] = fromdate
 
     if args.todate:
-        todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
+        todate = datetime.datetime.strptime(args.todate, "%Y-%m-%d")
         dkwargs['todate'] = todate
 
     if args.timeframe:
@@ -113,7 +115,23 @@ def runstrat(args=None):
         dkwargs['compression'] = args.compression
 
     # data0 = bt.feeds.BacktraderCSVData(dataname=args.data0, **dkwargs)
-    data0 = bt.feeds.VCData(dataname=args.data0, historical=True, **dkwargs)
+    # data0 = bt.feeds.VCData(dataname=args.data0, historical=True, **dkwargs)
+    data0 = bt.feeds.GenericCSVData(
+        dataname=args.data0,
+        dtformat="%Y-%m-%d",
+        tmformat="%H:%M:%S",
+        fromdate=dkwargs['fromdate'],
+        todate=dkwargs['todate'],
+        datetime=1,
+        time=2,
+        open=3,
+        high=4,
+        low=5,
+        close=6,
+        volume=7,
+        timeframe=bt.TimeFrame.Minutes,
+        compression=5,
+    )
     cerebro.adddata(data0, name='Data0')
 
     cerebro.addstrategy(St, short=args.short, printdata=args.printdata)
@@ -122,7 +140,7 @@ def runstrat(args=None):
     # Own analyzerset
     cerebro.addanalyzer(bt.analyzers.TimeReturn, timeframe=bt.TimeFrame.Years)
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, timeframe=bt.TimeFrame.Years)
-    cerebro.addanalyzer(bt.analyzers.SQN,)
+    cerebro.addanalyzer(bt.analyzers.SQN, )
 
     if args.pyfolio:
         cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio',
@@ -152,7 +170,7 @@ def runstrat(args=None):
         print('{}: {}'.format(k, v))
 
     if args.pyfolio:
-        pyfoliozer = strat.analyzers.getbyname('pyfolio',)
+        pyfoliozer = strat.analyzers.getbyname('pyfolio', )
 
         returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
         if args.printout:
@@ -183,28 +201,28 @@ def runstrat(args=None):
 
 
 def parse_args(pargs=None):
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for pivot point and cross plotting')
 
-    parser.add_argument('--data0', required=True,
+    parser.add_argument('--data0', required=False,
+                        default='D:/study/python-demo/myQuant/bt_backtrader/datas/DQC13-5m-dt-tm-20120709-20220330.csv',
                         help='Data to be read in')
 
     parser.add_argument('--timeframe', required=False,
-                        default=_TFS[0], choices=_TFS,
+                        default=list(_TFS)[0], choices=list(_TFS),
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--compression', required=False,
-                        default=1, type=int,
+                        default=15, type=int,
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--fromdate', required=False,
-                        default='2013-01-01',
+                        default='2012-07-09',
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--todate', required=False,
-                        default='2015-12-31',
+                        default='2012-10-10',
                         help='Ending date in YYYY-MM-DD format')
 
     parser.add_argument('--stake', required=False, action='store',
