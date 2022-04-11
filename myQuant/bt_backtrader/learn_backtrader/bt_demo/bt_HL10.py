@@ -80,25 +80,6 @@ def runstrat(args=None):
         data.resample(timeframe=tframes[args.timeframe], compression=args.compression)
 
     cerebro = bt.Cerebro(stdstats=False)
-    # 添加观测器
-    cerebro.addobserver(bt.observers.Broker)
-    cerebro.addobserver(bt.observers.Trades)
-    cerebro.addobserver(bt.observers.BuySell)
-    cerebro.addobserver(bt.observers.DrawDown)
-    # cerebro.addobserver(bt.observers.TimeReturn)
-    # 添加分析指标
-    # 返回年初至年末的年度收益率
-    cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='_AnnualReturn')
-    # 计算最大回撤相关指标
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')
-    # 计算年化收益：日度收益
-    cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)
-    # 计算年化夏普比率：日度收益
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio',
-                        timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算夏普比率
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='_SharpeRatio_A')
-    # 返回收益率时序
-    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')
 
     cerebro.adddata(data)
     # 设置投资金额100000.0
@@ -141,44 +122,89 @@ def runstrat(args=None):
         name=None
     )
 
-    # strategy
-    cerebro.addstrategy(TestStrategy)
+    strats = None
+    if args.opts:
+        result = None
+        # 为Cerebro引擎添加策略, 优化策略
+        strats = cerebro.optstrategy(
+            TestStrategy,
+            RPP=range(1, 10),
+            SPP=range(1, 10),
+        )
+        result = cerebro.run()
+    else:
+        # 添加分析指标
+        # 返回年初至年末的年度收益率
+        cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='_AnnualReturn')
+        # 计算最大回撤相关指标
+        cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')
+        # 计算年化收益：日度收益
+        cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)
+        # 添加策略
+        cerebro.addstrategy(TestStrategy)
+        # 添加观测器
+        cerebro.addobserver(bt.observers.Broker)
+        cerebro.addobserver(bt.observers.Trades)
+        cerebro.addobserver(bt.observers.BuySell)
+        cerebro.addobserver(bt.observers.DrawDown)
+        # cerebro.addobserver(bt.observers.TimeReturn)
+        # 添加分析指标
 
-    # 引擎运行前打印期出资金
-    print('组合期初资金: %.2f' % cerebro.broker.getvalue())
-    # 启动回测
-    result = cerebro.run()
-    # 提取收益序列
-    pnl = pd.Series(result[0].analyzers._TimeReturn.get_analysis())
-    # 计算累计收益
-    cumulative = (pnl + 1).cumprod()
-    # 计算回撤序列
-    max_return = cumulative.cummax()
-    drawdown = (cumulative - max_return) / max_return
-    # 计算收益评价指标
-    import pyfolio as pf
-    # 按年统计收益指标
-    perf_stats_year = pnl.groupby(pnl.index.to_period('m')).apply(lambda data: pf.timeseries.perf_stats(data)).unstack()
-    # 统计所有时间段的收益指标
-    perf_stats_all = pf.timeseries.perf_stats(pnl).to_frame(name='all')
-    perf_stats = pd.concat([perf_stats_year, perf_stats_all.T], axis=0)
-    perf_stats_ = round(perf_stats, 4).reset_index()
+        # 计算年化夏普比率：日度收益
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio',
+                            timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算夏普比率
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='_SharpeRatio_A')
+        # 返回收益率时序
+        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')
+        # 引擎运行前打印期出资金
+        print('组合期初资金: %.2f' % cerebro.broker.getvalue())
+        # 启动回测
+        result = cerebro.run()
+        # 引擎运行后打期末资金
+        print('组合期末资金: %.2f' % cerebro.broker.getvalue())
+        # 提取收益序列
+        pnl = pd.Series(result[0].analyzers._TimeReturn.get_analysis())
+        # 计算累计收益
+        cumulative = (pnl + 1).cumprod()
+        # 计算回撤序列
+        max_return = cumulative.cummax()
+        drawdown = (cumulative - max_return) / max_return
+        # 计算收益评价指标
+        import pyfolio as pf
+        # 按年统计收益指标
+        perf_stats_year = pnl.groupby(pnl.index.to_period('m')).apply(lambda data: pf.timeseries.perf_stats(data)).unstack()
+        # 统计所有时间段的收益指标
+        perf_stats_all = pf.timeseries.perf_stats(pnl).to_frame(name='all')
+        perf_stats = pd.concat([perf_stats_year, perf_stats_all.T], axis=0)
+        perf_stats_ = round(perf_stats, 4).reset_index()
 
-    # 引擎运行后打期末资金
-    print('组合期末资金: %.2f' % cerebro.broker.getvalue())
-    # 提取结果
-    print("--------------- 年度收益率 -----------------")
-    print(result[0].analyzers._AnnualReturn.get_analysis())
-    print("--------------- 最大回撤 -----------------")
-    print(result[0].analyzers._DrawDown.get_analysis())
-    print("--------------- 年化收益：日度收益 -----------------")
-    print(result[0].analyzers._Returns.get_analysis())
-    print("--------------- 年化夏普比率：日度收益 -----------------")
-    print(result[0].analyzers._SharpeRatio.get_analysis())
-    print("--------------- SharpeRatio_A -----------------")
-    print(result[0].analyzers._SharpeRatio_A.get_analysis())
+        # 引擎运行后打期末资金
+        print('组合期末资金: %.2f' % cerebro.broker.getvalue())
+        # 提取结果
+        print("\n--------------- 年度收益率 -----------------")
+        _AnnualReturn = result[0].analyzers._AnnualReturn.get_analysis()
+        # print(' 收益率k,v', get_analysis.items())
+        for k, v in _AnnualReturn.items():
+            print(" (", k, ":{:.2f})".format(v), end='')
+        print("\n--------------- 最大回撤 -----------------")
+        _DrawDown = result[0].analyzers._DrawDown.get_analysis()
+        for k, v in _DrawDown.items():
+            print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+            if isinstance(v, bt.utils.autodict.AutoOrderedDict):
+                for kk, vv in v.items():
+                    print(" (", k, (" : {:.2f})" if isinstance(vv, float) else " : {:})").format(vv), end='')
+        print("\n--------------- 年化收益：日度收益 -----------------")
+        _Returns = result[0].analyzers._Returns.get_analysis()
+        for k, v in _Returns.items():
+            print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+        print("\n--------------- 年化夏普比率：日度收益 -----------------")
+        _SharpeRatio = (result[0].analyzers._SharpeRatio.get_analysis())
+        for k, v in _SharpeRatio.items():
+            print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+        print("\n--------------- SharpeRatio_A -----------------")
+        print(result[0].analyzers._SharpeRatio_A.get_analysis())
 
-    if args.plot:
+    if args.plot and not args.opts:
         pkwargs = dict(style='bar')
         if args.plot is not True:  # evals to True but is not True
             npkwargs = eval('dict(' + args.plot + ')')  # args were passed
@@ -252,7 +278,8 @@ def parse_args(pargs=None):
                         help='重新采样到的时间范围')
     parser.add_argument('--compression', required=False, type=int, default=DT_COMPRESSION,
                         help='将 n 条压缩为 1, 最小周期为原数据周期')
-
+    parser.add_argument('--opts', required=False, type=bool, default=True,
+                        help='策略优化')
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
@@ -282,15 +309,15 @@ class UseTarget(Enum):
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
 
-    def log(self, txt, dt=None):
+    def log(self, txt, dt=None, doprint=False):
         # 记录策略的执行日志
-        dt = dt or self.datas[0].datetime.datetime(0)
-        print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
-        # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
-        # print('%s, %s' % (dt.isoformat(), txt))
+        if self.params.printlog or doprint:
+            dt = dt or self.datas[0].datetime.datetime(0)
+            print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
+            # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
+            # print('%s, %s' % (dt.isoformat(), txt))
 
     params = dict(
-
         RPP=1,  # 盈利千分比
         SPP=19,  # 亏损千分比
         RSPP=5,  # 盈亏千分比
@@ -301,11 +328,13 @@ class TestStrategy(bt.Strategy):
         SSPP=0,  # 最大回撤千分比
         addLongOrShort=0,  # 加仓方向addLongOrShort=0无限制,>0时只有多头加仓,<0时只有空头加仓
         valid=None,  # 订单生效时间
-
+        printlog=False,  # 是否打印日志
         use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
     )
 
     def __init__(self):
+        # super().__init__(*args, **kwargs)
+        # self.opts = opts  # 启动参数
         self.mprs = self.p.RSPP / 1000  # 盈亏千分比
         self.mpr = self.p.RPP / 1000  # 盈利千分比
         self.mps = self.p.SPP / 1000  # 亏损千分比
@@ -364,7 +393,7 @@ class TestStrategy(bt.Strategy):
         t += ',exit:{:.2f}'.format(self.sexit)
         t += ',open_m3:{:}'.format(self.dtopen_month)
         t += ',总资产:{:.2f}'.format(self.broker.getvalue())
-        t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
+        # t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
 
@@ -679,6 +708,14 @@ class TestStrategy(bt.Strategy):
                 t_exit += ',总资产:{:.2f}'.format(assets)
                 # self.log(t_exit)
 
+    def stop(self):
+        """测略结束时，多用于参数调优"""
+        self.log(' 参数 RPP:{:2d} '.format(self.params.RPP)
+                 + ' SPP:{:2d} '.format(self.params.SPP)
+                 + ' 期末资金: {:.2f} '.format(self.broker.getvalue()
+                                           ), doprint=True)
 
+
+"""主函数"""
 if __name__ == '__main__':
     runstrat()
