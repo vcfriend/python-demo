@@ -19,7 +19,7 @@ def runstrat(args=None):
 
     if args.dtformat is not None:
         dt_format = args.dtformat
-        dt_dtformat = dt_format[:dt_format.find(' %H')]
+        dt_dtformat = dt_format[:dt_format.find('%d')+len('%d')]
         dt_tmformat = dt_format[dt_format.find('%H'):]
     if args.fromdate is not None:
         dt_start = bt.datetime.datetime.strptime(args.fromdate, dt_dtformat)
@@ -82,8 +82,8 @@ def runstrat(args=None):
     cerebro = bt.Cerebro(stdstats=False)
     # 观测器
     cerebro.addobserver(bt.observers.Broker)
-    # cerebro.addobserver(bt.observers.Trades)
-    # cerebro.addobserver(bt.observers.BuySell)
+    cerebro.addobserver(bt.observers.Trades)
+    cerebro.addobserver(bt.observers.BuySell)
     cerebro.addobserver(bt.observers.DrawDown)
     # cerebro.addobserver(bt.observers.TimeReturn)
     # 添加分析指标
@@ -168,7 +168,7 @@ def runstrat(args=None):
             npkwargs = eval('dict(' + args.plot + ')')  # args were passed
             pkwargs.update(npkwargs)
 
-        cerebro.plot(**pkwargs)
+        cerebro.plot(volume=False, **pkwargs)
 
 
 def parse_args(pargs=None):
@@ -282,7 +282,7 @@ class TestStrategy(bt.Strategy):
         self.dtlow = self.datas[0].low
 
         if self.dtdate(1).month != self.dtdate(-1).month:
-            self.dtopen_month = self.datas[0].open
+            self.dtopen_month = self.datas[0].open[0]
 
         # 跟踪挂单
         self.myorder = None
@@ -301,6 +301,9 @@ class TestStrategy(bt.Strategy):
             trade.pnl,  # 盈亏
             (trade.pnl - trade.pnlcomm),  # 手续费
             trade.pnlcomm)  # 盈亏含手续费
+        t += ',add:{:.2f}'.format(self.radd)
+        t += ',exit:{:.2f}'.format(self.sexit)
+        t += ',open_m:{:}'.format(self.dtopen_month)
         t += ',总资产:{:.2f}'.format(self.broker.getvalue())
         t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
@@ -339,6 +342,9 @@ class TestStrategy(bt.Strategy):
             t += ',持仓:{:d}'.format(self.position.size)
             t += ',Price:{:.2f}'.format(self.dtclose[0])
 
+        t += ',add:{:.2f}'.format(self.radd)
+        t += ',exit:{:.2f}'.format(self.sexit)
+        t += ',open_m:{:}'.format(self.dtopen_month)
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
         t += ',总资产:{:.2f}'.format(self.broker.getvalue())
