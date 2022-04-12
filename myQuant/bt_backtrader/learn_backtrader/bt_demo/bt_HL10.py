@@ -3,6 +3,7 @@ import backtrader as bt
 import argparse
 import pandas as pd
 import numpy as np
+import time
 
 DT_FILE_PATH = "datas\\DQC13-5m-dt-tm-20120709-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
@@ -11,7 +12,7 @@ DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-DT_OPTS = False  # 是否参数调优
+DT_OPTS = True  # 是否参数调优
 
 
 def runstrat(args=None):
@@ -87,7 +88,7 @@ def runstrat(args=None):
     cerebro.adddata(data)
     # 设置投资金额100000.0
     cerebro.broker.setcash(100000.0)
-
+    # <editor-fold desc="折叠代码:交易手续费设置">
     cerebro.broker.setcommission(
         # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
         # commission=0.0015,
@@ -124,6 +125,7 @@ def runstrat(args=None):
         # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
         name=None
     )
+    # </editor-fold>
 
     strats = None
     if args.opts:
@@ -135,7 +137,16 @@ def runstrat(args=None):
             SPP=range(1, 10),
             printlog=False,
         )
+        # clock the start of the process
+        tstart = time.perf_counter()
         result = cerebro.run()
+        # Run over everything
+        stratruns = cerebro.run(maxcpus=args.maxcpus,
+                                runonce=not args.no_runonce,)
+        # clock the end of the process
+        tend = time.perf_counter()
+        # print out the result
+        print('Time used:', str(tend - tstart))
     else:
         # 添加分析指标
         # 返回年初至年末的年度收益率
@@ -301,6 +312,11 @@ def parse_args(pargs=None):
                         help='策略优化')
     parser.add_argument('--quantstats', required=False, type=int, default=DT_QUANTSTATS,
                         help='是否使用 quantstats 分析测试结果')
+    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=0,
+                        help=('Number of CPUs to use in the optimization'
+                              '\n  - 0 (default): 使用所有可用的 CPU\n'
+                              '  - 1 -> n: 使用尽可能多的指定\n'))
+    parser.add_argument('--no-runonce', action='store_true', required=False, help='在下一个模式下运行')
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,

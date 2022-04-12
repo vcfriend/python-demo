@@ -81,13 +81,13 @@ def runstrat():
     cerebro.adddata(data)
 
     # clock the start of the process
-    tstart = time.clock()
+    tstart = time.perf_counter()
 
     # Run over everything
     stratruns = cerebro.run()
 
     # clock the end of the process
-    tend = time.clock()
+    tend = time.perf_counter()
 
     print('==================================================')
     for stratrun in stratruns:
@@ -127,37 +127,37 @@ def parse_args():
         type=int, required=False, default=0,
         help=('Number of CPUs to use in the optimization'
               '\n'
-              '  - 0 (default): use all available CPUs\n'
-              '  - 1 -> n: use as many as specified\n'))
+              '  - 0 (default): 使用所有可用的 CPU\n'
+              '  - 1 -> n: 使用尽可能多的指定\n'))
 
     parser.add_argument(
         '--no-runonce', action='store_true', required=False,
-        help='Run in next mode')
+        help='在下一个模式下运行')
 
     parser.add_argument(
         '--exactbars', required=False, type=int, default=0,
-        help=('Use the specified exactbars still compatible with preload\n'
-              '  0 No memory savings\n'
-              '  -1 Moderate memory savings\n'
-              '  -2 Less moderate memory savings\n'))
+        help=('使用仍与预加载兼容的指定精确条\n'
+              '  0 不节省内存\n'
+              '  -1 适度的内存节省\n'
+              '  -2 较少的内存节省\n'))
 
     parser.add_argument(
         '--no-optdatas', action='store_true', required=False,
-        help='Do not optimize data preloading in optimization')
+        help='优化中不优化数据预加载')
 
     parser.add_argument(
         '--no-optreturn', action='store_true', required=False,
-        help='Do not optimize the returned values to save time')
+        help='不要优化返回值以节省时间')
 
     parser.add_argument(
         '--ma_low', type=int,
         default=10, required=False,
-        help='SMA range low to optimize')
+        help='SMA 范围低以优化')
 
     parser.add_argument(
         '--ma_high', type=int,
         default=30, required=False,
-        help='SMA range high to optimize')
+        help='SMA 范围高以优化')
 
     parser.add_argument(
         '--m1_low', type=int,
