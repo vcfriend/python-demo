@@ -3,6 +3,7 @@ import backtrader as bt
 import argparse
 import pandas as pd
 import numpy as np
+from enum import Enum
 
 DT_FILE_PATH = "datas\\DQC13-5m-dt-tm-20120709-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
@@ -93,7 +94,7 @@ def runstrat(args=None):
     cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='_AnnualReturn')  # 返回年初至年末的年度收益率
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')  # 计算最大回撤相关指标
     cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)  # 计算年化收益：日度收益
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')  # 添加PyFolio分析
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio_quantstats')  # 添加PyFolio_quantstats分析工具
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
     cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='_SharpeRatio_A')
     cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')  # 添加收益率时序
@@ -102,6 +103,7 @@ def runstrat(args=None):
     # 设置投资金额100000.0
     cerebro.broker.setcash(100000.0)
 
+    # <editor-fold desc="折叠代码:交易手续费设置">
     cerebro.broker.setcommission(
         # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
         # commission=0.0015,
@@ -138,6 +140,7 @@ def runstrat(args=None):
         # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
         name=None
     )
+    # </editor-fold>
 
     # strategy
     cerebro.addstrategy(TestStrategy)
@@ -150,31 +153,35 @@ def runstrat(args=None):
     # 引擎运行后打期末资金
     print('组合期末资金: %.2f' % cerebro.broker.getvalue())
     # 提取结果
-    print("\n--------------- 年度收益率 -----------------")
+    print("\n--------------- 累计收益率 -----------------")
     _AnnualReturn = result[0].analyzers._AnnualReturn.get_analysis()
+    print(" Cumulative Return: {:.2f}".format(sum(_AnnualReturn.values())))
+    print("\n--------------- 年度收益率 -----------------")
     # print(' 收益率k,v', get_analysis.items())
     for k, v in _AnnualReturn.items():
-        print(" (", k, ":{:.2f})".format(v), end='')
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- 最大回撤 -----------------")
     _DrawDown = result[0].analyzers._DrawDown.get_analysis()
     for k, v in _DrawDown.items():
-        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
-        if isinstance(v, bt.utils.autodict.AutoOrderedDict):
-            print('\n', type(v))
+        if not isinstance(v, dict):
+            t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
+            print(t, end='')
+        else:
             for kk, vv in v.items():
-                print(" (", k, (" : {:.2f})" if isinstance(vv, float) else " : {:})").format(vv), end='')
+                t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
+                print(t, end='')
     print("\n--------------- 年化收益：日度收益 -----------------")
     _Returns = result[0].analyzers._Returns.get_analysis()
     for k, v in _Returns.items():
-        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- 年化夏普比率：日度收益 -----------------")
     _SharpeRatio = (result[0].analyzers._SharpeRatio.get_analysis())
     for k, v in _SharpeRatio.items():
-        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
-    print("\n--------------- SharpeRatio_A -----------------")
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
+    print("\n--------------- SharpeRatio_A 年化夏普拉提奥-----------------")
     _SharpeRatio_A = result[0].analyzers._SharpeRatio_A.get_analysis()
     for k, v in _SharpeRatio_A.items():
-        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- test end -----------------")
 
     if args.plot:
@@ -248,11 +255,11 @@ def runstrat(args=None):
 
     if args.quantstats:
         # 使用quantstats 分析工具并保存到HTML文件
-        portfolio_stats = result[0].analyzers.getbyname('PyFolio')
+        portfolio_stats = result[0].analyzers.getbyname('PyFolio_quantstats')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
         import quantstats
-        quantstats.reports.html(returns, output='stats.html', title='quantstats PyFolio')  # 将分析指标保存到HTML文件
+        quantstats.reports.html(returns, output='stats.html', title='PyFolio_quantstats')  # 将分析指标保存到HTML文件
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 
@@ -291,9 +298,6 @@ def parse_args(pargs=None):
     return parser.parse_args()
 
 
-from enum import Enum
-
-
 class UseTarget(Enum):
     """枚举开仓类型"""
     USE_TARGET_SIZE = 0  # 成交量
@@ -304,37 +308,37 @@ class UseTarget(Enum):
 # 创建策略继承bt.Strategy
 class TestStrategy(bt.Strategy):
 
-    def log(self, txt, dt=None):
+    def log(self, txt, dt=None, doprint=False):
         # 记录策略的执行日志
-        dt = dt or self.datas[0].datetime.datetime(0)
-        print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
-        # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
-        # print('%s, %s' % (dt.isoformat(), txt))
+        if self.p.printlog or doprint:
+            dt = dt or self.datas[0].datetime.datetime(0)
+            # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
+            # print('%s, %s' % (dt.isoformat(), txt))
+            print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
 
     params = dict(
-
-        RPP=1,  # 盈利千分比
-        SPP=19,  # 亏损千分比
-        RSPP=5,  # 盈亏千分比
-        POSKK=10,  # 入场开仓单位 按(数量,金额,百分比)下单
-        POSADP=0,  # 加减仓幅度百分比
-        POSMAX=50,  # 最大开仓单位
-        OCJK=1,  # CLOSE与OPEN的间隔
-        SSPP=0,  # 最大回撤千分比
+        rpp=1,  # 盈利千分比
+        spp=19,  # 亏损千分比
+        rspp=5,  # 盈亏千分比
+        poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
+        posadp=0,  # 加减仓幅度百分比
+        posmax=50,  # 最大开仓单位
+        ocjk=1,  # CLOSE与OPEN的间隔
+        sspp=0,  # 最大回撤千分比
         addLongOrShort=0,  # 加仓方向addLongOrShort=0无限制,>0时只有多头加仓,<0时只有空头加仓
         valid=None,  # 订单生效时间
-
+        printlog=False,  # 是否打印日志
         use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
     )
 
     def __init__(self):
-        self.mprs = self.p.RSPP / 1000  # 盈亏千分比
-        self.mpr = self.p.RPP / 1000  # 盈利千分比
-        self.mps = self.p.SPP / 1000  # 亏损千分比
-        self.mpposad = self.p.POSADP / 100  # 加减仓幅度百分比
-        self.mposkk = self.p.POSKK  # 开仓单位
-        self.mpposmin = self.p.POSKK  # 最小开仓单位
-        self.mpposmax = self.p.POSMAX  # 最大开仓单位
+        self.mprs = self.p.rspp / 1000  # 盈亏千分比
+        self.mpr = self.p.rpp / 1000  # 盈利千分比
+        self.mps = self.p.spp / 1000  # 亏损千分比
+        self.mpposad = self.p.posadp / 100  # 加减仓幅度百分比
+        self.mposkk = self.p.poskk  # 开仓单位
+        self.mpposmin = self.p.poskk  # 最小开仓单位
+        self.mpposmax = self.p.posmax  # 最大开仓单位
         self.myentryprice_begin = 0.0  # 初始入场价格
         self.myentryprice = 0.0  # 入场价格
         self.myexitprice = 0.0  # 离场价格
