@@ -9,6 +9,8 @@ DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 DT_START, DT_END = '2012-01-01', '2013-02-01'
 DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
+DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
+DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 
 
 def runstrat(args=None):
@@ -80,25 +82,21 @@ def runstrat(args=None):
         data.resample(timeframe=tframes[args.timeframe], compression=args.compression)
 
     cerebro = bt.Cerebro(stdstats=False)
-    # 添加观测器
+    # 添加观测器,绘制时显示
     cerebro.addobserver(bt.observers.Broker)
     cerebro.addobserver(bt.observers.Trades)
     cerebro.addobserver(bt.observers.BuySell)
     cerebro.addobserver(bt.observers.DrawDown)
     # cerebro.addobserver(bt.observers.TimeReturn)
+
     # 添加分析指标
-    # 返回年初至年末的年度收益率
-    cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='_AnnualReturn')
-    # 计算最大回撤相关指标
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')
-    # 计算年化收益：日度收益
-    cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)
-    # 计算年化夏普比率：日度收益
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio',
-                        timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算夏普比率
+    cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='_AnnualReturn')  # 返回年初至年末的年度收益率
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')  # 计算最大回撤相关指标
+    cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)  # 计算年化收益：日度收益
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')  # 添加PyFolio分析
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
     cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='_SharpeRatio_A')
-    # 返回收益率时序
-    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')  # 添加收益率时序
 
     cerebro.adddata(data)
     # 设置投资金额100000.0
@@ -148,35 +146,36 @@ def runstrat(args=None):
     print('组合期初资金: %.2f' % cerebro.broker.getvalue())
     # 启动回测
     result = cerebro.run()
-    # 提取收益序列
-    pnl = pd.Series(result[0].analyzers._TimeReturn.get_analysis())
-    # 计算累计收益
-    cumulative = (pnl + 1).cumprod()
-    # 计算回撤序列
-    max_return = cumulative.cummax()
-    drawdown = (cumulative - max_return) / max_return
-    # 计算收益评价指标
-    import pyfolio as pf
-    # 按年统计收益指标
-    perf_stats_year = pnl.groupby(pnl.index.to_period('m')).apply(lambda data: pf.timeseries.perf_stats(data)).unstack()
-    # 统计所有时间段的收益指标
-    perf_stats_all = pf.timeseries.perf_stats(pnl).to_frame(name='all')
-    perf_stats = pd.concat([perf_stats_year, perf_stats_all.T], axis=0)
-    perf_stats_ = round(perf_stats, 4).reset_index()
 
     # 引擎运行后打期末资金
     print('组合期末资金: %.2f' % cerebro.broker.getvalue())
     # 提取结果
-    print("--------------- 年度收益率 -----------------")
-    print(result[0].analyzers._AnnualReturn.get_analysis())
-    print("--------------- 最大回撤 -----------------")
-    print(result[0].analyzers._DrawDown.get_analysis())
-    print("--------------- 年化收益：日度收益 -----------------")
-    print(result[0].analyzers._Returns.get_analysis())
-    print("--------------- 年化夏普比率：日度收益 -----------------")
-    print(result[0].analyzers._SharpeRatio.get_analysis())
-    print("--------------- SharpeRatio_A -----------------")
-    print(result[0].analyzers._SharpeRatio_A.get_analysis())
+    print("\n--------------- 年度收益率 -----------------")
+    _AnnualReturn = result[0].analyzers._AnnualReturn.get_analysis()
+    # print(' 收益率k,v', get_analysis.items())
+    for k, v in _AnnualReturn.items():
+        print(" (", k, ":{:.2f})".format(v), end='')
+    print("\n--------------- 最大回撤 -----------------")
+    _DrawDown = result[0].analyzers._DrawDown.get_analysis()
+    for k, v in _DrawDown.items():
+        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+        if isinstance(v, bt.utils.autodict.AutoOrderedDict):
+            print('\n', type(v))
+            for kk, vv in v.items():
+                print(" (", k, (" : {:.2f})" if isinstance(vv, float) else " : {:})").format(vv), end='')
+    print("\n--------------- 年化收益：日度收益 -----------------")
+    _Returns = result[0].analyzers._Returns.get_analysis()
+    for k, v in _Returns.items():
+        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+    print("\n--------------- 年化夏普比率：日度收益 -----------------")
+    _SharpeRatio = (result[0].analyzers._SharpeRatio.get_analysis())
+    for k, v in _SharpeRatio.items():
+        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+    print("\n--------------- SharpeRatio_A -----------------")
+    _SharpeRatio_A = result[0].analyzers._SharpeRatio_A.get_analysis()
+    for k, v in _SharpeRatio_A.items():
+        print(" (", k, (" : {:.2f})" if isinstance(v, float) else " : {:})").format(v), end='')
+    print("\n--------------- test end -----------------")
 
     if args.plot:
         pkwargs = dict(style='bar')
@@ -184,22 +183,36 @@ def runstrat(args=None):
             npkwargs = eval('dict(' + args.plot + ')')  # args were passed
             pkwargs.update(npkwargs)
 
-        # cerebro.plot(volume=False, **pkwargs)
+        cerebro.plot(volume=False, **pkwargs)  # 绘图BT观察器结果
 
+        # 结合pyfolio工具 计算并绘制收益评价指标
+        import pyfolio as pf
         # 绘制图形
         import matplotlib.pyplot as plt
         plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
         import matplotlib.ticker as ticker  # 导入设置坐标轴的模块
-
         # plt.style.use('seaborn')
         plt.style.use('dark_background')
+
+        # 提取收益序列
+        pnl = pd.Series(result[0].analyzers._TimeReturn.get_analysis())
+        # 计算累计收益
+        cumulative = (pnl + 1).cumprod()
+        # 计算回撤序列
+        max_return = cumulative.cummax()
+        drawdown = (cumulative - max_return) / max_return
+        # 按年统计收益指标
+        perf_stats_year = pnl.groupby(pnl.index.to_period('m')).apply(lambda data: pf.timeseries.perf_stats(data)).unstack()
+        # 统计所有时间段的收益指标
+        perf_stats_all = pf.timeseries.perf_stats(pnl).to_frame(name='all')
+        perf_stats = pd.concat([perf_stats_year, perf_stats_all.T], axis=0)
+        perf_stats_ = round(perf_stats, 4).reset_index()
 
         fig, (ax0, ax1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [3, 4]}, figsize=(24, 16))
         cols_names = ['date', 'Annual\nreturn', 'Cumulative\nreturns', 'Annual\n volatility',
                       'Sharpe\nratio', 'Calmar\nratio', 'Stability', 'Max\ndrawdown',
                       'Omega\nratio', 'Sortino\nratio', 'Skew', 'Kurtosis', 'Tail\nratio',
                       'Daily value\nat risk']
-
         # 绘制表格
         ax0.set_axis_off()  # 除去坐标轴
         table = ax0.table(cellText=perf_stats_.values,
@@ -219,7 +232,7 @@ def runstrat(args=None):
         # 绘制回撤曲线
         drawdown.plot.area(ax=ax1, label='drawdown (right)', rot=0, alpha=0.3, fontsize=13, grid=False)
         # 绘制累计收益曲线
-        (cumulative).plot(ax=ax2, color='#F1C40F', lw=2.0, label='cumret (left)', rot=0, fontsize=13, grid=False)
+        cumulative.plot(ax=ax2, color='#F1C40F', lw=2.0, label='cumret (left)', rot=0, fontsize=13, grid=False)
         # 不然 x 轴留有空白
         ax2.set_xbound(lower=cumulative.index.min(), upper=cumulative.index.max())
         # 主轴定位器：每 5 个月显示一个日期：根据具体天数来做排版
@@ -227,10 +240,21 @@ def runstrat(args=None):
         # 同时绘制双轴的图例
         h1, l1 = ax1.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
-        plt.legend(h1 + h2, l1 + l2, fontsize=12, loc='upper left', ncol=1)
 
+        plt.legend(h1 + h2, l1 + l2, fontsize=12, loc='upper left', ncol=1)
         fig.tight_layout()  # 规整排版
         plt.show()
+        # 结合pyfolio工具 计算并绘制收益评价指标
+
+    if args.quantstats:
+        # 使用quantstats 分析工具并保存到HTML文件
+        portfolio_stats = result[0].analyzers.getbyname('PyFolio')
+        returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
+        returns.index = returns.index.tz_convert(None)
+        import quantstats
+        quantstats.reports.html(returns, output='stats.html', title='quantstats PyFolio')  # 将分析指标保存到HTML文件
+        print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
+        # 使用quantstats 分析工具并保存到HTML文件
 
 
 def parse_args(pargs=None):
@@ -252,16 +276,14 @@ def parse_args(pargs=None):
                         help='重新采样到的时间范围')
     parser.add_argument('--compression', required=False, type=int, default=DT_COMPRESSION,
                         help='将 n 条压缩为 1, 最小周期为原数据周期')
+    parser.add_argument('--quantstats', required=False, type=int, default=DT_QUANTSTATS,
+                        help='是否使用 quantstats 分析测试结果')
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
-                        metavar='kwargs', const=True,
-                        # default='style="candle"',
+                        metavar='kwargs', const=True, default=DT_PLOT,
                         help=('Plot the read data applying any kwargs passed\n'
-                              '\n'
-                              'For example:\n'
-                              '\n'
-                              '  --plot style="candle" (to plot candles)\n'))
+                              '\n''For example:\n''\n''  --plot style="candle" (to plot candles)\n'))
     parser.add_argument("-f", "--file", default="file")  # 接收这个-f参数
     if pargs is not None:
         return parser.parse_args(pargs)
@@ -414,23 +436,6 @@ class TestStrategy(bt.Strategy):
         self.log(t)
         if not order.alive():
             self.myorder = None  # 表示没有订单待处理
-
-    def pos_cash(self, size=None, price=None):
-        """开仓金额"""
-        poscash = 0.0  # 开仓金额
-        price = price if price else self.dtclose[0]
-
-        if self.p.use_target == UseTarget.USE_TARGET_SIZE:  # 按成交量下单
-            poscash = abs(size) * bt.Order.comminfo.get_margin(price) * 1.1
-        elif self.p.use_target == UseTarget.USE_TARGET_VALUE:  # 按目标金额开仓
-            poscash = abs(size)
-        elif self.p.use_target == UseTarget.USE_TARGET_PERCENT:  # 百分比开仓
-            percent = abs(size / 100)
-            poscash = percent * self.broker.getcash()  # 可用资金百分比交易
-            # poscash = percent * self.broker.getvalue()  # 帐户总资金百分比交易
-            # value1 = self.broker.getvalue(datas=[self.data])  # 占用资金
-
-        return poscash
 
     def order_target(self, size=None, data=None):
         """订单开仓头寸管理"""
