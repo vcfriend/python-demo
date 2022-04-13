@@ -7,7 +7,7 @@ from enum import Enum
 
 DT_FILE_PATH = "datas\\DQC13-5m-dt-tm-20120709-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-DT_START, DT_END = '2012-01-01', '2013-02-01'
+DT_START, DT_END = '2012-01-01', '2022-02-01'
 DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
@@ -317,7 +317,7 @@ class TestStrategy(bt.Strategy):
             print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
 
     params = dict(
-        rpp=1,  # 盈利千分比
+        rpp=8,  # 盈利千分比
         spp=19,  # 亏损千分比
         rspp=5,  # 盈亏千分比
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单

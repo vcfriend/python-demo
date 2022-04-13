@@ -135,8 +135,8 @@ def runstrat(args=None):
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             TestStrategy,
-            rpp=range(1, 3),
-            spp=range(1, 10),
+            rpp=range(1, 2),
+            spp=range(1, 20),
             printlog=False,
         )
         # 添加分析指标
@@ -163,34 +163,41 @@ def runstrat(args=None):
 
         print("\n--------------- 分析结果 -----------------")
 
-        # 提取收益序列
-        # pnl = pd.Series(result[0].analyzers.timeReturn.get_analysis())
-        # 计算累计收益
-        # cumulative = (pnl + 1).cumprod()
-
         # 每个策略实例的结果以列表的形式保存在列表中。
         # 优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
-        par_list = [[x[0].p.rpp,  # 参数
-                     x[0].p.spp,  # 参数
-                     ((x[0].analyzers.tradeAnalyzer.get_analysis()['won']['total']) / (x[0].analyzers.tradeAnalyzer.get_analysis()['lost']['total'])),  # 胜率
-                     x[0].analyzers.returns.get_analysis()['rnorm100'],  # 以 100% 表示的年化归一化回报
-                     x[0].analyzers.tradeAnalyzer.get_analysis()['total']['total'],  # 交易次数
-                     x[0].analyzers.drawdown.get_analysis()['max']['drawdown'],  # 回撤
-                     x[0].analyzers.sharpe.get_analysis()['sharperatio'],  # 夏普率
-                     x[0].analyzers.tradeAnalyzer.get_analysis()['pnl']['gross']['total'],  # 帐户余额
-                     x[0].analyzers.tradeAnalyzer.get_analysis()['pnl']['net']['total'],  # 手续费
-                     x[0].analyzers.returns.get_analysis()['rtot'],  # 总复合回报
-                     ] for x in result]
+        res_list = [[]]
+        for x in result:
+            trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
+            returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
+            drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
+            sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
+            row = [
+                x[0].p.rpp,  # 参数
+                x[0].p.spp,  # 参数
+                returns['rtot'],  # 总复合回报
+                (trade['won']['total']) / (trade['lost']['total']),  # 胜率
+                returns['rnorm100'],  # 以 100% 表示的年化归一化回报
+                drawdown['max']['drawdown'],  # 最大回撤
+                sharpe['sharperatio'],  # 夏普率
+                (((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])),  # 手续费/帐户盈亏
+                trade['total']['total'],  # 交易次数
+                trade['pnl']['net']['total'],  # 帐户余额含手续费
+            ]
+            # 变量是浮点数时,且<10时,保留三位小数,>10时保留二位小数,不是浮点数时保持不变
+            row_3d = [(('{:.3f}' if abs(i) < 10 else '{:.2f}') if isinstance(i, float) else '{:}').format(i) for i in row]
+            res_list.append(row_3d)  # 添加到返回列表
 
         # 结果转成dataframe
-        columns = ['rpp', 'spp', 'win%', 'rnorm100%', 'total', 'drawdown', 'sharpe', 'cash', 'net', 'rtot%']
-        par_df = pd.DataFrame(par_list, columns=columns)
-        pd.set_option('precision', 4)  # 显示小数点后的位数
+        columns = ['rpp', 'spp', 'rtot%', 'win%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'net']
+        res_df = pd.DataFrame(res_list, columns=columns)
+        pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的部分有多少行
         pd.set_option('display.max_columns', 20)  # 确定显示的部分有多少行
         pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
-        print(par_df.sort_values('cash'))  # 按余额排序
-        par_df.to_csv('result.csv', sep='\t', float_format='%.4f')  # 保存分析数据到文件
+        pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
+        res_df = res_df.sort_values(by='rtot%')
+        print(res_df)  # 按总复合回报排序
+        res_df.to_csv('result.csv', sep='\t', float_format='%.3f')  # 保存分析数据到文件
 
     else:
         # 添加分析指标
@@ -361,7 +368,7 @@ def parse_args(pargs=None):
                         help='策略优化')
     parser.add_argument('--quantstats', required=False, type=int, default=DT_QUANTSTATS,
                         help='是否使用 quantstats 分析测试结果')
-    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=0,
+    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15,
                         help=('Number of CPUs to use in the optimization'
                               '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
     parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
