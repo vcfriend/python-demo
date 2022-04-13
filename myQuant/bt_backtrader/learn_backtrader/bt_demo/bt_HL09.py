@@ -91,13 +91,13 @@ def runstrat(args=None):
     # cerebro.addobserver(bt.observers.TimeReturn)
 
     # 添加分析指标
-    cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='_AnnualReturn')  # 返回年初至年末的年度收益率
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown')  # 计算最大回撤相关指标
-    cerebro.addanalyzer(bt.analyzers.Returns, _name='_Returns', tann=252)  # 计算年化收益：日度收益
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio_quantstats')  # 添加PyFolio_quantstats分析工具
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='_SharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='_SharpeRatio_A')
-    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='_TimeReturn')  # 添加收益率时序
+    cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualReturn')  # 返回年初至年末的年度收益率
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
+    cerebro.addanalyzer(bt.analyzers.Returns, _name='returns', tann=252)  # 计算年化收益：日度收益
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio_quantstats')  # 使用4个子analyzer来收集数据并将其转换为与pyfolio兼容的数据集
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')  # 夏普率的扩展，以年化形式返回夏普率
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn')  # 添加收益率时序
 
     cerebro.adddata(data)
     # 设置投资金额100000.0
@@ -154,14 +154,14 @@ def runstrat(args=None):
     print('组合期末资金: %.2f' % cerebro.broker.getvalue())
     # 提取结果
     print("\n--------------- 累计收益率 -----------------")
-    _AnnualReturn = result[0].analyzers._AnnualReturn.get_analysis()
+    _AnnualReturn = result[0].analyzers.annualReturn.get_analysis()
     print(" Cumulative Return: {:.2f}".format(sum(_AnnualReturn.values())))
     print("\n--------------- 年度收益率 -----------------")
     # print(' 收益率k,v', get_analysis.items())
     for k, v in _AnnualReturn.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- 最大回撤 -----------------")
-    _DrawDown = result[0].analyzers._DrawDown.get_analysis()
+    _DrawDown = result[0].analyzers.drawDown.get_analysis()
     for k, v in _DrawDown.items():
         if not isinstance(v, dict):
             t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
@@ -171,15 +171,15 @@ def runstrat(args=None):
                 t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
                 print(t, end='')
     print("\n--------------- 年化收益：日度收益 -----------------")
-    _Returns = result[0].analyzers._Returns.get_analysis()
+    _Returns = result[0].analyzers.returns.get_analysis()
     for k, v in _Returns.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- 年化夏普比率：日度收益 -----------------")
-    _SharpeRatio = (result[0].analyzers._SharpeRatio.get_analysis())
+    _SharpeRatio = (result[0].analyzers.sharpeRatio.get_analysis())
     for k, v in _SharpeRatio.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- SharpeRatio_A 年化夏普拉提奥-----------------")
-    _SharpeRatio_A = result[0].analyzers._SharpeRatio_A.get_analysis()
+    _SharpeRatio_A = result[0].analyzers.sharpeRatio_A.get_analysis()
     for k, v in _SharpeRatio_A.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- test end -----------------")
@@ -255,11 +255,11 @@ def runstrat(args=None):
 
     if args.quantstats:
         # 使用quantstats 分析工具并保存到HTML文件
-        portfolio_stats = result[0].analyzers.getbyname('PyFolio_quantstats')
+        portfolio_stats = result[0].analyzers.getbyname('pyFolio_quantstats')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
         import quantstats
-        quantstats.reports.html(returns, output='stats.html', title='PyFolio_quantstats')  # 将分析指标保存到HTML文件
+        quantstats.reports.html(returns, output='stats.html', title='pyFolio_quantstats')  # 将分析指标保存到HTML文件
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 

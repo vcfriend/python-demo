@@ -147,7 +147,7 @@ def parse_args():
 
     parser.add_argument(
         '--no-optreturn', action='store_true', required=False,
-        help='不要优化返回值以节省时间')
+        help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
 
     parser.add_argument(
         '--ma_low', type=int,
