@@ -8,7 +8,7 @@ from enum import Enum
 
 DT_FILE_PATH = "datas\\DQC13-5m-dt-tm-20120709-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-DT_START, DT_END = '2012-01-01', '2013-02-01'
+DT_START, DT_END = '2012-01-01', '2012-02-01'
 DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
@@ -135,8 +135,8 @@ def runstrat(args=None):
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             TestStrategy,
-            rpp=range(1, 2),
-            spp=range(1, 20),
+            rpp=range(1, 10),
+            spp=range(10, 20),
             printlog=False,
         )
         # 添加分析指标
@@ -166,29 +166,41 @@ def runstrat(args=None):
         # 每个策略实例的结果以列表的形式保存在列表中。
         # 优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
         res_list = [[]]
+        res_timereturn_month = [[]]
+        res_timereturn_title = []  # 列标题
+
+        timeReturn = result[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
+        for k, v in timeReturn.items():
+            res_timereturn_title.append('{:%Y-%m}'.format(k))
+
         for x in result:
             trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
             returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
             drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
             sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
+            timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
+
             row = [
                 x[0].p.rpp,  # 参数
                 x[0].p.spp,  # 参数
                 returns['rtot'],  # 总复合回报
-                (trade['won']['total']) / (trade['lost']['total']),  # 胜率
+                (trade['won']['total']) / (trade['lost']['total'] + trade['won']['total']),  # 胜率
                 returns['rnorm100'],  # 以 100% 表示的年化归一化回报
                 drawdown['max']['drawdown'],  # 最大回撤
                 sharpe['sharperatio'],  # 夏普率
-                (((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])),  # 手续费/帐户盈亏
+                (((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])),  # 手续费比净盈亏
                 trade['total']['total'],  # 交易次数
                 trade['pnl']['net']['total'],  # 帐户余额含手续费
             ]
+            res_timereturn_row = list(timeReturn.values())  # 月度或年度复合回报,由参数timeframe=bt.TimeFrame.Months控制
+            row.extend(res_timereturn_row)  # 月度复合回报
             # 变量是浮点数时,且<10时,保留三位小数,>10时保留二位小数,不是浮点数时保持不变
             row_3d = [(('{:.3f}' if abs(i) < 10 else '{:.2f}') if isinstance(i, float) else '{:}').format(i) for i in row]
             res_list.append(row_3d)  # 添加到返回列表
 
         # 结果转成dataframe
-        columns = ['rpp', 'spp', 'rtot%', 'win%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'net']
+        columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'net']
+        columns.extend(res_timereturn_title)  # 将月标题添加到columns列表里
         res_df = pd.DataFrame(res_list, columns=columns)
         pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的部分有多少行

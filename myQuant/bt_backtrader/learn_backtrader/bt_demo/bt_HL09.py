@@ -7,7 +7,7 @@ from enum import Enum
 
 DT_FILE_PATH = "datas\\DQC13-5m-dt-tm-20120709-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-DT_START, DT_END = '2012-01-01', '2022-02-01'
+DT_START, DT_END = '2012-01-01', '2013-02-01'
 DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
@@ -94,7 +94,7 @@ def runstrat(args=None):
     cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualReturn')  # 返回年初至年末的年度收益率
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
     cerebro.addanalyzer(bt.analyzers.Returns, _name='returns', tann=252)  # 计算年化收益：日度收益
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio_quantstats')  # 使用4个子analyzer来收集数据并将其转换为与pyfolio兼容的数据集
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 使用4个子analyzer来收集数据并将其转换为与pyfolio兼容的数据集
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
     cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')  # 夏普率的扩展，以年化形式返回夏普率
     cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn')  # 添加收益率时序
@@ -255,7 +255,7 @@ def runstrat(args=None):
 
     if args.quantstats:
         # 使用quantstats 分析工具并保存到HTML文件
-        portfolio_stats = result[0].analyzers.getbyname('pyFolio_quantstats')
+        portfolio_stats = result[0].analyzers.getbyname('pyFolio')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
         import quantstats
