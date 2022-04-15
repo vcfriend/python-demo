@@ -226,38 +226,39 @@ def runstrat(args=None):
             timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
 
             row = [
-                x[0].p.rpp,  # 参数
-                x[0].p.spp,  # 参数
-                returns['rtot'],  # 总复合回报
-                (trade['won']['total']) / (trade['lost']['total'] + trade['won']['total']),  # 胜率
-                returns['rnorm100'],  # 以 100% 表示的年化归一化回报
-                drawdown['max']['drawdown'],  # 最大回撤
-                sharpe['sharperatio'],  # 夏普率
-                (((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])),  # 手续费比净盈亏
-                trade['total']['total'],  # 交易次数
-                trade['pnl']['net']['total'],  # 帐户余额含手续费
+                '{:2d}'.format(x[0].p.rpp),  # 参数
+                '{:2d}'.format(x[0].p.spp),  # 参数
+                '{:5.2f}'.format(returns['rtot'] * 100),  # 总复合回报
+                '{:5.2f}'.format((trade['won']['total']) / (trade['lost']['total'] + trade['won']['total']) * 100),  # 胜率
+                '{:5.2f}'.format(returns['rnorm100']),  # 以 100% 表示的年化归一化回报
+                '{:5.2f}'.format(drawdown['max']['drawdown']),  # 最大回撤
+                '{:5.5f}'.format(sharpe['sharperatio']),  # 夏普率
+                '{:5.2f}'.format((((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])) * 100),  # 手续费占比净盈亏百分比
+                '{:4d}'.format(trade['total']['total']),  # 交易次数
+                '{:8.2f}'.format(trade['pnl']['net']['total']),  # 帐户余额含手续费
             ]
             res_timereturn_row = list(timeReturn.values())  # 月度或年度复合回报,由参数timeframe=bt.TimeFrame.Months控制
             row.extend(res_timereturn_row)  # 月度复合回报
             # 变量是浮点数时,且<10时,%比显示保留5位整数1位小数且*100,>10时保留8位整数2位小数,不是浮点数时保留5位整数
-            row_3d = [(('{:5.1f}' if abs(i) < 10 else '{:8.2f}') if isinstance(i, float) else '{:5}').format(i * 100 if (abs(i) < 10 and isinstance(i, float)) else i) for i in row]
-            res_list.append(row_3d)  # 添加到返回列表
+            # row = [(('{:5.1f}' if abs(i) < 10 else '{:8.2f}') if isinstance(i, float) else '{:5}').format(i * 100 if (abs(i) < 10 and isinstance(i, float)) else i) for i in row]
+            res_list.append(row)  # 添加到返回列表
 
         # 结果转成dataframe
         columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'net']
         columns_all = columns.copy()
         columns_all.extend(res_timereturn_title)  # 将列标题添加到columns列表尾部
         res_df = pd.DataFrame(res_list, dtype='float', columns=columns_all)
+        res_df.index.name = 'id'  # 设置索引名称
         res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
         pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的最小行有多少
         pd.set_option('display.max_columns', 20)  # 确定显示最大列多少
         pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
         pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
-        res_df = res_df.sort_values(by='rtot%')  # 按总复合回报排序
+        res_df = res_df.sort_values(by='rtot%', ascending=False)  # 按总复合回报排序
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         print(res_df.loc[:, columns])  # 显示指定列
-        res_df.to_csv('result.csv', sep='\t', float_format='%.3f')  # 保存分析数据到文件
+        res_df.to_csv('result.csv', sep='\t', float_format='%.2f')  # 保存分析数据到文件
     # 回测分析
     else:
         # 添加观测器,绘制时显示
@@ -393,7 +394,7 @@ def runstrat(args=None):
         import quantstats
         # 将分析指标保存到HTML文件
         quantstats.reports.html(returns, output='stats.html',
-                                title=DT_FILE_PATH + 'rpp:{:} spp:{:}'.format(DT_RPP, DT_SPP))
+                                title=DT_FILE_PATH + 'rpp:{:} spp:{:}'.format(DT_RPP[0], DT_SPP[0]))
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 
