@@ -10,8 +10,8 @@ DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 DT_START, DT_END = '2012-01-01', '2013-02-01'
 DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
-DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
+DT_PLOT = True  # 是否绘图,还可提供绘图参数:'style="candle"'
+DT_QUANTSTATS = False  # 是否使用 quantstats 分析测试结果
 
 
 def runstrat(args=None):
@@ -154,15 +154,15 @@ def runstrat(args=None):
     print('组合期末资金: %.2f' % cerebro.broker.getvalue())
     # 提取结果
     print("\n--------------- 累计收益率 -----------------")
-    _AnnualReturn = result[0].analyzers.annualReturn.get_analysis()
-    print(" Cumulative Return: {:.2f}".format(sum(_AnnualReturn.values())))
+    annualReturn = result[0].analyzers.annualReturn.get_analysis()
+    print(" Cumulative Return: {:.2f}".format(sum(annualReturn.values())))
     print("\n--------------- 年度收益率 -----------------")
     # print(' 收益率k,v', get_analysis.items())
-    for k, v in _AnnualReturn.items():
+    for k, v in annualReturn.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- 最大回撤 -----------------")
-    _DrawDown = result[0].analyzers.drawDown.get_analysis()
-    for k, v in _DrawDown.items():
+    drawDown = result[0].analyzers.drawDown.get_analysis()
+    for k, v in drawDown.items():
         if not isinstance(v, dict):
             t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
             print(t, end='')
@@ -175,12 +175,12 @@ def runstrat(args=None):
     for k, v in _Returns.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- 年化夏普比率：日度收益 -----------------")
-    _SharpeRatio = (result[0].analyzers.sharpeRatio.get_analysis())
-    for k, v in _SharpeRatio.items():
+    sharpeRatio = (result[0].analyzers.sharpeRatio.get_analysis())
+    for k, v in sharpeRatio.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- SharpeRatio_A 年化夏普拉提奥-----------------")
-    _SharpeRatio_A = result[0].analyzers.sharpeRatio_A.get_analysis()
-    for k, v in _SharpeRatio_A.items():
+    sharpeRatio_A = result[0].analyzers.sharpeRatio_A.get_analysis()
+    for k, v in sharpeRatio_A.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
     print("\n--------------- test end -----------------")
 
@@ -202,7 +202,7 @@ def runstrat(args=None):
         plt.style.use('dark_background')
 
         # 提取收益序列
-        pnl = pd.Series(result[0].analyzers._TimeReturn.get_analysis())
+        pnl = pd.Series(result[0].analyzers.timeReturn.get_analysis())
         # 计算累计收益
         cumulative = (pnl + 1).cumprod()
         # 计算回撤序列

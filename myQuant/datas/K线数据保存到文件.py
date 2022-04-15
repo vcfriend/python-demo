@@ -34,22 +34,24 @@ def init(context):
     df['datetime'] = pd.to_datetime(df['datetime'], format="%Y%m%d%H%M%S")  # date转为时间格式
     # df['date'] = df['datetime'].dt.date
     # df['time'] = df['datetime'].dt.time
-    df['date'] = df['datetime'].apply(lambda x: x.strftime('%Y-%m-%d'))
-    df['time'] = df['datetime'].apply(lambda x: x.strftime('%H:%M:%S'))
-    df.set_index("datetime", drop=True, inplace=False, append=False)  # 将datetime设置为索引列,删除原有列
+    df['date'] = df['datetime'].apply(lambda x: x.strftime('%Y-%m-%d'))  # 添加日期列
+    df['time'] = df['datetime'].apply(lambda x: x.strftime('%H:%M:%S'))  # 添加时间列
+    df.set_index("datetime", drop=True, inplace=False, append=False)  # 将datetime设置为索引列,drop=True 删除原有列
     # 取出特定列保存
-    df2 = df[['date', 'time', 'open', 'high', 'low', 'close', 'volume']]
-    df2[''] = pd.Series()  # 增加空列，为了后续读取文件方便识别
-    print(df2.info)
+    df = df[['datetime', 'open', 'high', 'low', 'close', 'volume']]
+    df[''] = pd.Series()  # 增加空列，为了后续读取文件方便识别
+    print(df.info)
     print("++++++++++++++++")
 
     filename = r"D:\Users\yalin\Weisoft Stock\%s-%s.csv" % (context.run_info.base_book_id, context.rule_type)
-    df2.to_csv(
+    df.to_csv(
         path_or_buf=filename,  # 文件保存路径
         sep=',',  # 分隔符
         header=True,  # 导出列标签
+        columns=['datetime', 'open', 'high', 'low', 'close', 'volume'],  # 导出指定列
         date_format='%Y-%m-%d %H:%M:%S',  # 时期格式化字符串
         float_format='%.0f',  # 浮点数格式化字符串保留的小数位数
+        index=False,  # 不导出索引列
     )
 
 
