@@ -175,9 +175,11 @@ def runstrat(args=None):
     # </editor-fold>
 
     strats = None
+    result_one = None
+    results_opt = None
+    global DT_RESULT_ONE, DT_RESULTS_OPT  # 申明要使用全局变量
     # 参数调优
     if args.opts:
-        result = None
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             TestStrategy,
@@ -194,8 +196,8 @@ def runstrat(args=None):
         # clock the start of the process
         tstart = time.perf_counter()
         # Run over everything
-        # result = cerebro.run()
-        result = cerebro.run(
+        # result_one = cerebro.run()
+        results_opt = cerebro.run(
             maxcpus=args.maxcpus,
             optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
             optreturn=not args.no_optreturn,  # optreturn（默认值：True)如果优化结果不是完整的对象（以及所有数据、指标、观察器等），而是具有以下属性的对象 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西。如果需要对（例如）指标的生成值进行详细分析，请将其关闭
@@ -204,7 +206,7 @@ def runstrat(args=None):
         )
         # clock the end of the process
         tend = time.perf_counter()
-        # print out the result
+        # print out the result_one
         print('Time used:', str(tend - tstart))
 
         print("\n--------------- 分析结果 -----------------")
@@ -214,11 +216,11 @@ def runstrat(args=None):
         res_list = [[]]
         res_timereturn_title = []  # 列标题
 
-        timeReturn = result[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
+        timeReturn = results_opt[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
         for k, v in timeReturn.items():
             res_timereturn_title.append('{:%Y-%m}'.format(k))
 
-        for x in result:
+        for x in results_opt:
             trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
             returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
             drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
@@ -244,21 +246,30 @@ def runstrat(args=None):
             res_list.append(row)  # 添加到返回列表
 
         # 结果转成dataframe
-        columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'net']
+        columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
         columns_all = columns.copy()
         columns_all.extend(res_timereturn_title)  # 将列标题添加到columns列表尾部
         res_df = pd.DataFrame(res_list, dtype='float', columns=columns_all)
-        res_df.index.name = 'id'  # 设置索引名称
+
         res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
+        res_df.loc[:, ['rpp', 'spp']].astype(int)
+        res_df.loc[:, ['rtot%']].astype('float')
+        # res_df.loc[:, ['rpp', 'spp', 'rtot%']].apply(pd.to_numeric, errors='ignore', axis=1)
+        # res_df.loc[:, ['rpp', 'spp']].apply(pd.to_numeric, downcast='signed', axis=1)
+        # res_df[['rpp', 'spp']] = res_df[['rpp', 'spp']].astype(int)   # 转换指定类数据类型
+
+        res_df.sort_values(by='rtot%', ascending=False, inplace=True)  # 按总复合回报排序
+        res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
+        # res_df.sort_index(level=['rtot%'], ascending=[True], inplace=True)  # 按总复合回报和帐户余额含手续费 排序
+        res_df.index.name = 'id'  # 设置索引名称
         pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的最小行有多少
         pd.set_option('display.max_columns', 20)  # 确定显示最大列多少
         pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
         pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
-        res_df = res_df.sort_values(by='rtot%', ascending=False)  # 按总复合回报排序
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         print(res_df.loc[:, columns])  # 显示指定列
-        res_df.to_csv('result.csv', sep='\t', float_format='%.2f')  # 保存分析数据到文件
+        res_df.to_csv('results_opt.csv', sep='\t', float_format='%.2f')  # 保存分析数据到文件
     # 回测分析
     else:
         # 添加观测器,绘制时显示
@@ -282,19 +293,19 @@ def runstrat(args=None):
         # 引擎运行前打印期出资金
         print('组合期初资金: %.2f' % cerebro.broker.getvalue())
         # 启动回测
-        result = cerebro.run()
+        result_one = cerebro.run()
         # 引擎运行后打期末资金
         print('组合期末资金: %.2f' % cerebro.broker.getvalue())
         # 提取结果
         print("\n--------------- 累计收益率 -----------------")
-        annualReturn = result[0].analyzers.annualReturn.get_analysis()
+        annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
         print(" Cumulative Return: {:.2f}".format(sum(annualReturn.values())))
         print("\n--------------- 年度收益率 -----------------")
         # print(' 收益率k,v', get_analysis.items())
         for k, v in annualReturn.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- 最大回撤 -----------------")
-        drawDown = result[0].analyzers.drawDown.get_analysis()
+        drawDown = result_one[0].analyzers.drawDown.get_analysis()
         for k, v in drawDown.items():
             if not isinstance(v, dict):
                 t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
@@ -304,15 +315,15 @@ def runstrat(args=None):
                     t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
                     print(t, end='')
         print("\n--------------- 年化收益：日度收益 -----------------")
-        returns = result[0].analyzers.returns.get_analysis()
-        for k, v in returns.items():
+        an_returns = result_one[0].analyzers.returns.get_analysis()
+        for k, v in an_returns.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- 年化夏普比率：日度收益 -----------------")
-        sharpeRatio = (result[0].analyzers.sharpeRatio.get_analysis())
+        sharpeRatio = (result_one[0].analyzers.sharpeRatio.get_analysis())
         for k, v in sharpeRatio.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- SharpeRatio_A -----------------")
-        sharpeRatio_A = result[0].analyzers.sharpeRatio_A.get_analysis()
+        sharpeRatio_A = result_one[0].analyzers.sharpeRatio_A.get_analysis()
         for k, v in sharpeRatio_A.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- test end -----------------")
@@ -335,7 +346,7 @@ def runstrat(args=None):
         plt.style.use('dark_background')
 
         # 提取收益序列
-        pnl = pd.Series(result[0].analyzers.timeReturn.get_analysis())
+        pnl = pd.Series(result_one[0].analyzers.timeReturn.get_analysis())
         # 计算累计收益
         cumulative = (pnl + 1).cumprod()
         # 计算回撤序列
@@ -388,7 +399,7 @@ def runstrat(args=None):
     # 回测分析保存到文件
     if args.quantstats and not args.opts:
         # 使用quantstats 分析工具并保存到HTML文件
-        portfolio_stats = result[0].analyzers.getbyname('pyFolio')
+        portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
         import quantstats
