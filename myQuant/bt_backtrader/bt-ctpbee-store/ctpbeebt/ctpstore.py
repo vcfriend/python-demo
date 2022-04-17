@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import collections
 from datetime import datetime
-from time import sleep 
+from time import sleep
 
 import backtrader as bt
 from backtrader.metabase import MetaParams
@@ -16,13 +16,13 @@ class MyCtpbeeApi(CtpbeeApi):
 
     def __init__(self, name, md_queue=None):
         super().__init__(name)
-        self.md_queue = md_queue  #行情队列
+        self.md_queue = md_queue  # 行情队列
         self.is_position_ok = False
         self.is_account_ok = False
 
     def on_contract(self, contract: ContractData):
         """ 处理推送的合约信息 """
-        #print(contract)
+        # print(contract)
         pass
 
     def on_log(self, log: LogData):
@@ -31,13 +31,13 @@ class MyCtpbeeApi(CtpbeeApi):
 
     def on_tick(self, tick: TickData) -> None:
         """ 处理推送的tick """
-        #print('on_tick: ', tick)
+        # print('on_tick: ', tick)
         pass
 
     def on_bar(self, bar: BarData) -> None:
         """ 处理ctpbee生成的bar """
         print('on_bar: ', bar.local_symbol, bar.datetime, bar.open_price, bar.high_price, bar.low_price, bar.close_price, bar.volume, bar.interval)
-        self.md_queue[bar.local_symbol].put(bar) #分发行情数据到对应的队列
+        self.md_queue[bar.local_symbol].put(bar)  # 分发行情数据到对应的队列
 
     def on_init(self, init):
         pass
@@ -45,23 +45,23 @@ class MyCtpbeeApi(CtpbeeApi):
     def on_order(self, order: OrderData) -> None:
         """ 报单回报 """
         print('on_order: ', order)
-        #这里应该将ctpbee的order类型转换为backtrader的order类型,然后通过notify_order通知策略
+        # 这里应该将ctpbee的order类型转换为backtrader的order类型,然后通过notify_order通知策略
         pass
 
     def on_trade(self, trade: TradeData) -> None:
         """ 成交回报 """
         print('on_trade: ', trade)
-        #这里应该通过ctpbee的trade去更新backtrader的order,然后通过notify_order通知策略
+        # 这里应该通过ctpbee的trade去更新backtrader的order,然后通过notify_order通知策略
         pass
 
     def on_position(self, position: PositionData) -> None:
         """ 处理持仓回报 """
-        #print('on_position', position)
+        # print('on_position', position)
         self.is_position_ok = True
 
     def on_account(self, account: AccountData) -> None:
         """ 处理账户信息 """
-        #print('on_account', account)
+        # print('on_account', account)
         self.is_account_ok = True
 
 
@@ -83,8 +83,8 @@ class CTPStore(with_metaclass(MetaSingleton, object)):
     Singleton class wrapping
     """
 
-    BrokerCls = None  #broker class will auto register
-    DataCls = None    #data class will auto register
+    BrokerCls = None  # broker class will auto register
+    DataCls = None  # data class will auto register
 
     params = (
         ("debug", False),
@@ -102,12 +102,12 @@ class CTPStore(with_metaclass(MetaSingleton, object)):
 
     def __init__(self, ctp_setting, *args, **kwargs):
         super(CTPStore, self).__init__()
-        #连接设置
+        # 连接设置
         self.ctp_setting = ctp_setting
-        #初始值
+        # 初始值
         self._cash = 0.0
         self._value = 0.0
-        #feed行情队列字典,保存每个feed的行情队列. key为feed,value为对应行情queue
+        # feed行情队列字典,保存每个feed的行情队列. key为feed,value为对应行情queue
         self.q_feed_qlive = dict()
         self.main_ctpbee_api = MyCtpbeeApi("main_ctpbee_api", md_queue=self.q_feed_qlive)
         self.app = CtpBee("ctpstore", __name__, refresh=True)
@@ -118,7 +118,7 @@ class CTPStore(with_metaclass(MetaSingleton, object)):
             sleep(1)
             if self.main_ctpbee_api.is_account_ok:
                 break
-        #调试输出
+        # 调试输出
         print('positions===>', self.main_ctpbee_api.center.positions)
         print('account===>', self.main_ctpbee_api.center.account)
 

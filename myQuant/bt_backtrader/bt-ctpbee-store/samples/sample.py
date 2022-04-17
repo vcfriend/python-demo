@@ -61,7 +61,7 @@ class SmaCross(bt.Strategy):
             print('d._name', d._name, 'd._dataname', d._dataname, d.datetime.datetime(0), 'o h l c ', d.open[0], d.high[0], d.low[0], d.close[0], ' vol ', d.volume[0])
             pos = self.beeapi.app.center.get_position(d._dataname)
             print('position', pos)
-            # 可以访问持仓、成交、订单等各种实盘信息，如何访问参考http://docs.ctpbee.com/modules/rec.html
+            # 可以访问持仓、成交、订单等各种实盘信息，如何访问参考 http://docs.ctpbee.com/modules/rec.html
             trades = self.beeapi.app.center.trades
             print('trades', trades)
             account = self.beeapi.app.center.account

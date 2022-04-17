@@ -1,0 +1,35 @@
+#
+# {
+#   "CONNECT_INFO": {
+#     "userid": "00380151",
+#     "password": "00380151",
+#     "brokerid": "10010",
+#     "md_address": "tcp://210.14.72.12:4602",
+#     "td_address": "tcp://210.14.72.12:4600",
+#     "product_info": "https://n-sight.com.cn/",
+#     "appid": "仿真环境暂时不需要",
+#     "auth_code": "仿真环境暂时不需要"
+#   },
+#   "INTERFACE": "ctp",
+#   "MD_FUNC": true,
+#   "TD_FUNC": true,
+#   "XMIN": [1]
+# }
+#
+#
+# {
+#   "CONNECT_INFO": {
+#     "userid": "00380151",
+#     "password": "00380151",
+#     "brokerid": "9999",
+#     "md_address": "tcp://122.144.152.13:9002",
+#     "td_address": "tcp://122.144.152.13:9002",
+#     "product_info": "",
+#     "appid": "https://n-sight.com.cn/",
+#     "auth_code": "0000000000000000"
+#   },
+#   "INTERFACE": "ctp",
+#   "MD_FUNC": true,
+#   "TD_FUNC": true,
+#   "XMIN": [1]
+# }
