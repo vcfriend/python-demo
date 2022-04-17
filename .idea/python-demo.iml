@@ -19,6 +19,7 @@
       <excludeFolder url="file://$MODULE_DIR$/scikit-learn/svm/code/.ipynb_checkpoints" />
       <excludeFolder url="file://$MODULE_DIR$/scikit-learn/svm/tests/.pytest_cache" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/myQuant/bt_backtrader/learn_backtrader/bt_demo/datas" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.9 (py39)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
