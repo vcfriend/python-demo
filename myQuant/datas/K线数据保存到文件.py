@@ -36,10 +36,11 @@ def init(context):
     # df['time'] = df['datetime'].dt.time
     df['date'] = df['datetime'].apply(lambda x: x.strftime('%Y-%m-%d'))  # 添加日期列
     df['time'] = df['datetime'].apply(lambda x: x.strftime('%H:%M:%S'))  # 添加时间列
-    df.set_index("datetime", drop=True, inplace=False, append=False)  # 将datetime设置为索引列,drop=True 删除原有列
     # 取出特定列保存
-    df = df[['datetime', 'open', 'high', 'low', 'close', 'volume']]
-    df[''] = pd.Series()  # 增加空列，为了后续读取文件方便识别
+    # df = df[['datetime', 'open', 'high', 'low', 'close', 'volume']]
+    df[''] = pd.Series()  # df[""] = ""增加空列，为了后续读取文件方便识别
+    df.set_index("datetime", drop=True, inplace=False, append=False)  # 将datetime设置为索引列,drop=True 删除原有列
+
     print(df.info)
     print("++++++++++++++++")
 
@@ -48,7 +49,8 @@ def init(context):
         path_or_buf=filename,  # 文件保存路径
         sep=',',  # 分隔符
         header=True,  # 导出列标签
-        columns=['datetime', 'open', 'high', 'low', 'close', 'volume'],  # 导出指定列
+        columns=['date', 'time', 'open', 'high', 'low', 'close', 'volume', ''],  # 导出指定列, 日期和时间分开成二列 包括''空列
+        # columns=['datetime', 'open', 'high', 'low', 'close', 'volume', ''],  # 导出指定列,包括''空列
         date_format='%Y-%m-%d %H:%M:%S',  # 时期格式化字符串
         float_format='%.0f',  # 浮点数格式化字符串保留的小数位数
         index=False,  # 不导出索引列

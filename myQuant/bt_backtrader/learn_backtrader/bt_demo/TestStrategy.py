@@ -409,8 +409,8 @@ class TestStrategy(bt.Strategy):
             print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
 
     params = dict(
-        rpp=18,  # 盈利千分比
-        spp=17,  # 亏损千分比
+        rpp=10,  # 盈利千分比
+        spp=10,  # 亏损千分比
         rspp=5,  # 盈亏千分比
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
         posadp=0,  # 加减仓幅度百分比
@@ -576,10 +576,11 @@ class TestStrategy(bt.Strategy):
                 size = -(abs(self.position.size) + self.mpposmin)
 
             # 限定使用资金的范围
-            poskkcash = sign * (  # sign 为开仓方向
+            poskkcash = sign * abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                    (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                    # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
             target = int(round(poskkcash // margin))
@@ -595,10 +596,11 @@ class TestStrategy(bt.Strategy):
                 posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
                 posmaxcash = min(max(margin * 1.1, self.mpposmax), get_cash)  # 最大开仓金额
                 # 限定使用资金的范围
-                poskkcash = sign * (  # sign 为开仓方向
+                poskkcash = sign * abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
-                        posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                        (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                        # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
                 self.myorder = self.order_target_value(target=poskkcash)
@@ -623,14 +625,16 @@ class TestStrategy(bt.Strategy):
                 # poskkcash = percent * (get_cash_value - open_profit)  # 帐户总资金百分比交易
 
                 # 限定使用资金的范围
-                poskkcash = sign * (  # sign 为开仓方向
+                poskkcash = sign * abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
-                        posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+
+                        # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                        (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
 
-                percent = sign * ((abs(poskkcash) + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
+                percent = sign * abs((abs(poskkcash) + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
                 # percent = sign * (abs(poskkcash) / get_cash)  # 计算占可用资金百分比 self.myorder = self.order_target_percent(target=percent)
                 self.myorder = self.order_target_percent(target=percent)
                 self.mposkk = percent * 100
@@ -695,7 +699,7 @@ class TestStrategy(bt.Strategy):
             if self.sig_long:  # 买入
                 t_enter += ',买入'
                 self.sig_ref1 = self.positionflag = 1  # 记录开仓信号
-                self.mposkk = abs(self.mposkk + 0.0001)
+                self.mposkk = abs(self.mposkk * 1.001 + 0.0001)
 
                 self.radd = self.myentryprice * (1 + self.mpr)
                 self.sexit = self.myentryprice / (1 + self.mps)
@@ -703,7 +707,7 @@ class TestStrategy(bt.Strategy):
             elif self.sig_short:  # 卖出
                 t_enter += ',卖出'
                 self.sig_ref1 = self.positionflag = -1  # 记录开仓信号
-                self.mposkk = -abs(self.mposkk * 1 + 0.0001)
+                self.mposkk = -abs(self.mposkk * 1.001 + 0.0001)
 
                 # self.radd = self.myentryprice * (1 - self.mpr)
                 # self.sexit = self.myentryprice * (1 + self.mps)

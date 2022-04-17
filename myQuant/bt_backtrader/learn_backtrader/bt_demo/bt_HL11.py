@@ -8,16 +8,21 @@ from enum import Enum
 
 DT_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-DT_START, DT_END = '2012-01-01', '2013-02-01'
+DT_START, DT_END = '2012-01-01', '2022-04-01'
 DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 DT_COMPRESSION = 15  # 合成周期的bar数
-DT_PRINTLOG = False  # 是否打印日志
+DT_PRINTLOG = True  # 是否打印日志
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-DT_OPTS = True  # 是否参数调优
-DT_RPP = [5, 1, 10]  # 参数
-DT_SPP = [17, 10, 20]  # 参数
+DT_OPTS = False  # 是否参数调优
+DT_RPP = [18, 1, 10, True]  # 参数[默认值,最小值,最小值,是否优化]
+DT_SPP = [17, 1, 10, True]  # 参数[默认值,最小值,最小值,是否优化]
 
+DT_PARAM = {
+    'rpp': (range(DT_RPP[1], DT_RPP[2]) if DT_RPP[3] else DT_RPP[0]),
+    'spp': (range(DT_SPP[1], DT_SPP[2]) if DT_SPP[3] else DT_SPP[0]),
+    'printlog': False,
+}
 
 def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
@@ -180,12 +185,11 @@ def runstrat(args=None):
     global DT_RESULT_ONE, DT_RESULTS_OPT  # 申明要使用全局变量
     # 参数调优
     if args.opts:
+        kwargs = DT_PARAM
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             TestStrategy,
-            rpp=range(DT_RPP[1], DT_RPP[2]),
-            spp=range(DT_SPP[1], DT_SPP[2]),
-            printlog=False,
+            **kwargs
         )
         # 添加分析指标
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
@@ -232,7 +236,7 @@ def runstrat(args=None):
                 '{:2d}'.format(x[0].p.spp),  # 参数
                 '{:5.2f}'.format(returns['rtot'] * 100),  # 总复合回报
                 '{:5.2f}'.format((trade['won']['total']) / (trade['lost']['total'] + trade['won']['total']) * 100),  # 胜率
-                '{:5.2f}'.format(returns['rnorm100']),  # 以 100% 表示的年化归一化回报
+                '{:5.2f}'.format(returns['rnorm100'] * 100),  # 以 100% 表示的年化归一化回报
                 '{:5.2f}'.format(drawdown['max']['drawdown']),  # 最大回撤
                 '{:5.5f}'.format(sharpe['sharperatio']),  # 夏普率
                 '{:5.2f}'.format((((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])) * 100),  # 手续费占比净盈亏百分比
@@ -265,11 +269,17 @@ def runstrat(args=None):
         pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的最小行有多少
         pd.set_option('display.max_columns', 20)  # 确定显示最大列多少
+        pd.set_option('display.float_format', '{:,.2f}'.format)  # 逗号格式化大值数字,设置数据精度
         pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
         pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
+
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
+        DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
         print(res_df.loc[:, columns])  # 显示指定列
-        res_df.to_csv('results_opt.csv', sep='\t', float_format='%.2f')  # 保存分析数据到文件
+        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(DT_FILE_PATH[:15], DT_START, DT_END, DT_PARAM['rpp'], DT_PARAM['spp'], ))
+        print(filename)  # 打印文件路径
+        res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
+
     # 回测分析
     else:
         # 添加观测器,绘制时显示
@@ -429,8 +439,8 @@ class TestStrategy(bt.Strategy):
             print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
 
     params = dict(
-        rpp=18,  # 盈利千分比
-        spp=17,  # 亏损千分比
+        rpp=10,  # 盈利千分比
+        spp=10,  # 亏损千分比
         rspp=5,  # 盈亏千分比
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
         posadp=0,  # 加减仓幅度百分比
@@ -596,10 +606,11 @@ class TestStrategy(bt.Strategy):
                 size = -(abs(self.position.size) + self.mpposmin)
 
             # 限定使用资金的范围
-            poskkcash = sign * (  # sign 为开仓方向
+            poskkcash = sign * abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                    (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                    # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
             target = int(round(poskkcash // margin))
@@ -615,10 +626,11 @@ class TestStrategy(bt.Strategy):
                 posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
                 posmaxcash = min(max(margin * 1.1, self.mpposmax), get_cash)  # 最大开仓金额
                 # 限定使用资金的范围
-                poskkcash = sign * (  # sign 为开仓方向
+                poskkcash = sign * abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
-                        posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                        (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                        # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
                 self.myorder = self.order_target_value(target=poskkcash)
@@ -643,14 +655,15 @@ class TestStrategy(bt.Strategy):
                 # poskkcash = percent * (get_cash_value - open_profit)  # 帐户总资金百分比交易
 
                 # 限定使用资金的范围
-                poskkcash = sign * (  # sign 为开仓方向
+                poskkcash = sign * abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
-                        posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                        (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                        # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
 
-                percent = sign * ((abs(poskkcash) + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
+                percent = sign * abs((abs(poskkcash) + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
                 # percent = sign * (abs(poskkcash) / get_cash)  # 计算占可用资金百分比 self.myorder = self.order_target_percent(target=percent)
                 self.myorder = self.order_target_percent(target=percent)
                 self.mposkk = percent * 100
@@ -723,7 +736,7 @@ class TestStrategy(bt.Strategy):
             elif self.sig_short:  # 卖出
                 t_enter += ',卖出'
                 self.sig_ref1 = self.positionflag = -1  # 记录开仓信号
-                self.mposkk = -abs(self.mposkk * 1 + 0.0001)
+                self.mposkk = -abs(self.mposkk + 0.0001)
 
                 # self.radd = self.myentryprice * (1 - self.mpr)
                 # self.sexit = self.myentryprice * (1 + self.mps)
