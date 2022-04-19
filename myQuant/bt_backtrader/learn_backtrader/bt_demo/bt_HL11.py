@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import time
 from enum import Enum
+from datetime import datetime
 
 DT_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
@@ -15,13 +16,12 @@ DT_PRINTLOG = True  # 是否打印日志
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 DT_OPTS = True  # 是否参数调优
-DT_RPP = [18, 1, 10, True]  # 参数[默认值,最小值,最大值,是否优化]
-DT_SPP = [17, 1, 10, True]  # 参数[默认值,最小值,最大值,是否优化]
+DT_RPP = [14, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+DT_SPP = [19, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 
 DT_PARAM = {
-    'rpp': (range(DT_RPP[1], DT_RPP[2]) if DT_RPP[3] else DT_RPP[0]),
-    'spp': (range(DT_SPP[1], DT_SPP[2]) if DT_SPP[3] else DT_SPP[0]),
-    'printlog': False,
+    'rpp': (range(DT_RPP[2], DT_RPP[3], DT_RPP[4]) if DT_RPP[1] else DT_RPP[0]),
+    'spp': (range(DT_SPP[2], DT_SPP[3], DT_SPP[4]) if DT_SPP[1] else DT_SPP[0]),
 }
 
 def parse_args(pargs=None):
@@ -86,7 +86,7 @@ def runstrat(args=None):
     myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
     file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
     print(file_path_abs)
-    print("dt_format:", dt_format, "dt_start:", dt_start, "dt_end:", dt_end)
+    print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
     if not os.path.exists(file_path_abs):
         raise Exception("数据源文件未找到！" + file_path_abs)
 
@@ -95,7 +95,7 @@ def runstrat(args=None):
     dkwargs['dtformat'] = dt_format
     # dkwargs['tmformat'] = dt_tmformat
 
-    print(dkwargs)
+    # print(dkwargs)
     # 加载数据
     df = pd.read_csv(filepath_or_buffer=file_path_abs,
                      # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
@@ -186,6 +186,8 @@ def runstrat(args=None):
     # 参数调优
     if args.opts:
         kwargs = DT_PARAM
+        kwargs['printlog'] = False
+        print(kwargs)
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             TestStrategy,
@@ -213,7 +215,7 @@ def runstrat(args=None):
         # print out the result_one
         print('Time used:', str(tend - tstart))
 
-        print("\n--------------- 分析结果 -----------------")
+        print("--------------- 分析结果 -----------------")
 
         # 每个策略实例的结果以列表的形式保存在列表中。
         # 优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
@@ -274,7 +276,7 @@ def runstrat(args=None):
         res_df[['rpp', 'spp', 'total']] = res_df[['rpp', 'spp', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
         res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
 
-        res_df.sort_values(by=['rtot%', 'pnl_net'], ascending=False, inplace=True)  # 按总复合回报和累计盈亏排序
+        res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
         res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
         res_df.index.name = 'id'  # 设置索引名称
         pd.set_option('precision', 3)  # 显示小数点后的位数
