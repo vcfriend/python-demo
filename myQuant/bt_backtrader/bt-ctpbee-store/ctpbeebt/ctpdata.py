@@ -79,7 +79,9 @@ class CTPData(with_metaclass(MetaCTPData, DataBase)):
         # 改数据类型
         for i in range(self.p.num_init_backfill):
             msg = futures_sina_df.iloc[i].to_dict()
-            dt = datetime.strptime(msg['datetime'], "%Y-%m-%d %H:%M:%S")
+            #  2022-04-18  .0
+            dt = datetime.strptime(msg['datetime'], "%Y-%m-%d  .%f")
+            # dt = datetime.strptime(msg['datetime'], "%Y-%m-%d %H:%M:%S.%f")
             dt = CHINA_TZ.localize(dt)
             msg['datetime'] = dt
             msg['OpenPrice'] = float(msg['OpenPrice'])

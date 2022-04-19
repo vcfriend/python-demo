@@ -104,7 +104,7 @@ class SmaCross(bt.Strategy):
 
 # 主程序开始
 if __name__ == '__main__':
-    with open('./params.json', 'r') as f:
+    with open('./params.json', 'r', encoding='utf-8') as f:
         ctp_setting = json.load(f)
 
     cerebro = bt.Cerebro(live=True)
@@ -115,11 +115,11 @@ if __name__ == '__main__':
     # 由于历史回填数据从akshare拿，最细1分钟bar，所以以下实盘也只接收1分钟bar
     # https://www.akshare.xyz/zh_CN/latest/data/futures/futures.html#id106
 
-    data0 = store.getdata(dataname='ag2112.SHFE', timeframe=bt.TimeFrame.Minutes,  # 注意符号必须带交易所代码。
-                          num_init_backfill=100 if is_trading_period() else 0)  # 初始回填bar数，使用TEST服务器进行模拟实盘时，要设为0
+    data0 = store.getdata(dataname='ag2206.SHFE', timeframe=bt.TimeFrame.Minutes,  # 注意符号必须带交易所代码。
+                          num_init_backfill=0 if is_trading_period() else 0)  # 初始回填bar数，使用TEST服务器进行模拟实盘时，要设为0
 
-    data1 = store.getdata(dataname='rb2201.SHFE', timeframe=bt.TimeFrame.Minutes,  # 注意符号必须带交易所代码。
-                          num_init_backfill=100 if is_trading_period() else 0)  # 初始回填bar数，使用TEST服务器进行模拟实盘时，要设为0
+    data1 = store.getdata(dataname='rb2210.SHFE', timeframe=bt.TimeFrame.Minutes,  # 注意符号必须带交易所代码。
+                          num_init_backfill=0 if is_trading_period() else 0)  # 初始回填bar数，使用TEST服务器进行模拟实盘时，要设为0
 
     cerebro.adddata(data0)
     cerebro.adddata(data1)

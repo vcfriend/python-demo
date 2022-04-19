@@ -26,6 +26,7 @@
     <orderEntry type="module" module-name="Python" />
     <orderEntry type="module" module-name="backtrader_ctp_example" />
     <orderEntry type="module" module-name="bt-ctpbee-store" />
+    <orderEntry type="module" module-name="openctp" />
   </component>
   <component name="PackageRequirementsSettings">
     <option name="requirementsPath" value="" />
