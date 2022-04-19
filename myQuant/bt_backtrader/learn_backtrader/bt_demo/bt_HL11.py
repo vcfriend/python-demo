@@ -15,8 +15,8 @@ DT_PRINTLOG = True  # 是否打印日志
 DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 DT_OPTS = False  # 是否参数调优
-DT_RPP = [18, 1, 10, True]  # 参数[默认值,最小值,最小值,是否优化]
-DT_SPP = [17, 1, 10, True]  # 参数[默认值,最小值,最小值,是否优化]
+DT_RPP = [18, 1, 10, True]  # 参数[默认值,最小值,最大值,是否优化]
+DT_SPP = [17, 1, 10, True]  # 参数[默认值,最小值,最大值,是否优化]
 
 DT_PARAM = {
     'rpp': (range(DT_RPP[1], DT_RPP[2]) if DT_RPP[3] else DT_RPP[0]),
@@ -514,8 +514,8 @@ class TestStrategy(bt.Strategy):
             trade.pnlcomm)  # 盈亏含手续费
         t += ',add:{:.2f}'.format(self.radd)
         t += ',exit:{:.2f}'.format(self.sexit)
-        t += ',open_m3:{:}'.format(self.dtopen_month)
-        t += ',总资产:{:.2f}'.format(self.broker.getvalue())
+        t += ',open_m:{:}'.format(self.dtopen_month)
+        t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         # t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
@@ -557,10 +557,10 @@ class TestStrategy(bt.Strategy):
 
         t += ',add:{:.2f}'.format(self.radd)
         t += ',exit:{:.2f}'.format(self.sexit)
-        t += ',open_m3:{:}'.format(self.dtopen_month)
+        t += ',open_m:{:}'.format(self.dtopen_month)
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
-        t += ',总资产:{:.2f}'.format(self.broker.getvalue())
+        t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
 
         self.log(t)
