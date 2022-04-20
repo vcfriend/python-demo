@@ -484,8 +484,8 @@ class TestStrategy(bt.Strategy):
             trade.pnlcomm)  # 盈亏含手续费
         t += ',add:{:.2f}'.format(self.radd)
         t += ',exit:{:.2f}'.format(self.sexit)
-        t += ',open_m3:{:}'.format(self.dtopen_month)
-        t += ',总资产:{:.2f}'.format(self.broker.getvalue())
+        t += ',open_m:{:}'.format(self.dtopen_month)
+        t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         # t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
@@ -527,10 +527,10 @@ class TestStrategy(bt.Strategy):
 
         t += ',add:{:.2f}'.format(self.radd)
         t += ',exit:{:.2f}'.format(self.sexit)
-        t += ',open_m3:{:}'.format(self.dtopen_month)
+        t += ',open_m:{:}'.format(self.dtopen_month)
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
-        t += ',总资产:{:.2f}'.format(self.broker.getvalue())
+        t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
 
         self.log(t)
@@ -628,9 +628,8 @@ class TestStrategy(bt.Strategy):
                 poskkcash = sign * abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
-
-                        # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                         (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                        # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
 

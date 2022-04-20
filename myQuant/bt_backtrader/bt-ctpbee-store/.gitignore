@@ -108,3 +108,5 @@ samples/.DS_Store
 .DS_Store
 
 params.json!/samples/params.json
+!/samples/params-ctpopen.json
+!/samples/params-n-sight.json

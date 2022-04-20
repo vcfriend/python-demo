@@ -6,13 +6,14 @@ import numpy as np
 import time
 from enum import Enum
 from datetime import datetime
+from TestStrategy import TestStrategy
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 G_DT_START, G_DT_END = '2012-01-01', '2022-04-01'
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 G_DT_COMPRESSION = 15  # 合成周期的bar数
-G_P_PRINTLOG = True  # 是否打印日志
+G_P_PRINTLOG = False  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_OPTS = False  # 是否参数调优
@@ -23,6 +24,7 @@ DT_PARAM = {
     'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
     'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_P_SPP[1] else G_P_SPP[0]),
 }
+
 
 def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
@@ -143,8 +145,8 @@ def runstrat(args=None):
     # <editor-fold desc="折叠代码:交易手续费设置">
     cerebro.broker.setcommission(
         # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-        # commission=0.0015,
-        commission=2.4,
+        commission=0.0015,
+        # commission=2.4,
         # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
         margin=0,
         # 乘数，盈亏会按该乘数进行放大
@@ -153,7 +155,7 @@ def runstrat(args=None):
         # 1.CommInfoBase.COMM_PERC 百分比费用
         # 2.CommInfoBase.COMM_FIXED 固定费用
         # 3.None 根据 margin 取值来确定类型
-        commtype=bt.CommInfoBase.COMM_FIXED,
+        commtype=bt.CommInfoBase.COMM_PERC,
         # 当交易费用处于百分比模式下时，commission 是否为 % 形式
         # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
         percabs=True,
@@ -172,7 +174,7 @@ def runstrat(args=None):
         # 如果 False, 则通过margin参数确定保证金
         # 如果automargin<0, 通过mult*price确定保证金
         # 如果automargin>0, 如果automargin*price确定保证金
-        automargin=10 * 0.10,
+        automargin=10 * 0.13,
         # 交易费用设置作用的数据集(也就是作用的标的)
         # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
         name=None
@@ -233,7 +235,8 @@ def runstrat(args=None):
             sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
             timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
 
-            if trade['total']['total'] == 0: continue  # 忽略交易次数为0 的数据
+            if trade['total']['total'] == 0:
+                continue  # 忽略交易次数为0 的数据
 
             returns_rort_ = returns['rtot'] * 100  # 总复合回报
             returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
@@ -442,7 +445,7 @@ class UseTarget(Enum):
 
 
 # 创建策略继承bt.Strategy
-class TestStrategy(bt.Strategy):
+class MyStrategy(bt.Strategy):
 
     def log(self, txt, dt=None, printlog=None):
         # 记录策略的执行日志
