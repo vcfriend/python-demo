@@ -7,21 +7,21 @@ import time
 from enum import Enum
 from datetime import datetime
 
-DT_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-DT_START, DT_END = '2012-01-01', '2014-04-01'
-DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
-DT_COMPRESSION = 15  # 合成周期的bar数
-DT_PRINTLOG = True  # 是否打印日志
-DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-DT_OPTS = True  # 是否参数调优
-DT_RPP = [14, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-DT_SPP = [19, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
+G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
+G_DT_START, G_DT_END = '2012-01-01', '2014-04-01'
+G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
+G_DT_COMPRESSION = 15  # 合成周期的bar数
+G_P_PRINTLOG = True  # 是否打印日志
+G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
+G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
+G_OPTS = True  # 是否参数调优
+G_P_RPP = [14, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SPP = [19, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 
 DT_PARAM = {
-    'rpp': (range(DT_RPP[2], DT_RPP[3], DT_RPP[4]) if DT_RPP[1] else DT_RPP[0]),
-    'spp': (range(DT_SPP[2], DT_SPP[3], DT_SPP[4]) if DT_SPP[1] else DT_SPP[0]),
+    'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
+    'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_P_SPP[1] else G_P_SPP[0]),
 }
 
 def parse_args(pargs=None):
@@ -30,22 +30,22 @@ def parse_args(pargs=None):
         description='Sample for Order Target')
 
     parser.add_argument('--data', required=False,
-                        default=DT_FILE_PATH,
+                        default=G_FILE_PATH,
                         help='Specific data to be read in')
-    parser.add_argument('--dtformat', required=False, default=DT_DTFORMAT,
+    parser.add_argument('--dtformat', required=False, default=G_DT_DTFORMAT,
                         help='Ending date in data datetime format')
-    parser.add_argument('--fromdate', required=False, default=DT_START,
+    parser.add_argument('--fromdate', required=False, default=G_DT_START,
                         help='Starting date in `dtformat` format')
-    parser.add_argument('--todate', required=False, default=DT_END,
+    parser.add_argument('--todate', required=False, default=G_DT_END,
                         help='Ending date in `dtformat` format')
-    parser.add_argument('--timeframe', required=False, default=DT_TIMEFRAME,
+    parser.add_argument('--timeframe', required=False, default=G_DT_TIMEFRAME,
                         choices=['minutes', 'daily', 'weekly', 'monthly'],
                         help='重新采样到的时间范围')
-    parser.add_argument('--compression', required=False, type=int, default=DT_COMPRESSION,
+    parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION,
                         help='将 n 条压缩为 1, 最小周期为原数据周期')
-    parser.add_argument('--opts', required=False, type=bool, default=DT_OPTS,
+    parser.add_argument('--opts', required=False, type=bool, default=G_OPTS,
                         help='策略优化')
-    parser.add_argument('--quantstats', required=False, type=int, default=DT_QUANTSTATS,
+    parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS,
                         help='是否使用 quantstats 分析测试结果')
     parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15,
                         help=('Number of CPUs to use in the optimization'
@@ -56,7 +56,7 @@ def parse_args(pargs=None):
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
-                        metavar='kwargs', const=True, default=DT_PLOT,
+                        metavar='kwargs', const=True, default=G_PLOT,
                         help=('绘制应用传递的任何 kwargs 的读取数据\n'
                               '\n''例如:\n''\n''  --plot style="candle" (to plot candles)\n'))
     parser.add_argument("-f", "--file", default="file")  # 接收这个-f参数
@@ -289,7 +289,7 @@ def runstrat(args=None):
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(DT_FILE_PATH[:15], DT_START, DT_END, DT_PARAM['rpp'], DT_PARAM['spp'], ))
+        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, DT_PARAM['rpp'], DT_PARAM['spp'], ))
         print(filename)  # 打印文件路径
         print(res_df.loc[:, columns])  # 显示指定列参数优化结果
         res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
@@ -312,7 +312,7 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
 
         # 添加策略和参数
-        cerebro.addstrategy(TestStrategy, rpp=DT_RPP[0], spp=DT_SPP[0], printlog=DT_PRINTLOG)
+        cerebro.addstrategy(TestStrategy, rpp=G_P_RPP[0], spp=G_P_SPP[0], printlog=G_P_PRINTLOG)
 
         # 引擎运行前打印期出资金
         print('组合期初资金: %.2f' % cerebro.broker.getvalue())
@@ -429,7 +429,7 @@ def runstrat(args=None):
         import quantstats
         # 将分析指标保存到HTML文件
         quantstats.reports.html(returns, output='stats.html',
-                                title=DT_FILE_PATH + ' rpp:{:} spp:{:}'.format(DT_RPP[0], DT_SPP[0]))
+                                title=G_FILE_PATH + ' rpp:{:} spp:{:}'.format(G_P_RPP[0], G_P_SPP[0]))
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 

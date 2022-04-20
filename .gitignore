@@ -140,5 +140,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-/myQuant/bt_backtrader/learn_backtrader/bt_demo/quantstats-tearsheet.html
 !/myQuant/bt_backtrader/learn_backtrader/bt_demo/quantstats-tearsheet.html
