@@ -10,7 +10,7 @@ from TestStrategy import TestStrategy
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2012-01-01', '2022-04-01'
+G_DT_START, G_DT_END = '2012-01-01', '2013-04-01'
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 G_DT_COMPRESSION = 15  # 合成周期的bar数
 G_P_PRINTLOG = False  # 是否打印日志
@@ -432,7 +432,7 @@ def runstrat(args=None):
         import quantstats
         # 将分析指标保存到HTML文件
         quantstats.reports.html(returns, output='stats.html',
-                                title=G_FILE_PATH + ' rpp:{:} spp:{:}'.format(G_P_RPP[0], G_P_SPP[0]))
+                                title=G_FILE_PATH + ' rpp:{:} spp:{:} dt:{:%H:%M:%S}'.format(G_P_RPP[0], G_P_SPP[0], datetime.now()))
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 

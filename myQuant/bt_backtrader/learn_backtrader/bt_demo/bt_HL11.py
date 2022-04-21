@@ -12,7 +12,7 @@ G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 G_DT_START, G_DT_END = '2012-01-01', '2022-04-01'
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 G_DT_COMPRESSION = 15  # 合成周期的bar数
-G_P_PRINTLOG = True  # 是否打印日志
+G_P_PRINTLOG = False  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_OPTS = False  # 是否参数调优
@@ -143,8 +143,8 @@ def runstrat(args=None):
     # <editor-fold desc="折叠代码:交易手续费设置">
     cerebro.broker.setcommission(
         # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-        # commission=0.0015,
-        commission=2.4,
+        commission=0.0015,
+        # commission=2.4,
         # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
         margin=0,
         # 乘数，盈亏会按该乘数进行放大
@@ -153,7 +153,7 @@ def runstrat(args=None):
         # 1.CommInfoBase.COMM_PERC 百分比费用
         # 2.CommInfoBase.COMM_FIXED 固定费用
         # 3.None 根据 margin 取值来确定类型
-        commtype=bt.CommInfoBase.COMM_FIXED,
+        commtype=bt.CommInfoBase.COMM_PERC,
         # 当交易费用处于百分比模式下时，commission 是否为 % 形式
         # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
         percabs=True,
@@ -172,7 +172,7 @@ def runstrat(args=None):
         # 如果 False, 则通过margin参数确定保证金
         # 如果automargin<0, 通过mult*price确定保证金
         # 如果automargin>0, 如果automargin*price确定保证金
-        automargin=10 * 0.10,
+        automargin=10 * 0.13,
         # 交易费用设置作用的数据集(也就是作用的标的)
         # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
         name=None
@@ -429,7 +429,7 @@ def runstrat(args=None):
         import quantstats
         # 将分析指标保存到HTML文件
         quantstats.reports.html(returns, output='stats.html',
-                                title=G_FILE_PATH + ' rpp:{:} spp:{:}'.format(G_P_RPP[0], G_P_SPP[0]))
+                                title=G_FILE_PATH + ' rpp:{:} spp:{:} dt:{:%H:%M:%S}'.format(G_P_RPP[0], G_P_SPP[0], datetime.now()))
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 
@@ -457,7 +457,7 @@ class TestStrategy(bt.Strategy):
         spp=10,  # 亏损千分比
         rspp=5,  # 盈亏千分比
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
-        posadp=0,  # 加减仓幅度百分比
+        posadp=10,  # 加减仓幅度百分比
         posmax=50,  # 最大开仓单位
         ocjk=1,  # CLOSE与OPEN的间隔
         sspp=0,  # 最大回撤千分比

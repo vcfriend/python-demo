@@ -1,20 +1,65 @@
 import os
-from enum import Enum
 import backtrader as bt
 import argparse
 import pandas as pd
 import numpy as np
 import time
+from enum import Enum
+from datetime import datetime
 
-DT_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-DT_START, DT_END = '2012-01-01', '2018-02-01'
-DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
-DT_COMPRESSION = 15  # 合成周期的bar数
-DT_PRINTLOG = False  # 是否打印日志
-DT_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-DT_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-DT_OPTS = False  # 是否参数调优
+G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
+G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
+G_DT_START, G_DT_END = '2012-01-01', '2013-04-01'
+G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
+G_DT_COMPRESSION = 15  # 合成周期的bar数
+G_P_PRINTLOG = False  # 是否打印日志
+G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
+G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
+G_OPTS = False  # 是否参数调优
+G_P_RPP = [3, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SPP = [7, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+
+
+def parse_args(pargs=None):
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description='Sample for Order Target')
+
+    parser.add_argument('--data', required=False,
+                        default=G_FILE_PATH,
+                        help='Specific data to be read in')
+    parser.add_argument('--dtformat', required=False, default=G_DT_DTFORMAT,
+                        help='Ending date in data datetime format')
+    parser.add_argument('--fromdate', required=False, default=G_DT_START,
+                        help='Starting date in `dtformat` format')
+    parser.add_argument('--todate', required=False, default=G_DT_END,
+                        help='Ending date in `dtformat` format')
+    parser.add_argument('--timeframe', required=False, default=G_DT_TIMEFRAME,
+                        choices=['minutes', 'daily', 'weekly', 'monthly'],
+                        help='重新采样到的时间范围')
+    parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION,
+                        help='将 n 条压缩为 1, 最小周期为原数据周期')
+    parser.add_argument('--opts', required=False, type=bool, default=G_OPTS,
+                        help='策略优化')
+    parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS,
+                        help='是否使用 quantstats 分析测试结果')
+    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15,
+                        help=('Number of CPUs to use in the optimization'
+                              '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
+    parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
+    parser.add_argument('--no-optreturn', action='store_true', required=False,
+                        help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
+
+    # Plot options
+    parser.add_argument('--plot', '-p', nargs='?', required=False,
+                        metavar='kwargs', const=True, default=G_PLOT,
+                        help=('绘制应用传递的任何 kwargs 的读取数据\n'
+                              '\n''例如:\n''\n''  --plot style="candle" (to plot candles)\n'))
+    parser.add_argument("-f", "--file", default="file")  # 接收这个-f参数
+    if pargs is not None:
+        return parser.parse_args(pargs)
+
+    return parser.parse_args()
 
 
 def runstrat(args=None):
@@ -37,7 +82,7 @@ def runstrat(args=None):
     myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
     file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
     print(file_path_abs)
-    print("dt_format:", dt_format, "dt_start:", dt_start, "dt_end:", dt_end)
+    print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
     if not os.path.exists(file_path_abs):
         raise Exception("数据源文件未找到！" + file_path_abs)
 
@@ -46,7 +91,7 @@ def runstrat(args=None):
     dkwargs['dtformat'] = dt_format
     # dkwargs['tmformat'] = dt_tmformat
 
-    print(dkwargs)
+    # print(dkwargs)
     # 加载数据
     df = pd.read_csv(filepath_or_buffer=file_path_abs,
                      # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
@@ -94,8 +139,8 @@ def runstrat(args=None):
     # <editor-fold desc="折叠代码:交易手续费设置">
     cerebro.broker.setcommission(
         # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-        # commission=0.0015,
-        commission=2.4,
+        commission=0.0015,
+        # commission=2.4,
         # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
         margin=0,
         # 乘数，盈亏会按该乘数进行放大
@@ -104,7 +149,7 @@ def runstrat(args=None):
         # 1.CommInfoBase.COMM_PERC 百分比费用
         # 2.CommInfoBase.COMM_FIXED 固定费用
         # 3.None 根据 margin 取值来确定类型
-        commtype=bt.CommInfoBase.COMM_FIXED,
+        commtype=bt.CommInfoBase.COMM_PERC,
         # 当交易费用处于百分比模式下时，commission 是否为 % 形式
         # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
         percabs=True,
@@ -123,7 +168,7 @@ def runstrat(args=None):
         # 如果 False, 则通过margin参数确定保证金
         # 如果automargin<0, 通过mult*price确定保证金
         # 如果automargin>0, 如果automargin*price确定保证金
-        automargin=10 * 0.10,
+        automargin=10 * 0.13,
         # 交易费用设置作用的数据集(也就是作用的标的)
         # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
         name=None
@@ -131,15 +176,18 @@ def runstrat(args=None):
     # </editor-fold>
 
     strats = None
+    result_one = None
+    results_opt = None
+    global DT_RESULT_ONE, DT_RESULTS_OPT  # 申明要使用全局变量
     # 参数调优
     if args.opts:
-        result = None
+        kwargs = DT_PARAM
+        kwargs['printlog'] = False
+        print(kwargs)
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             TestStrategy,
-            rpp=range(1, 20),
-            spp=range(10, 20),
-            printlog=False,
+            **kwargs
         )
         # 添加分析指标
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
@@ -150,66 +198,99 @@ def runstrat(args=None):
         # clock the start of the process
         tstart = time.perf_counter()
         # Run over everything
-        # result = cerebro.run()
-        result = cerebro.run(maxcpus=args.maxcpus,
-                             optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
-                             optreturn=not args.no_optreturn,  # optreturn（默认值：True)如果优化结果不是完整的对象（以及所有数据、指标、观察器等），而是具有以下属性的对象 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西。如果需要对（例如）指标的生成值进行详细分析，请将其关闭
-                             # optreturn=False,
-                             # stdstats=False,
-                             )
+        # result_one = cerebro.run()
+        results_opt = cerebro.run(
+            maxcpus=args.maxcpus,
+            optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
+            optreturn=not args.no_optreturn,  # optreturn（默认值：True)如果优化结果不是完整的对象（以及所有数据、指标、观察器等），而是具有以下属性的对象 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西。如果需要对（例如）指标的生成值进行详细分析，请将其关闭
+            # optreturn=False,
+            # stdstats=False,
+        )
         # clock the end of the process
         tend = time.perf_counter()
-        # print out the result
+        # print out the result_one
         print('Time used:', str(tend - tstart))
 
-        print("\n--------------- 分析结果 -----------------")
+        print("--------------- 分析结果 -----------------")
 
         # 每个策略实例的结果以列表的形式保存在列表中。
         # 优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
         res_list = [[]]
         res_timereturn_title = []  # 列标题
 
-        timeReturn = result[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
+        timeReturn = results_opt[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
         for k, v in timeReturn.items():
             res_timereturn_title.append('{:%Y-%m}'.format(k))
 
-        for x in result:
+        for x in results_opt:
             trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
             returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
             drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
             sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
             timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
 
+            if trade['total']['total'] == 0:
+                continue  # 忽略交易次数为0 的数据
+
+            returns_rort_ = returns['rtot'] * 100  # 总复合回报
+            returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
+            trade_won_ = (trade['won']['total'])  # 总盈利次数
+            trade_lost_ = (trade['lost']['total'])  # 总亏损次数
+            trade_win_rate = trade_won_ / (trade_lost_ + trade_won_) * 100  # 胜率
+            drawdown_ = drawdown['max']['drawdown']
+            sharpe_ = sharpe['sharperatio']
+            trade_total_ = trade['total']['total']  # 交易次数
+            trade_pnl_total_ = (trade['pnl']['gross']['total'])  # 总盈亏
+            trade_pnl_net_ = (trade['pnl']['net']['total'])  # 总盈亏-手续费
+            trade_comm_net_p = (abs(trade_pnl_total_ - trade_pnl_net_) / trade_pnl_total_) * 100  # 手续费占比净盈亏百分比
+
             row = [
-                x[0].p.rpp,  # 参数
-                x[0].p.spp,  # 参数
-                returns['rtot'],  # 总复合回报
-                (trade['won']['total']) / (trade['lost']['total'] + trade['won']['total']),  # 胜率
-                returns['rnorm100'],  # 以 100% 表示的年化归一化回报
-                drawdown['max']['drawdown'],  # 最大回撤
-                sharpe['sharperatio'],  # 夏普率
-                (((trade['pnl']['gross']['total']) - (trade['pnl']['net']['total'])) / (trade['pnl']['gross']['total'])),  # 手续费比净盈亏
-                trade['total']['total'],  # 交易次数
-                trade['pnl']['net']['total'],  # 帐户余额含手续费
+                '{:2d}'.format(x[0].p.rpp),  # 参数
+                '{:2d}'.format(x[0].p.spp),  # 参数
+                '{:5.2f}'.format(returns_rort_),  # 总复合回报
+                '{:5.2f}'.format(trade_win_rate),  # 胜率
+                '{:5.2f}'.format(returns_rnorm100_),  # 年化归一化回报
+                '{:5.2f}'.format(drawdown_ if drawdown_ else 0),  # 最大回撤
+                '{:5.2f}'.format(sharpe_ if sharpe_ else 0),  # 夏普率
+                '{:5.2f}'.format(trade_comm_net_p),  # 手续费占比净盈亏百分比
+                '{:4d}'.format(trade_total_),  # 交易次数
+                '{:8.2f}'.format(trade_pnl_net_),  # 总盈亏余额含手续费
             ]
             res_timereturn_row = list(timeReturn.values())  # 月度或年度复合回报,由参数timeframe=bt.TimeFrame.Months控制
             row.extend(res_timereturn_row)  # 月度复合回报
-            # 变量是浮点数时,且<10时,保留三位小数,>10时保留二位小数,不是浮点数时保持不变
-            row_3d = [(('{:.3f}' if abs(i) < 10 else '{:.2f}') if isinstance(i, float) else '{:}').format(i) for i in row]
-            res_list.append(row_3d)  # 添加到返回列表
+            # 变量是浮点数时,且<10时,%比显示保留5位整数1位小数且*100,>10时保留8位整数2位小数,不是浮点数时保留5位整数
+            # row = [(('{:5.1f}' if abs(i) < 10 else '{:8.2f}') if isinstance(i, float) else '{:5}').format(i * 100 if (abs(i) < 10 and isinstance(i, float)) else i) for i in row]
+            res_list.append(row)  # 添加到返回列表
 
         # 结果转成dataframe
-        columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'net']
-        columns.extend(res_timereturn_title)  # 将月标题添加到columns列表里
-        res_df = pd.DataFrame(res_list, columns=columns)
+        columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
+        columns_all = columns.copy()
+        columns_all.extend(res_timereturn_title)  # 将列标题添加到columns列表尾部
+        res_df = pd.DataFrame(res_list, dtype='float', columns=columns_all)
+
+        res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
+        # res_df[['rpp', 'spp', 'total']] = res_df[['rpp', 'spp', 'total']].astype(int)   # 转换指定类数据类型
+        res_df[['rpp', 'spp', 'total']] = res_df[['rpp', 'spp', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
+        res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
+
+        res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
+        res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
+        res_df.index.name = 'id'  # 设置索引名称
         pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的部分有多少行
-        pd.set_option('display.max_columns', 20)  # 确定显示的部分有多少行
+        pd.set_option('display.max_rows', 300)  # 确定显示的部分有多少行
+        pd.set_option('display.max_columns', 20)  # 确定显示的部分有多少列
+        pd.set_option('display.float_format', '{:,.2f}'.format)  # 逗号格式化大值数字,设置数据精度
         pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
         pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
-        res_df = res_df.sort_values(by='rtot%')
-        print(res_df)  # 按总复合回报排序
-        res_df.to_csv('result.csv', sep='\t', float_format='%.3f')  # 保存分析数据到文件
+
+        res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
+        DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
+        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, DT_PARAM['rpp'], DT_PARAM['spp'], ))
+        print(filename)  # 打印文件路径
+        print(res_df.loc[:, columns])  # 显示指定列参数优化结果
+        res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
+
     # 回测分析
     else:
         # 添加观测器,绘制时显示
@@ -228,24 +309,24 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
 
         # 添加策略和参数
-        cerebro.addstrategy(TestStrategy, printlog=DT_PRINTLOG)
+        cerebro.addstrategy(TestStrategy, rpp=G_P_RPP[0], spp=G_P_SPP[0], printlog=G_P_PRINTLOG)
 
         # 引擎运行前打印期出资金
         print('组合期初资金: %.2f' % cerebro.broker.getvalue())
         # 启动回测
-        result = cerebro.run()
+        result_one = cerebro.run()
         # 引擎运行后打期末资金
         print('组合期末资金: %.2f' % cerebro.broker.getvalue())
         # 提取结果
         print("\n--------------- 累计收益率 -----------------")
-        annualReturn = result[0].analyzers.annualReturn.get_analysis()
+        annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
         print(" Cumulative Return: {:.2f}".format(sum(annualReturn.values())))
         print("\n--------------- 年度收益率 -----------------")
         # print(' 收益率k,v', get_analysis.items())
         for k, v in annualReturn.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- 最大回撤 -----------------")
-        drawDown = result[0].analyzers.drawDown.get_analysis()
+        drawDown = result_one[0].analyzers.drawDown.get_analysis()
         for k, v in drawDown.items():
             if not isinstance(v, dict):
                 t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
@@ -255,15 +336,15 @@ def runstrat(args=None):
                     t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
                     print(t, end='')
         print("\n--------------- 年化收益：日度收益 -----------------")
-        returns = result[0].analyzers.returns.get_analysis()
-        for k, v in returns.items():
+        an_returns = result_one[0].analyzers.returns.get_analysis()
+        for k, v in an_returns.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- 年化夏普比率：日度收益 -----------------")
-        sharpeRatio = (result[0].analyzers.sharpeRatio.get_analysis())
+        sharpeRatio = (result_one[0].analyzers.sharpeRatio.get_analysis())
         for k, v in sharpeRatio.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- SharpeRatio_A -----------------")
-        sharpeRatio_A = result[0].analyzers.sharpeRatio_A.get_analysis()
+        sharpeRatio_A = result_one[0].analyzers.sharpeRatio_A.get_analysis()
         for k, v in sharpeRatio_A.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- test end -----------------")
@@ -286,7 +367,7 @@ def runstrat(args=None):
         plt.style.use('dark_background')
 
         # 提取收益序列
-        pnl = pd.Series(result[0].analyzers.timeReturn.get_analysis())
+        pnl = pd.Series(result_one[0].analyzers.timeReturn.get_analysis())
         # 计算累计收益
         cumulative = (pnl + 1).cumprod()
         # 计算回撤序列
@@ -339,55 +420,15 @@ def runstrat(args=None):
     # 回测分析保存到文件
     if args.quantstats and not args.opts:
         # 使用quantstats 分析工具并保存到HTML文件
-        portfolio_stats = result[0].analyzers.getbyname('pyFolio')
+        portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
         import quantstats
-        quantstats.reports.html(returns, output='stats.html', title=DT_FILE_PATH)  # 将分析指标保存到HTML文件
+        # 将分析指标保存到HTML文件
+        quantstats.reports.html(returns, output='stats.html',
+                                title=G_FILE_PATH + ' rpp:{:} spp:{:} dt:{:%H:%M:%S}'.format(G_P_RPP[0], G_P_SPP[0], datetime.now()))
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
-
-
-def parse_args(pargs=None):
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Sample for Order Target')
-
-    parser.add_argument('--data', required=False,
-                        default=DT_FILE_PATH,
-                        help='Specific data to be read in')
-    parser.add_argument('--dtformat', required=False, default=DT_DTFORMAT,
-                        help='Ending date in data datetime format')
-    parser.add_argument('--fromdate', required=False, default=DT_START,
-                        help='Starting date in `dtformat` format')
-    parser.add_argument('--todate', required=False, default=DT_END,
-                        help='Ending date in `dtformat` format')
-    parser.add_argument('--timeframe', required=False, default=DT_TIMEFRAME,
-                        choices=['minutes', 'daily', 'weekly', 'monthly'],
-                        help='重新采样到的时间范围')
-    parser.add_argument('--compression', required=False, type=int, default=DT_COMPRESSION,
-                        help='将 n 条压缩为 1, 最小周期为原数据周期')
-    parser.add_argument('--opts', required=False, type=bool, default=DT_OPTS,
-                        help='策略优化')
-    parser.add_argument('--quantstats', required=False, type=int, default=DT_QUANTSTATS,
-                        help='是否使用 quantstats 分析测试结果')
-    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15,
-                        help=('Number of CPUs to use in the optimization'
-                              '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
-    parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
-    parser.add_argument('--no-optreturn', action='store_true', required=False,
-                        help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
-
-    # Plot options
-    parser.add_argument('--plot', '-p', nargs='?', required=False,
-                        metavar='kwargs', const=True, default=DT_PLOT,
-                        help=('绘制应用传递的任何 kwargs 的读取数据\n'
-                              '\n''例如:\n''\n''  --plot style="candle" (to plot candles)\n'))
-    parser.add_argument("-f", "--file", default="file")  # 接收这个-f参数
-    if pargs is not None:
-        return parser.parse_args(pargs)
-
-    return parser.parse_args()
 
 
 class UseTarget(Enum):
@@ -413,7 +454,7 @@ class TestStrategy(bt.Strategy):
         spp=10,  # 亏损千分比
         rspp=5,  # 盈亏千分比
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
-        posadp=0,  # 加减仓幅度百分比
+        posadp=10,  # 加减仓幅度百分比
         posmax=50,  # 最大开仓单位
         ocjk=1,  # CLOSE与OPEN的间隔
         sspp=0,  # 最大回撤千分比
@@ -441,6 +482,8 @@ class TestStrategy(bt.Strategy):
         self.turtleunits = 0  # 加仓次数
         self.numlosst = 0  # 统计连续亏损次数
         self.ppunit = 1  # 交易手数比率
+        self.ppos_profit_ref1 = 0.0  # 上一笔交易盈亏幅度
+        self.mposkk_begin = self.mposkk  # 入场时的开仓单位
         self.positionflag = 0  # 仓位状态 0表示没有仓位，1表示持有多头， -1表示持有空头
         self.radd = 0  # 盈利加仓价格
         self.sexit = 0  # 亏损退出价格
@@ -562,8 +605,15 @@ class TestStrategy(bt.Strategy):
         get_cash = abs(self.broker.getcash())  # 可用资金
         get_cash_value = abs(self.broker.getvalue())  # 帐户总资金
         sign = np.sign(self.mposkk)  # 取正负符号
+        self.mposkk = abs(self.mposkk)
         open_profit = sign * self.position.size * (self.position.price - self.dtclose[0])  # 浮动盈亏
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
+
+        if self.ppos_profit_ref1 > 0:
+            self.mposkk = abs(self.mposkk * (1 + self.mpposad))  # 上一笔交易盈利时，增加仓位
+        # else:
+        #     self.mposkk = abs(self.mposkk * (1 - self.mpposad))  # 上一笔交易亏损时，减少仓位
+
 
         # 按成交量下单
         if self.p.use_target == UseTarget.USE_TARGET_SIZE:
@@ -576,15 +626,14 @@ class TestStrategy(bt.Strategy):
                 size = -(abs(self.position.size) + self.mpposmin)
 
             # 限定使用资金的范围
-            poskkcash = sign * abs(  # sign 为开仓方向
+            poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
                     (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
                     # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
-            target = int(round(poskkcash // margin))
-
+            target = sign * int(round(poskkcash // margin))
             self.myorder = self.order_target_size(target=target)
             self.mposkk = size
 
@@ -596,36 +645,31 @@ class TestStrategy(bt.Strategy):
                 posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
                 posmaxcash = min(max(margin * 1.1, self.mpposmax), get_cash)  # 最大开仓金额
                 # 限定使用资金的范围
-                poskkcash = sign * abs(  # sign 为开仓方向
+                poskkcash = abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
                         (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
                         # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
-                self.myorder = self.order_target_value(target=poskkcash)
+                value = sign * poskkcash
+                self.myorder = self.order_target_value(target=value)
                 self.mposkk = poskkcash
 
             # 按目标百分比下单
             elif self.p.use_target == UseTarget.USE_TARGET_PERCENT:
                 posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
                 posmaxcash = min(max(margin * 1.1, (get_cash * self.mpposmax)), get_cash)  # 最大开仓金额
-                percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
+                # percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
                 # percent = (margin_cash / get_cash_value)  # 持仓头寸占总资金比率
-                percent = percent if percent else (size / 100)  # 首次开仓使用size%参数
-                if size > 0:  # 开多仓
-                    percent = (abs(percent) * (1 + self.mpposad))
-                elif size < 0:  # 开空仓
-                    percent = -(abs(percent) * (1 + self.mpposad))
-                else:  # 不开仓
-                    pass
+                percent = abs(self.mposkk / 100)  # 目标持仓比率
 
                 # poskkcash = percent * (get_cash - open_profit)  # (可用资金-浮动盈亏)金额百分比交易
                 poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
                 # poskkcash = percent * (get_cash_value - open_profit)  # 帐户总资金百分比交易
 
                 # 限定使用资金的范围
-                poskkcash = sign * abs(  # sign 为开仓方向
+                poskkcash = abs(  # sign 为开仓方向
                     get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                     else (  # 最小开仓金额<可用金额时
                         (poskkcash * (1.01 + self.mpposad)) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
@@ -633,7 +677,7 @@ class TestStrategy(bt.Strategy):
                         else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                               else poskkcash)))
 
-                percent = sign * abs((abs(poskkcash) + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
+                percent = sign * abs((poskkcash + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
                 # percent = sign * (abs(poskkcash) / get_cash)  # 计算占可用资金百分比 self.myorder = self.order_target_percent(target=percent)
                 self.myorder = self.order_target_percent(target=percent)
                 self.mposkk = percent * 100
@@ -694,11 +738,13 @@ class TestStrategy(bt.Strategy):
                 self.turtleunits = 1  # 加仓次数
                 self.buyorderthisbar = 1  # 标记该周期的交易状态
                 self.bar_executed = len(self)  # 记录当前交易的bar序列
+                self.mpposad = (self.mpposad + 0.0001) * 1.001  # 加减仓幅度
 
             if self.sig_long:  # 买入
                 t_enter += ',买入'
                 self.sig_ref1 = self.positionflag = 1  # 记录开仓信号
-                self.mposkk = abs(self.mposkk * 1.001 + 0.0001)
+                self.mposkk = abs(self.mposkk + 0.0001)
+                self.mposkk_begin = self.mposkk
 
                 self.radd = self.myentryprice * (1 + self.mpr)
                 self.sexit = self.myentryprice / (1 + self.mps)
@@ -706,7 +752,8 @@ class TestStrategy(bt.Strategy):
             elif self.sig_short:  # 卖出
                 t_enter += ',卖出'
                 self.sig_ref1 = self.positionflag = -1  # 记录开仓信号
-                self.mposkk = -abs(self.mposkk * 1.001 + 0.0001)
+                self.mposkk = -abs(self.mposkk + 1.0001)
+                self.mposkk_begin = self.mposkk
 
                 # self.radd = self.myentryprice * (1 - self.mpr)
                 # self.sexit = self.myentryprice * (1 + self.mps)
@@ -752,7 +799,7 @@ class TestStrategy(bt.Strategy):
                 self.radd = self.myentryprice / (1 + self.mpr)
                 self.sexit = self.myentryprice * (1 + self.mps)
 
-            # 加仓日志
+            # 加仓及打印日志
             if self.sig_longa1 or self.sig_shorta1:
                 self.myorder = self.order_target(self.mposkk)  # 加仓中
                 if self.myorder and hasattr(self.myorder, 'size'):
@@ -764,6 +811,12 @@ class TestStrategy(bt.Strategy):
                 t_add += ',总资产:{:.2f}'.format(assets)
                 # self.log(t_add)
 
+            # 多头离场
+            if self.sig_longx1:
+                self.ppos_profit_ref1 = ((self.myexitprice - self.myentryprice_begin) / self.myentryprice_begin)  # 计算盈亏幅度
+            # 空头离场
+            if self.sig_shortx1:
+                self.ppos_profit_ref1 = ((self.myentryprice_begin - self.myexitprice) / self.myentryprice_begin)  # 计算盈亏幅度
             # 离场 离场价格 SEXIT CLOSE
             if self.sig_longx1 or self.sig_shortx1:
                 # 盈利或连续亏损时,减少下次开仓比率
