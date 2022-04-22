@@ -9,15 +9,15 @@ from datetime import datetime
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2012-01-01', '2013-04-01'
+G_DT_START, G_DT_END = '2013-01-01', '2022-04-01'
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
 G_DT_COMPRESSION = 15  # 合成周期的bar数
 G_P_PRINTLOG = False  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_OPTS = False  # 是否参数调优
-G_P_RPP = [3, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-G_P_SPP = [7, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_RPP = [2, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SPP = [4, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 
 DT_PARAM = {
     'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
@@ -250,7 +250,8 @@ def runstrat(args=None):
             trade_total_ = trade['total']['total']  # 交易次数
             trade_pnl_total_ = (trade['pnl']['gross']['total'])  # 总盈亏
             trade_pnl_net_ = (trade['pnl']['net']['total'])  # 总盈亏-手续费
-            trade_comm_net_p = (abs(trade_pnl_total_ - trade_pnl_net_) / trade_pnl_total_) * 100  # 手续费占比净盈亏百分比
+            trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
+            trade_comm_net_p = (trade_pnl_comm_ / trade_pnl_net_) * 100  # 手续费占比净盈亏百分比
 
             row = [
                 '{:2d}'.format(x[0].p.rpp),  # 参数
@@ -283,7 +284,7 @@ def runstrat(args=None):
         res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
 
         res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
-        res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
+        # res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
         res_df.index.name = 'id'  # 设置索引名称
         pd.set_option('precision', 3)  # 显示小数点后的位数
         pd.set_option('display.min_rows', 300)  # 确定显示的部分有多少行
@@ -331,7 +332,7 @@ def runstrat(args=None):
         annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
         pyFolio = result_one[0].analyzers.pyFolio.get_analysis()
         print(" Cumulative Return: {:.2f}".format(sum(annualReturn.values())))
-        print(" pyFolio Cumulative Return: {:,.2f}".format(sum(pyFolio['returns'].values())))
+        print(" pyFolio Cumulative Return%: {:,.2f}".format(sum(pyFolio['returns'].values()) * 100))
         print("\n--------------- 年度收益率 -----------------")
         # print(' 收益率k,v', get_analysis.items())
         for k, v in annualReturn.items():
@@ -624,7 +625,6 @@ class TestStrategy(bt.Strategy):
             self.mposkk = abs(self.mposkk * (1 + self.mpposad))  # 上一笔交易盈利时，增加仓位
         # else:
         #     self.mposkk = abs(self.mposkk * (1 - self.mpposad))  # 上一笔交易亏损时，减少仓位
-
 
         # 按成交量下单
         if self.p.use_target == UseTarget.USE_TARGET_SIZE:
