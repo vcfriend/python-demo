@@ -19,6 +19,11 @@ G_OPTS = False  # 是否参数调优
 G_P_RPP = [3, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_SPP = [7, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 
+DT_PARAM = {
+    'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
+    'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_P_SPP[1] else G_P_SPP[0]),
+}
+
 
 def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
@@ -192,6 +197,7 @@ def runstrat(args=None):
         # 添加分析指标
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
         cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
+        cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")  # 回撤
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
@@ -225,6 +231,7 @@ def runstrat(args=None):
         for x in results_opt:
             trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
             returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
+            pyFolio = x[0].analyzers.pyFolio.get_analysis()  # pyFolio分析引用
             drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
             sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
             timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
@@ -233,6 +240,7 @@ def runstrat(args=None):
                 continue  # 忽略交易次数为0 的数据
 
             returns_rort_ = returns['rtot'] * 100  # 总复合回报
+            pyFolio_returns_ = sum(pyFolio['returns'].values()) * 100  # pyFolio总复合回报
             returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
             trade_won_ = (trade['won']['total'])  # 总盈利次数
             trade_lost_ = (trade['lost']['total'])  # 总亏损次数
@@ -248,6 +256,7 @@ def runstrat(args=None):
                 '{:2d}'.format(x[0].p.rpp),  # 参数
                 '{:2d}'.format(x[0].p.spp),  # 参数
                 '{:5.2f}'.format(returns_rort_),  # 总复合回报
+                '{:5.2f}'.format(pyFolio_returns_),  # pyFolio总复合回报
                 '{:5.2f}'.format(trade_win_rate),  # 胜率
                 '{:5.2f}'.format(returns_rnorm100_),  # 年化归一化回报
                 '{:5.2f}'.format(drawdown_ if drawdown_ else 0),  # 最大回撤
@@ -263,7 +272,7 @@ def runstrat(args=None):
             res_list.append(row)  # 添加到返回列表
 
         # 结果转成dataframe
-        columns = ['rpp', 'spp', 'rtot%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
+        columns = ['rpp', 'spp', 'rtot%', 'py_rt%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
         columns_all = columns.copy()
         columns_all.extend(res_timereturn_title)  # 将列标题添加到columns列表尾部
         res_df = pd.DataFrame(res_list, dtype='float', columns=columns_all)
@@ -320,7 +329,9 @@ def runstrat(args=None):
         # 提取结果
         print("\n--------------- 累计收益率 -----------------")
         annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
+        pyFolio = result_one[0].analyzers.pyFolio.get_analysis()
         print(" Cumulative Return: {:.2f}".format(sum(annualReturn.values())))
+        print(" pyFolio Cumulative Return: {:,.2f}".format(sum(pyFolio['returns'].values())))
         print("\n--------------- 年度收益率 -----------------")
         # print(' 收益率k,v', get_analysis.items())
         for k, v in annualReturn.items():
