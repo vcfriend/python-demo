@@ -521,14 +521,12 @@ class MyStrategy(bt.Strategy):
         addLongOrShort=0,  # 加仓方向addLongOrShort=0无限制,>0时只有多头加仓,<0时只有空头加仓
         valid=None,  # 订单生效时间
         printlog=False,  # 是否打印日志
-        automargin=10 * 0.13,  # 合约乘数*保证金比率
         use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
     )
 
     def __init__(self):
         # super().__init__(*args, **kwargs)
         # self.opts = opts  # 启动参数
-        # self.broker.setcommission(automargin=self.p.automargin)
         self.mprs = self.p.rspp / 1000  # 盈亏千分比
         self.mpr = self.p.rpp / 1000  # 盈利千分比
         self.mps = self.p.spp / 1000  # 亏损千分比
