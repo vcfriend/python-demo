@@ -6,7 +6,7 @@ import numpy as np
 import time
 from enum import Enum
 from datetime import datetime
-from TestStrategy import TestStrategy
+from MyStrategy import MyStrategy
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
@@ -192,7 +192,7 @@ def runstrat(args=None):
         print(kwargs)
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
-            TestStrategy,
+            MyStrategy,
             **kwargs
         )
         # 添加分析指标
@@ -315,7 +315,7 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
 
         # 添加策略和参数
-        cerebro.addstrategy(TestStrategy, rpp=G_P_RPP[0], spp=G_P_SPP[0], printlog=G_P_PRINTLOG)
+        cerebro.addstrategy(MyStrategy, rpp=G_P_RPP[0], spp=G_P_SPP[0], printlog=G_P_PRINTLOG)
 
         # 引擎运行前打印期出资金
         print('组合期初资金: %.2f' % cerebro.broker.getvalue())

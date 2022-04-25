@@ -11,9 +11,10 @@ from datetime import datetime
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 G_DT_START, G_DT_END = '2013-01-01', '2015-04-01'
+G_COMM = 'comm_sqrb'  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 15  # 合成bar的周期数
-G_P_PRINTLOG = True  # 是否打印日志
+G_P_PRINTLOG = False  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_OPTS = False  # 是否参数调优
@@ -142,43 +143,52 @@ def runstrat(args=None):
     # 设置投资金额100000.0
     cerebro.broker.setcash(100000.0)
 
-    # <editor-fold desc="折叠代码:交易手续费设置">
-    cerebro.broker.setcommission(
-        # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-        commission=0.0015,
-        # commission=2.4,
-        # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
-        margin=0,
-        # 乘数，盈亏会按该乘数进行放大
-        mult=10.0,
-        # 交易费用计算方式，取值有：
-        # 1.CommInfoBase.COMM_PERC 百分比费用
-        # 2.CommInfoBase.COMM_FIXED 固定费用
-        # 3.None 根据 margin 取值来确定类型
-        commtype=bt.CommInfoBase.COMM_PERC,
-        # 当交易费用处于百分比模式下时，commission 是否为 % 形式
-        # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
-        percabs=True,
-        # 是否为股票模式，该模式通常由margin和commtype参数决定
-        # margin=None或COMM_PERC模式时，就会stocklike=True，对应股票手续费；
-        # margin设置了取值或COMM_FIXED模式时,就会stocklike=False，对应期货手续费
-        stocklike=False,
-        # 计算持有的空头头寸的年化利息
-        # days * price * abs(size) * (interest / 365)
-        interest=0.0,
-        # 计算持有的多头头寸的年化利息
-        interest_long=False,
-        # 杠杆比率，交易时按该杠杆调整所需现金
-        leverage=1.0,
-        # 自动计算保证金
-        # 如果 False, 则通过margin参数确定保证金
-        # 如果automargin<0, 通过mult*price确定保证金
-        # 如果automargin>0, 如果automargin*price确定保证金
-        automargin=10 * 0.13,
-        # 交易费用设置作用的数据集(也就是作用的标的)
-        # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
-        name=None
-    )
+    # # <editor-fold desc="折叠代码:交易手续费设置方式一">
+    # cerebro.broker.setcommission(
+    #     # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
+    #     commission=0.00015,
+    #     # commission=2.4,
+    #     # 期货保证金，决定着交易费用的类型,只有在 stocklike=False 和 automargin=False时起作用
+    #     margin=0,
+    #     # 乘数，盈亏会按该乘数进行放大
+    #     mult=10.0,
+    #     # 交易费用计算方式，取值有：
+    #     # 1.CommInfoBase.COMM_PERC 百分比费用
+    #     # 2.CommInfoBase.COMM_FIXED 固定费用
+    #     # 3.None 根据 margin 取值来确定类型
+    #     commtype=bt.CommInfoBase.COMM_PERC,
+    #     # 当交易费用处于百分比模式下时，commission 是否为 % 形式
+    #     # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
+    #     percabs=True,
+    #     # 是否为股票模式，该模式通常由margin和commtype参数决定
+    #     # margin=None或COMM_PERC模式时，就会stocklike=True，对应股票手续费；
+    #     # margin设置了取值或COMM_FIXED模式时,就会stocklike=False，对应期货手续费
+    #     stocklike=False,
+    #     # 计算持有的空头头寸的年化利息
+    #     # days * price * abs(size) * (interest / 365)
+    #     interest=0.0,
+    #     # 计算持有的多头头寸的年化利息
+    #     interest_long=False,
+    #     # 杠杆比率，交易时按该杠杆调整所需现金
+    #     leverage=1.0,
+    #     # 自动计算保证金
+    #     # 如果 False, 则通过margin参数确定保证金
+    #     # 如果automargin<0, 通过mult*price确定保证金
+    #     # 如果automargin>0, 如果automargin*price确定保证金
+    #     automargin=10 * 0.13,
+    #     # 交易费用设置作用的数据集(也就是作用的标的)
+    #     # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
+    #     name=None
+    # )
+    # # </editor-fold>
+    pass
+    # <editor-fold desc="折叠代码:交易手续费设置方式二">
+    comm = {
+        'comm_sqrb': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
+        'comm_zqcf': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
+    }
+    # 添加进 broker
+    cerebro.broker.addcommissioninfo(comm[G_COMM], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
     # </editor-fold>
 
     strats = None
@@ -192,7 +202,7 @@ def runstrat(args=None):
         print(kwargs)
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
-            TestStrategy,
+            MyStrategy,
             **kwargs
         )
         # 添加分析指标
@@ -320,7 +330,7 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
 
         # 添加策略和参数
-        cerebro.addstrategy(TestStrategy, rpp=G_P_RPP[0], spp=G_P_SPP[0], printlog=G_P_PRINTLOG)
+        cerebro.addstrategy(MyStrategy, rpp=G_P_RPP[0], spp=G_P_SPP[0], printlog=G_P_PRINTLOG)
 
         # 引擎运行前打印期出资金
         print('组合期初资金: %.2f' % cerebro.broker.getvalue())
@@ -444,6 +454,43 @@ def runstrat(args=None):
         # 使用quantstats 分析工具并保存到HTML文件
 
 
+# 在继承 CommInfoBase 基础类的基础上自定义交易费用
+class MyCommission(bt.CommInfoBase):
+    # 对应 setcommission 中介绍的那些参数，也可以增添新的全局参数
+    params = (
+        ('stocklike', False),  # False期货模式
+        ('commtype', bt.CommInfoBase.COMM_PERC),  # 使用百分比费用模式
+        ('percabs', True),  # commission 不以 % 为单位
+        ('leverage', 1.0),  # 杠杆比率，交易时按该杠杆调整所需现金
+        ('margin_rate', False),  # 期货保证金比率
+        ('commission', 0.0),  # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
+        ('mult', 1.0),  # 合约乘数，盈亏会按该乘数进行放大
+        ('margin', None),  # 期货保证金，决定着交易费用的类型,只有在 stocklike=False 和 automargin=False时起作用
+    )
+
+    # 自定义费用计算公式
+    def _getcommission(self, size, price, pseudoexec):
+        comm = 0.0
+        if self.p.commtype == bt.CommInfoBase.COMM_PERC:  # 百分比手续费
+            comm = abs(size) * price * self.p.commission
+        elif self.p.commtype == bt.CommInfoBase.COMM_FIXED:  # 固定手续费
+            comm = abs(size) * self.p.commission
+        return comm
+
+    # 自定义保证金计算方式
+    def get_margin(self, price):
+        """计算保证金"""
+        value = 0.0
+        if not self.p.margin_rate:
+            value = self.p.margin
+        elif self.p.margin_rate < 0:
+            value = price * self.p.mult
+        elif self.p.margin_rate > 0:
+            value = price * self.p.mult * self.p.margin_rate  # int/float expected
+        self.p.margin = value  # 设置保证金
+        return value
+
+
 class UseTarget(Enum):
     """枚举开仓类型"""
     USE_TARGET_SIZE = 0  # 成交量
@@ -452,7 +499,7 @@ class UseTarget(Enum):
 
 
 # 创建策略继承bt.Strategy
-class TestStrategy(bt.Strategy):
+class MyStrategy(bt.Strategy):
 
     def log(self, txt, dt=None, printlog=None):
         # 记录策略的执行日志
@@ -587,8 +634,8 @@ class TestStrategy(bt.Strategy):
         t += ',add:{:.2f}'.format(self.radd)
         t += ',exit:{:.2f}'.format(self.sexit)
         t += ',open_m:{:}'.format(self.dtopen_month)
-        t += ',automargin:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.automargin)  # 获取保证比率*合约乘数
-        t += ',margin:{:}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低开仓保证金
+        t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证比率
+        t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低开仓保证金
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
