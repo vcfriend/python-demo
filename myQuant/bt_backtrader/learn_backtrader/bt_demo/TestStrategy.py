@@ -1,5 +1,6 @@
 import os
 import backtrader as bt
+import quantstats
 import argparse
 import pandas as pd
 import numpy as np
@@ -9,15 +10,15 @@ from datetime import datetime
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2013-01-01', '2022-04-01'
-G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期
-G_DT_COMPRESSION = 15  # 合成周期的bar数
-G_P_PRINTLOG = False  # 是否打印日志
+G_DT_START, G_DT_END = '2013-01-01', '2015-04-01'
+G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
+G_DT_COMPRESSION = 15  # 合成bar的周期数
+G_P_PRINTLOG = True  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_OPTS = False  # 是否参数调优
-G_P_RPP = [2, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-G_P_SPP = [4, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_RPP = [3, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SPP = [7, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 
 DT_PARAM = {
     'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
@@ -467,18 +468,20 @@ class TestStrategy(bt.Strategy):
         rspp=5,  # 盈亏千分比
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
         posadp=10,  # 加减仓幅度百分比
-        posmax=50,  # 最大开仓单位
+        posmax=100,  # 最大开仓单位
         ocjk=1,  # CLOSE与OPEN的间隔
         sspp=0,  # 最大回撤千分比
         addLongOrShort=0,  # 加仓方向addLongOrShort=0无限制,>0时只有多头加仓,<0时只有空头加仓
         valid=None,  # 订单生效时间
         printlog=False,  # 是否打印日志
+        automargin=10 * 0.13,  # 合约乘数*保证金比率
         use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
     )
 
     def __init__(self):
         # super().__init__(*args, **kwargs)
         # self.opts = opts  # 启动参数
+        # self.broker.setcommission(automargin=self.p.automargin)
         self.mprs = self.p.rspp / 1000  # 盈亏千分比
         self.mpr = self.p.rpp / 1000  # 盈利千分比
         self.mps = self.p.spp / 1000  # 亏损千分比
@@ -488,6 +491,7 @@ class TestStrategy(bt.Strategy):
         self.mpposmax = self.p.posmax  # 最大开仓单位
         self.myentryprice_begin = 0.0  # 初始入场价格
         self.myentryprice = 0.0  # 入场价格
+        self.myentryprice_ref1 = 0.0  # 上一次入场价格
         self.myexitprice = 0.0  # 离场价格
         self.buyorderthisbar = 0  # 该周期是否有交易 0没有,1有
         self.bar_executed = 0  # 记录当前交易的bar序列
@@ -583,6 +587,8 @@ class TestStrategy(bt.Strategy):
         t += ',add:{:.2f}'.format(self.radd)
         t += ',exit:{:.2f}'.format(self.sexit)
         t += ',open_m:{:}'.format(self.dtopen_month)
+        t += ',automargin:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.automargin)  # 获取保证比率*合约乘数
+        t += ',margin:{:}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低开仓保证金
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
@@ -610,6 +616,7 @@ class TestStrategy(bt.Strategy):
         poskkcash = 0.0  # 开仓单位
         posmincash = 0.0  # 最小开仓单位
         posmaxcash = 0.0  # 最大开仓单位
+        automargin = self.broker.getcommissioninfo(data=self.data).p.automargin  # 获取保证比率*合约乘数
         comminfo = self.broker.getcommissioninfo(self.data)
         margin = comminfo.get_margin(self.dtclose[0]) * 1.01  # 最低开仓保证金
         margin_cash = self.broker.getvalue(datas=[self.data])  # 持仓头寸占用资金
@@ -618,6 +625,10 @@ class TestStrategy(bt.Strategy):
         get_cash_value = abs(self.broker.getvalue())  # 帐户总资金
         sign = np.sign(self.mposkk)  # 取正负符号
         self.mposkk = abs(self.mposkk)
+        if self.myentryprice_ref1:
+            mpe_r1_ = abs(self.myentryprice - self.myentryprice_ref1) / self.myentryprice_ref1  # 当前入场价与上次入场价之间的涨跌幅度
+            automargin_re = automargin * (mpe_r1_ / self.mps) if mpe_r1_ else automargin  # 调整保证金比率
+            # self.broker.setcommission(automargin=automargin_re)  # 设置保证金比率
         open_profit = sign * self.position.size * (self.position.price - self.dtclose[0])  # 浮动盈亏
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
 
@@ -744,6 +755,7 @@ class TestStrategy(bt.Strategy):
         if not self.position and self.position.size == 0 and (assets > 0):
 
             if self.sig_long or self.sig_short:
+                # self.broker.setcommission(automargin=self.p.automargin)  # 设置初始保证金比率
                 self.myentryprice = self.dtclose[0]  # 入场价格
                 self.myentryprice_begin = self.myentryprice  # 开始入场价格
                 self.turtleunits = 1  # 加仓次数
@@ -785,20 +797,24 @@ class TestStrategy(bt.Strategy):
                 # self.log(t_enter)
         # 有持仓时
         else:
-            # 盈利加仓
+            mpec_, mpr_, mps_ = 0.0, self.mpr, self.mps
+            # 加仓
             if self.sig_longa1 or self.sig_shorta1:
+                self.myentryprice_ref1 = self.myentryprice
                 self.myentryprice = self.dtclose[0]  # 入场价格
                 self.turtleunits += 1  # 加仓次数加1
                 self.buyorderthisbar = 1  # 标记该周期的交易状态
                 self.bar_executed = len(self)  # 记录当前交易的bar序列
+                mpe_r1_ = abs(self.myentryprice - self.myentryprice_ref1) / self.myentryprice_ref1  # 当前入场价与上次入场价之间的涨跌幅度
+                # mpr_ = max(mpe_r1_, mpr_)
 
             # 多头加仓
             if self.sig_longa1:
                 t_add += ',买入'
                 self.mposkk = abs(self.mposkk)
 
-                self.radd = self.myentryprice * (1 + self.mpr)
-                self.sexit = self.myentryprice / (1 + self.mps)
+                self.radd = self.myentryprice * (1 + mpr_)
+                self.sexit = self.myentryprice / (1 + mps_)
 
             # 空头加仓
             if self.sig_shorta1:
@@ -807,8 +823,8 @@ class TestStrategy(bt.Strategy):
 
                 # self.radd = self.myentryprice * (1 - self.mpr)
                 # self.sexit = self.myentryprice * (1 + self.mps)
-                self.radd = self.myentryprice / (1 + self.mpr)
-                self.sexit = self.myentryprice * (1 + self.mps)
+                self.radd = self.myentryprice / (1 + mpr_)
+                self.sexit = self.myentryprice * (1 + mps_)
 
             # 加仓及打印日志
             if self.sig_longa1 or self.sig_shorta1:
