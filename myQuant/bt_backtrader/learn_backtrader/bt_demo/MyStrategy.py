@@ -1,27 +1,27 @@
-import os
+import os, sys
+import time
 import backtrader as bt
 import quantstats
 import argparse
 import pandas as pd
 import numpy as np
-import time
 from enum import Enum
 from datetime import datetime
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2013-01-01', '2022-04-01'
+G_DT_START, G_DT_END = '2013-01-01', '2014-04-01'
 G_COMM = 'comm_sqrb'  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 15  # 合成bar的周期数
+G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_PRINTLOG = False  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_OPTS = False  # 是否参数调优
 G_P_RPP = [3, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_SPP = [7, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_KEYPRICE = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
-DT_PARAM = {
+G_P_PARAM = {
     'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
     'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_P_SPP[1] else G_P_SPP[0]),
 }
@@ -44,17 +44,14 @@ def parse_args(pargs=None):
     parser.add_argument('--timeframe', required=False, default=G_DT_TIMEFRAME,
                         choices=['minutes', 'daily', 'weekly', 'monthly'],
                         help='重新采样到的时间范围')
-    parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION,
-                        help='将 n 条压缩为 1, 最小周期为原数据周期')
+    parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION, help='将 n 条压缩为 1, 最小周期为原数据周期')
     parser.add_argument('--keyprice', required=False, type=list, default=G_KEYPRICE, help='当穿越关键价格后加仓限制，列表类型 [price1, price2]'),
     parser.add_argument('--rpp', required=False, type=int, default=G_P_RPP[0], help='--rpp 盈利千分比'),
     parser.add_argument('--spp', required=False, type=int, default=G_P_SPP[0], help='--spp 亏损千分比'),
     parser.add_argument('--opts', required=False, type=bool, default=G_OPTS, help='是否策略优化')
-    parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS,
-                        help='是否使用 quantstats 分析测试结果')
-    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15,
-                        help=('Number of CPUs to use in the optimization'
-                              '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
+    parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS, help='是否使用 quantstats 分析测试结果')
+    parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15, help=('Number of CPUs to use in the optimization'
+                                                                                       '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
     parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
     parser.add_argument('--no-optreturn', action='store_true', required=False,
                         help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
@@ -72,6 +69,7 @@ def parse_args(pargs=None):
 
 
 def runstrat(args=None):
+    global DT_RESULT_ONE, DT_RESULTS_OPT  # 申明要使用全局变量
     args = parse_args(args)
     dkwargs = dict()
 
@@ -102,7 +100,9 @@ def runstrat(args=None):
     # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
     if not os.path.exists(file_path_abs):
         raise Exception("数据源文件未找到！" + file_path_abs)
+
     dkwargs['dtformat'] = dt_format
+    # dkwargs['tmformat'] = dt_tmformat
     dkwargs['fromdate'] = dt_start
     dkwargs['todate'] = dt_end
     dkwargs['rpp'] = rpp
@@ -114,9 +114,7 @@ def runstrat(args=None):
             v = v.strftime("%Y-%m-%d")
         txt += ' {:}:{:}'.format(k, v)
     print(txt)
-    # dkwargs['tmformat'] = dt_tmformat
 
-    # print(dkwargs)
     # 加载数据
     df = pd.read_csv(filepath_or_buffer=file_path_abs,
                      # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
@@ -212,10 +210,9 @@ def runstrat(args=None):
     strats = None
     result_one = None
     results_opt = None
-    global DT_RESULT_ONE, DT_RESULTS_OPT  # 申明要使用全局变量
     # 参数调优
     if args.opts:
-        kwargs = DT_PARAM
+        kwargs = G_P_PARAM
         kwargs['printlog'] = False
         print(kwargs)
         # 为Cerebro引擎添加策略, 优化策略
@@ -233,7 +230,6 @@ def runstrat(args=None):
         # clock the start of the process
         tstart = time.perf_counter()
         # Run over everything
-        # result_one = cerebro.run()
         results_opt = cerebro.run(
             maxcpus=args.maxcpus,
             optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
@@ -245,11 +241,9 @@ def runstrat(args=None):
         tend = time.perf_counter()
         # print out the result_one
         print('Time used:', str(tend - tstart))
-
         print("--------------- 分析结果 -----------------")
 
-        # 每个策略实例的结果以列表的形式保存在列表中。
-        # 优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
+        # 每个策略实例的结果以列表的形式保存在列表中。优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
         res_list = [[]]
         res_timereturn_title = []  # 列标题
 
@@ -271,16 +265,16 @@ def runstrat(args=None):
             returns_rort_ = returns['rtot'] * 100  # 总复合回报
             pyFolio_returns_ = sum(pyFolio['returns'].values()) * 100  # pyFolio总复合回报
             returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
-            trade_won_ = (trade['won']['total'])  # 总盈利次数
-            trade_lost_ = (trade['lost']['total'])  # 总亏损次数
+            trade_won_ = (trade['won']['total']) if 'won' in trade else 0  # 总盈利次数
+            trade_lost_ = (trade['lost']['total']) if 'lost' in trade else 0  # 总亏损次数
+            trade_total_ = trade['total']['total']  # 交易次数
             trade_win_rate = trade_won_ / (trade_lost_ + trade_won_) * 100  # 胜率
             drawdown_ = drawdown['max']['drawdown']
             sharpe_ = sharpe['sharperatio']
-            trade_total_ = trade['total']['total']  # 交易次数
-            trade_pnl_total_ = (trade['pnl']['gross']['total'])  # 总盈亏
-            trade_pnl_net_ = (trade['pnl']['net']['total'])  # 总盈亏-手续费
+            trade_pnl_total_ = (trade['pnl']['gross']['total']) if 'pnl' in trade else 0  # 总盈亏
+            trade_pnl_net_ = (trade['pnl']['net']['total']) if 'pnl' in trade else 0  # 总盈亏-手续费
             trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
-            trade_comm_net_p = (trade_pnl_comm_ / trade_pnl_net_) * 100  # 手续费占比净盈亏百分比
+            trade_comm_net_p = ((trade_pnl_comm_ / trade_pnl_net_) * 100) if trade_pnl_net_ != 0 else 0  # 手续费占比净盈亏百分比
 
             row = [
                 '{:2d}'.format(x[0].p.rpp),  # 参数
@@ -300,6 +294,10 @@ def runstrat(args=None):
             # 变量是浮点数时,且<10时,%比显示保留5位整数1位小数且*100,>10时保留8位整数2位小数,不是浮点数时保留5位整数
             # row = [(('{:5.1f}' if abs(i) < 10 else '{:8.2f}') if isinstance(i, float) else '{:5}').format(i * 100 if (abs(i) < 10 and isinstance(i, float)) else i) for i in row]
             res_list.append(row)  # 添加到返回列表
+        if not bool(res_list):
+            print('回测数据不存在,退出')
+        # print('res_list', type(res_list))
+        # res_list = list(filter(None, res_list))  # 过滤空值
 
         # 结果转成dataframe
         columns = ['rpp', 'spp', 'rtot%', 'py_rt%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
@@ -325,7 +323,7 @@ def runstrat(args=None):
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, DT_PARAM['rpp'], DT_PARAM['spp'], ))
+        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, G_P_PARAM['rpp'], G_P_PARAM['spp'], ))
         print(filename)  # 打印文件路径
         print(res_df.loc[:, columns])  # 显示指定列参数优化结果
         res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
@@ -461,6 +459,7 @@ def runstrat(args=None):
     # 回测分析保存到文件
     if args.quantstats and not args.opts:
         # 使用quantstats 分析工具并保存到HTML文件
+        import quantstats
         portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
