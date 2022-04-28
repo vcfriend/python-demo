@@ -7,23 +7,26 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 from datetime import datetime
+from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
 
 G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2013-01-01', '2014-04-01'
+G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 G_COMM = 'comm_sqrb'  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 15  # 合成bar的周期数
-G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-G_P_PRINTLOG = False  # 是否打印日志
+G_QUANTSTATS = False  # 是否使用 quantstats 分析测试结果
+G_P_PRINTLOG = True  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-G_OPTS = False  # 是否参数调优
+G_KEYPRICE = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
+G_OPTS = True  # 是否参数调优
 G_P_RPP = [3, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_SPP = [7, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-G_KEYPRICE = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
+G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_PARAM = {
-    'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_P_RPP[1] else G_P_RPP[0]),
-    'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_P_SPP[1] else G_P_SPP[0]),
+    'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_OPTS and G_P_RPP[1] else G_P_RPP[0]),
+    'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_OPTS and G_P_SPP[1] else G_P_SPP[0]),
+    'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
 }
 
 
@@ -48,6 +51,7 @@ def parse_args(pargs=None):
     parser.add_argument('--keyprice', required=False, type=list, default=G_KEYPRICE, help='当穿越关键价格后加仓限制，列表类型 [price1, price2]'),
     parser.add_argument('--rpp', required=False, type=int, default=G_P_RPP[0], help='--rpp 盈利千分比'),
     parser.add_argument('--spp', required=False, type=int, default=G_P_SPP[0], help='--spp 亏损千分比'),
+    parser.add_argument('--ojk', required=False, type=int, default=G_P_OJK[0], help='--ojk 订单间隔bar周期数'),
     parser.add_argument('--opts', required=False, type=bool, default=G_OPTS, help='是否策略优化')
     parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS, help='是否使用 quantstats 分析测试结果')
     parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15, help=('Number of CPUs to use in the optimization'
@@ -73,41 +77,41 @@ def runstrat(args=None):
     args = parse_args(args)
     dkwargs = dict()
 
-    file_path = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = ""
-    rpp = spp = 10
-    keyprice = []
+    file_path_abs = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = None
 
     if args.dtformat is not None:
         dt_format = args.dtformat
         dt_dtformat = dt_format[:dt_format.find('%d') + len('%d')]
         dt_tmformat = dt_format[dt_format.find('%H'):]
+        dkwargs['dtformat'] = dt_format
+        # dkwargs['tmformat'] = dt_tmformat
     if args.fromdate is not None:
         dt_start = datetime.strptime(args.fromdate, dt_dtformat)
+        dkwargs['fromdate'] = dt_start
     if args.todate is not None:
         dt_end = datetime.strptime(args.todate, dt_dtformat)
+        dkwargs['todate'] = dt_end
     if args.data is not None:
         file_path = args.data
+        myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
+        file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
+        print(file_path_abs)
+        # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
+        if not os.path.exists(file_path_abs):
+            raise Exception("数据源文件未找到！" + file_path_abs)
     if args.rpp is not None:
         rpp = args.rpp
+        dkwargs['rpp'] = rpp
     if args.spp is not None:
         spp = args.spp
+        dkwargs['spp'] = spp
+    if args.ojk is not None:
+        ojk = args.ojk
+        dkwargs['ojk'] = ojk
     if args.keyprice is not None:
         keyprice = args.keyprice[1:] if args.keyprice[0] else None
+        dkwargs['keyprice'] = keyprice
 
-    myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
-    file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
-    print(file_path_abs)
-    # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
-    if not os.path.exists(file_path_abs):
-        raise Exception("数据源文件未找到！" + file_path_abs)
-
-    dkwargs['dtformat'] = dt_format
-    # dkwargs['tmformat'] = dt_tmformat
-    dkwargs['fromdate'] = dt_start
-    dkwargs['todate'] = dt_end
-    dkwargs['rpp'] = rpp
-    dkwargs['spp'] = spp
-    dkwargs['keyprice'] = keyprice
     txt = 'dkwargs:'
     for k, v in dkwargs.items():
         if isinstance(v, datetime):
@@ -213,11 +217,12 @@ def runstrat(args=None):
     # 参数调优
     if args.opts:
         kwargs = G_P_PARAM
-        kwargs['printlog'] = False
+        # kwargs['printlog'] = False
         print(kwargs)
         # 为Cerebro引擎添加策略, 优化策略
         strats = cerebro.optstrategy(
             MyStrategy,
+            printlog=False,
             **kwargs
         )
         # 添加分析指标
@@ -227,6 +232,7 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")  # 回撤
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
+        cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
         # clock the start of the process
         tstart = time.perf_counter()
         # Run over everything
@@ -253,6 +259,7 @@ def runstrat(args=None):
 
         for x in results_opt:
             trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
+            my_trade = x[0].analyzers.my_tradeAnalyzer.get_analysis()  # 交易分析引用
             returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
             pyFolio = x[0].analyzers.pyFolio.get_analysis()  # pyFolio分析引用
             drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
@@ -279,6 +286,7 @@ def runstrat(args=None):
             row = [
                 '{:2d}'.format(x[0].p.rpp),  # 参数
                 '{:2d}'.format(x[0].p.spp),  # 参数
+                '{:2d}'.format(x[0].p.ojk),  # 参数
                 '{:5.2f}'.format(returns_rort_),  # 总复合回报
                 '{:5.2f}'.format(pyFolio_returns_),  # pyFolio总复合回报
                 '{:5.2f}'.format(trade_win_rate),  # 胜率
@@ -300,14 +308,14 @@ def runstrat(args=None):
         # res_list = list(filter(None, res_list))  # 过滤空值
 
         # 结果转成dataframe
-        columns = ['rpp', 'spp', 'rtot%', 'py_rt%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
+        columns = ['rpp', 'spp', 'ojk', 'rtot%', 'py_rt%', 'won%', 'rnorm%', 'maxDD%', 'sharpe', 'comm%', 'total', 'pnl_net']
         columns_all = columns.copy()
         columns_all.extend(res_timereturn_title)  # 将列标题添加到columns列表尾部
         res_df = pd.DataFrame(res_list, dtype='float', columns=columns_all)
 
         res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
-        # res_df[['rpp', 'spp', 'total']] = res_df[['rpp', 'spp', 'total']].astype(int)   # 转换指定类数据类型
-        res_df[['rpp', 'spp', 'total']] = res_df[['rpp', 'spp', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
+        # res_df[['rpp', 'spp', 'ojk', 'total']] = res_df[['rpp', 'spp', 'ojk', 'total']].astype(int)   # 转换指定类数据类型
+        res_df[['rpp', 'spp', 'ojk', 'total']] = res_df[['rpp', 'spp', 'ojk', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
         res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
 
         res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
@@ -323,7 +331,7 @@ def runstrat(args=None):
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        filename = ('{:}_{:}-{:}_{:}{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, G_P_PARAM['rpp'], G_P_PARAM['spp'], ))
+        filename = ('{:}_{:}-{:}_{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, (str(list(G_P_PARAM.values())).replace(' ', '').replace(':', '')), ))
         print(filename)  # 打印文件路径
         print(res_df.loc[:, columns])  # 显示指定列参数优化结果
         res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
@@ -334,8 +342,8 @@ def runstrat(args=None):
         cerebro.addobserver(bt.observers.Broker)
         cerebro.addobserver(bt.observers.Trades)
         cerebro.addobserver(bt.observers.BuySell)
-        cerebro.addobserver(bt.observers.DrawDown)
         # cerebro.addobserver(bt.observers.TimeReturn)
+        cerebro.addobserver(bt.observers.DrawDown)
         # 添加分析指标
         cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualReturn')  # 返回年初至年末的年度收益率
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
@@ -344,6 +352,7 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
         cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
+        cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
 
         # 添加策略和参数
         cerebro.addstrategy(MyStrategy, rpp=dkwargs['rpp'], spp=dkwargs['spp'], keyprice=dkwargs['keyprice'], printlog=G_P_PRINTLOG)
@@ -357,6 +366,7 @@ def runstrat(args=None):
         # 提取结果
         print("\n--------------- 累计收益率 -----------------")
         annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
+        my_tradeAnalyzer = result_one[0].analyzers.my_tradeAnalyzer.get_analysis()
         pyFolio = result_one[0].analyzers.pyFolio.get_analysis()
         print(" Cumulative Return: {:.2f}".format(sum(annualReturn.values())))
         print(" pyFolio Cumulative Return%: {:,.2f}".format(sum(pyFolio['returns'].values()) * 100))
@@ -465,8 +475,8 @@ def runstrat(args=None):
         returns.index = returns.index.tz_convert(None)
         import quantstats
         # 将分析指标保存到HTML文件
-        quantstats.reports.html(returns, output='stats.html',
-                                title=G_FILE_PATH + ' rpp:{:} spp:{:} dt:{:%H:%M:%S}'.format(G_P_RPP[0], G_P_SPP[0], datetime.now()))
+        title = G_FILE_PATH + ' param:{:} dt:{:%H:%M:%S}'.format(str(G_P_PARAM).replace(' ', '').replace(':', ''), datetime.now())
+        quantstats.reports.html(returns, output='stats.html', title=title)
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 
@@ -522,7 +532,7 @@ class MyStrategy(bt.Strategy):
         # 记录策略的执行日志
         if self.p.printlog or printlog:
             dt = dt or self.datas[0].datetime.datetime(0)
-            # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
+            # 时间断点调试,调试条件 self.datas[0].dtdt.dtdt(0) >= bt.dtdt.dtdt.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
             # print('%s, %s' % (dt.isoformat(), txt))
             print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
 
@@ -533,7 +543,7 @@ class MyStrategy(bt.Strategy):
         poskk=10,  # 入场开仓单位 按(数量,金额,百分比)下单
         posadp=10,  # 加减仓幅度百分比
         posmax=100,  # 最大开仓单位
-        ocjk=1,  # CLOSE与OPEN的间隔
+        ojk=1,  # 订单间隔bar周期数
         sspp=0,  # 最大回撤千分比
         keyprice=[],  # 加仓方向的关价格点位 keyprice=0无限制,向上穿越 keyprice 时只有多头加仓,向下穿越 keyprice 时只有空头加仓
         valid=None,  # 订单生效时间
@@ -551,6 +561,8 @@ class MyStrategy(bt.Strategy):
         self.mposkk = self.p.poskk  # 开仓单位
         self.mpposmin = self.p.poskk  # 最小开仓单位
         self.mpposmax = self.p.posmax  # 最大开仓单位
+        self.myorder_entry = dict()  # 入场订单
+        self.myorder_datetime: datetime = None  # 订单发生时间
         self.myentryprice_begin = 0.0  # 初始入场价格
         self.myentryprice = 0.0  # 入场价格
         self.myentryprice_ref1 = 0.0  # 上一次入场价格
@@ -582,7 +594,8 @@ class MyStrategy(bt.Strategy):
         self.initial_amount = 0.0  # 初始金额
 
         # 建立对于DataFeed的Open/Close价格的引用参数
-        self.dtdate = self.datas[0].datetime.date
+        self.dtdt: datetime = self.datas[0].datetime  # 日期时间
+        self.dtdate = self.datas[0].datetime.date  # 日期
         self.dtopen = self.datas[0].open
         self.dtclose = self.datas[0].close
         self.dthigh = self.datas[0].high
@@ -600,6 +613,7 @@ class MyStrategy(bt.Strategy):
         self.initial_amount = self.broker.getcash()
 
     def notify_trade(self, trade):
+        """每当有交易订单状态发生改变时通知信息"""
         if not trade.isclosed:
             return
         t = 'notify_trade:'
@@ -615,9 +629,10 @@ class MyStrategy(bt.Strategy):
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
 
-        self.log(t)
+        self.log(t, dt=self.dtdt.datetime(0))
 
     def notify_order(self, order):
+        """每当有交易订单生成时通知信息"""
         if order.status in [order.Submitted, order.Accepted]:
             # broker 提交/接受了，买/卖订单则什么都不做
             # self.log('order.OrdTypes:{:},size:{:}'.format(order.OrdTypes[order.ordtype], order.size))
@@ -660,7 +675,7 @@ class MyStrategy(bt.Strategy):
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         t += ',开仓比:{:.0f}%'.format(self.mposkk)
 
-        self.log(t)
+        self.log(t, dt=self.dtdt.datetime(0))
         if not order.alive():
             self.myorder = None  # 表示没有订单待处理
 
@@ -761,17 +776,26 @@ class MyStrategy(bt.Strategy):
         return self.myorder
 
     def next(self):
-        # 记录收盘价
-        # self.log('Close, %.2f' % self.dtclose[0])
+        """每当有新的k线周期生成时通知信息"""
+        # self.log('Close, %.2f' % self.dtclose[0], dt=bt.num2date(self.dtdt[0]))  # 打印当前收盘价 bt.num2date(self.dtdt[0]) 日期数值转换
+        # self.log('dt, {:}'.format((self.dtdt.datetime(0) - self.dtdt.datetime(-1)).total_seconds() / 60))  # 计算与一个时间序列的间隔分钟数
         # if (round(self.dtdate(0).month // 3) % 4) != (round(self.dtdate(-1).month // 3) % 4):  # 记录每个季度open价
-        if (round(self.dtdate(0).month)) != (round(self.dtdate(-1).month)):  # 记录每个月open价
-            self.dtopen_month = self.datas[0].open[0]
-        self.buyorderthisbar = 0  # 标记该周期的交易状态
-        assets = self.broker.getvalue()  # 当前总资产
-
+        if self.myorder_datetime:  # 判断订单时间是否小于间隔周期
+            dt1 = (self.dtdt.datetime(0) - self.myorder_datetime).total_seconds() / 60  # 订单时间到当前bar的间隔分钟数
+            dt2 = (self.dtdt.datetime(0) - self.dtdt.datetime(-1)).total_seconds() / 60  # 与前一个bar的间隔分钟数
+            dt3 = dt1 // dt2  # 订单间隔周期数
+            ojk = dt3 % dt2  # 间隔周期数取模(0-dt2)
+            # print('order:', self.myorder_datetime.strftime("%Y-%m-%d %H:%M:%S"), 'dt1:', dt1, 'dt2:', dt2, 'dt3:', dt3, 'ojk:', ojk)
+            if ojk < self.p.ojk:
+                return
         # 如果有订单正在挂起，不操作
         if self.myorder:
             return
+        if (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)):  # 记录每个月open价
+            self.dtopen_month = self.dtopen[0]
+        self.buyorderthisbar = 0  # 标记该周期的交易状态
+        assets = self.broker.getvalue()  # 当前总资产
+
         # 多头入场条件
         self.sig_long = (
                 not self.position  # 空仓时
@@ -820,9 +844,17 @@ class MyStrategy(bt.Strategy):
         t_enter = t_add = t_exit = t_dec = 'next:'
         mpec_, mpr_, mps_ = 0.0, self.mpr, self.mps
 
+        # 当有信号发生时,更新订单时间
+        if (self.sig_long or self.sig_short
+                or self.sig_longa1 or self.sig_shorta1
+                or self.sig_long_dec or self.sig_short_dec
+                or self.sig_longx1 or self.sig_shortx1):
+            self.myorder_datetime = self.dtdt.datetime(0)  # 订单时间
+
         # 入场开仓准备
         if self.sig_long or self.sig_short:
             # self.broker.setcommission(automargin=self.p.automargin)  # 设置初始保证金比率
+            self.myorder_entry['入场价格'] = self.dtclose[0]  # 入场价格
             self.myentryprice = self.dtclose[0]  # 入场价格
             self.myentryprice_begin = self.myentryprice  # 开始入场价格
             self.turtleunits = 1  # 加仓次数
@@ -863,6 +895,8 @@ class MyStrategy(bt.Strategy):
 
         # 持仓加仓准备
         if self.sig_longa1 or self.sig_shorta1:
+            self.myorder_entry['上次入场价格'] = (self.myorder_entry['加场价格'] if '加场价格' in self.myorder_entry else self.myorder_entry['入场价格'])  # 上次加仓价格
+            self.myorder_entry['加场价格'] = self.dtclose[0]  # 加场价格
             self.myentryprice_ref1 = self.myentryprice
             self.myentryprice = self.dtclose[0]  # 入场价格
             self.turtleunits += 1  # 加仓次数加1
@@ -963,6 +997,69 @@ class MyStrategy(bt.Strategy):
         #          + ' spp:{:2d} '.format(self.p.spp)
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
         #          , doprint=True)
+
+
+class Statistics():
+    """策略统计,成交记录"""
+    # 记录每笔交易的成交与账户持仓等信息
+    trade_record = {
+        'datetime': [],  # 记录每笔交易发生的时间
+        '交易类型': [],  # 交易类型 开多,开空, 平多,平空
+        '交易量': [],  # 发送订单的交易数量
+        '成交量': [],  # 已成交的数量
+        '多头持仓': [],  # 多头持仓数量
+        '空头持仓': [],  # 空头持仓数量
+        '成交价': [],  # 开仓时成交价为开仓价, 平仓时成交价为平仓价
+        '持仓均价': [],  # 账户头寸持仓均价
+        '平仓盈亏%': [],  # 平仓时统计盈亏比率
+        '浮动盈亏%': [],  # 开仓时浮动盈亏比率
+        '收益率%': [],  # 累计收益率
+        '保证金%': [],  # 保证金率
+        '仓位%': [],  # 保证金占用总资金百分比的持仓仓位
+        '回撤%': [],  # 账户金额创新高后的回撤率
+        '帐户金额': [],  # 账户金额
+        '浮动盈亏': [],  # 开仓时浮动盈亏>0为盈利,<0为亏损
+        '平仓盈亏': [],  # 平仓时统计盈亏>0为盈利,<0为亏损
+        '手续费': [],  # 交易手续费
+    }
+    # 时间段内的统计分析
+    analysis_date = {
+        'date': [],  # 时间段 日,月,年
+        '收益率%': [],  # 收益率
+        '胜率%': [],  # 胜率
+        '手续费%': [],  # 交易费/(利润扣除手续费的净盈亏)
+        '盈亏比': [],  # 盈亏比=平均盈利/平均亏损
+        '回撤%': [],  # 账户金额创新高后的回撤率
+        '交易次数': [],  # 交易次数
+        '净利润': [],  # 净利润
+        '总盈利': [],  # 总盈利
+        '总亏损': [],  # 总亏损
+        '平均盈利': [],  # 平均盈利
+        '平均亏损': [],  # 平均亏损
+        '手续费': [],  # 交易手续费
+    }
+    datetime_begin: datetime = None  # 第一笔交易开始时间
+    datetime_end: datetime = None  # 最后一笔交易开始时间
+    gross_profit = 0.0  # 总盈利=策略盈利总额（未扣除手续费）
+    cumulative_return = 0.0  # 累计收益率
+    gross_loss = 0.0  # 总亏损=策略亏损总额（未扣除手续费）
+    gross_num_trade = 0  # 总交易次数
+    num_trade_win = 0  # 盈利交易次数
+    num_trade_loss = 0  # 亏损交易次数
+    max_num_seq_loss = 0  # 最大连续亏损次数
+    avg_num_seq_loss = 0  # 平均连续亏损次数
+    max_num_seq_win = 0  # 最大连续盈利次数
+    avg_num_seq_win = 0  # 平均连续盈利次数
+    percent_win = 0  # 胜率=盈利交易占总交易次数的比例
+    payoff_rate = 0.0  # 盈亏比=平均盈利/平均亏损
+    avg_payoff = 0.0  # 平均盈亏 = 净利润 / 交易次数.
+    avg_win = 0.0  # 平均盈利=总盈利/盈利交易次数
+    avg_loss = 0.0  # 平均亏损=总亏损/亏损交易次数
+    comm_profit_net = 0.0  # 交易费/(利润扣除手续费的净盈亏)
+    max_drawdown = 0.0  # 最大回撤
+    sharp_rate = 0.0  # 夏普率
+
+    pass
 
 
 """-------主函数---------"""

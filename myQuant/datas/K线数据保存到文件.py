@@ -19,8 +19,8 @@ def init(context):
     context.data = ['datetime', 'open', 'high', 'low', 'close', 'volume']
     # 1d 为1天，5m 为5分钟周期
     context.rule_type = '5m'
-    context.date_start = '20220101'
-    context.date_end = '20220401'
+    context.date_start = '20100416'
+    context.date_end = '20220428'
     bars = history_bars_date(context.run_info.base_book_id, context.date_start, context.date_end, context.rule_type,
                              context.data)
     print("-------------")
@@ -39,6 +39,7 @@ def init(context):
     # 取出特定列保存
     # df = df[['datetime', 'open', 'high', 'low', 'close', 'volume']]
     df[''] = pd.Series()  # df[""] = ""增加空列，为了后续读取文件方便识别
+    df[['volume']] = df[['volume']].astype(int)  # 转换指定类数据类型
     df.set_index("datetime", drop=True, inplace=False, append=False)  # 将datetime设置为索引列,drop=True 删除原有列
 
     print(df.info)
@@ -49,10 +50,10 @@ def init(context):
         path_or_buf=filename,  # 文件保存路径
         sep=',',  # 分隔符
         header=True,  # 导出列标签
-        columns=['date', 'time', 'open', 'high', 'low', 'close', 'volume', ''],  # 导出指定列, 日期和时间分开成二列 包括''空列
-        # columns=['datetime', 'open', 'high', 'low', 'close', 'volume', ''],  # 导出指定列,包括''空列
+        # columns=['date', 'time', 'open', 'high', 'low', 'close', 'volume', ''],  # 导出指定列, 日期和时间分开成二列 包括''空列
+        columns=['datetime', 'open', 'high', 'low', 'close', 'volume', ''],  # 导出指定列,包括''空列
         date_format='%Y-%m-%d %H:%M:%S',  # 时期格式化字符串
-        float_format='%.0f',  # 浮点数格式化字符串保留的小数位数
+        float_format='%.1f',  # 浮点数格式化字符串保留的小数位数
         index=False,  # 不导出索引列
     )
 
