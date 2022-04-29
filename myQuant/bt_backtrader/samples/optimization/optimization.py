@@ -160,7 +160,7 @@ def parse_args():
         help='SMA 范围高以优化')
 
     parser.add_argument(
-        '--m1_low', type=int,
+            '--m1_low', type=int,
         default=12, required=False,
         help='MACD Fast MA range low to optimize')
 
