@@ -18,18 +18,18 @@ G_DT_COMPRESSION = 15  # 合成bar的周期数
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_PRINTLOG = True  # 是否打印日志
 G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-G_PRICE_KEY = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
 G_OPTS = False  # 是否参数调优
 G_P_RSP = [10, True, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_RPP = [10, False, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_SPP = [10, False, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_KEY = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
 G_P_PARAM = {
     'rsp': (range(G_P_RSP[2], G_P_RSP[3], G_P_RSP[4]) if G_OPTS and G_P_RSP[1] else G_P_RSP[0]),
     # 'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_OPTS and G_P_RPP[1] else G_P_RPP[0]),
     # 'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_OPTS and G_P_SPP[1] else G_P_SPP[0]),
     'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
-    'key': G_PRICE_KEY[1:] if G_PRICE_KEY[0] else None
+    'key': G_P_KEY[1:] if G_P_KEY[0] else None
 }
 
 
@@ -339,7 +339,7 @@ def runstrat(args=None):
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        filename = ('{:}_{:}-{:}_{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, (str(list(G_P_PARAM.values())).replace(' ', '').replace(':', '')), ))
+        filename = ('{:}_{:}-{:}_{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, (str(G_P_PARAM).replace(' ', '').replace('\'', '').replace(':', '=')), ))
         print(filename)  # 打印文件路径
         print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
         res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
