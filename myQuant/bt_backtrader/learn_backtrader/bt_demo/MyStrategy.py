@@ -574,11 +574,13 @@ class MyStrategy(bt.Strategy):
         txt = ('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
 
         if self.p.savelog:
-            self.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
+            if self.fileHandler:
+                self.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
             self.logger.debug(txt)  # 输出debug信息到日志系统
 
         if self.p.printlog or printlog:
-            self.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
+            if self.streamHandler:
+                self.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
             self.logger.debug(txt)  # 输出debug信息到日志系统
 
     params = dict(
@@ -602,11 +604,11 @@ class MyStrategy(bt.Strategy):
         # super().__init__(*args, **kwargs)
         # self.opts = opts  # 启动参数
         self.logger = self.fileHandler = self.streamHandler = None
-        if self.p.printlog and self.p.savelog:
-            if self.logger and self.fileHandler and self.streamHandler:  # 使用前先关闭句柄
-                self.streamHandler.close()
-                self.fileHandler.close()
-                self.logger.close()
+        if self.p.printlog or self.p.savelog:
+            if self.streamHandler:
+                self.streamHandler.close()  # 使用前先关闭句柄
+            if self.fileHandler:
+                self.fileHandler.close()  # 使用前先关闭句柄
             self.logger, self.fileHandler, self.streamHandler = logger_config(log_path=str(self.p.filename) + '_log.txt', logging_name='交易日志')
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
         self.mpr = (self.p.rpp if self.p.rpp else self.p.rsp) / 1000  # 盈利千分比
@@ -1069,9 +1071,10 @@ class MyStrategy(bt.Strategy):
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
         #          , doprint=True)
         # 在记录日志之后移除句柄
-        self.logger.removeHandler(self.streamHandler)
-        self.logger.removeHandler(self.fileHandler)
-        # logging.shutdown()  # 关闭日志系统
+        if self.p.printlog or self.p.savelog:
+            self.logger.removeHandler(self.streamHandler)
+            self.logger.removeFilter(self.fileHandler)
+            # logging.shutdown()  # 关闭日志系统
 
 
 class Statistics():
