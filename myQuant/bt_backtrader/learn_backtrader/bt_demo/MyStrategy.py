@@ -1069,8 +1069,8 @@ class MyStrategy(bt.Strategy):
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
         #          , doprint=True)
         # 在记录日志之后移除句柄
-        # self.logger.removeHandler(self.streamHandler)
-        # self.logger.removeHandler(self.fileHandler)
+        self.logger.removeHandler(self.streamHandler)
+        self.logger.removeHandler(self.fileHandler)
         # logging.shutdown()  # 关闭日志系统
 
 
