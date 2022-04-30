@@ -1,6 +1,7 @@
 import os, sys
 import time
 import backtrader as bt
+import logging
 import quantstats
 import argparse
 import pandas as pd
@@ -9,27 +10,30 @@ from enum import Enum
 from datetime import datetime
 from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
 
-G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
+G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
+# DT_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
+# G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2013-01-01', '2013-02-01'
-G_COMM = 'comm_sqrb'  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
+G_DT_START, G_DT_END = '2013-01-01', '2016-02-01'
+G_COMM = 'comm_' + G_FILE_PATH.split('\\')[1][:4].lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 15  # 合成bar的周期数
+G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-G_P_PRINTLOG = True  # 是否打印日志
-G_PLOT = False  # 是否绘图,还可提供绘图参数:'style="candle"'
-G_OPTS = False  # 是否参数调优
-G_P_RSP = [10, True, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-G_P_RPP = [10, False, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-G_P_SPP = [10, False, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SAVELOG = True  # 是否输出日志到文件
+G_P_PRINTLOG = True  # 是否输出日志到控制台
+G_OPTS = True  # 是否参数调优
+G_P_RPP = [8, True, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SPP = [8, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_RSP = [10, False, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_KEY = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
 G_P_PARAM = {
-    'rsp': (range(G_P_RSP[2], G_P_RSP[3], G_P_RSP[4]) if G_OPTS and G_P_RSP[1] else G_P_RSP[0]),
-    # 'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_OPTS and G_P_RPP[1] else G_P_RPP[0]),
-    # 'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_OPTS and G_P_SPP[1] else G_P_SPP[0]),
-    'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
-    'key': G_P_KEY[1:] if G_P_KEY[0] else None
+    'rpp': (range(G_P_RPP[2], G_P_RPP[3], G_P_RPP[4]) if G_OPTS and G_P_RPP[1] else G_P_RPP[0]),
+    'spp': (range(G_P_SPP[2], G_P_SPP[3], G_P_SPP[4]) if G_OPTS and G_P_SPP[1] else G_P_SPP[0]),
+    # 'rsp': (range(G_P_RSP[2], G_P_RSP[3], G_P_RSP[4]) if G_OPTS and G_P_RSP[1] else G_P_RSP[0]),
+    # 'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
+    # 'key': G_P_KEY[1:] if G_P_KEY[0] else None
 }
 
 
@@ -116,8 +120,10 @@ def runstrat(args=None):
         ojk = args.ojk
         dkwargs['ojk'] = ojk
     if args.key is not None:
-        dkwargs['key'] = args.key
+        key = args.key
+        dkwargs['key'] = key
 
+    dkwargs['filename'] = ('{:}_{:}_{:}_{:}_{:}'.format(G_FILE_PATH[:12], (str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1])), G_DT_START, G_DT_END, (str(G_P_PARAM).replace(' ', '').replace('\'', '').replace(':', '=')), ))
     print('dt_start:', dt_start, 'dt_end:', dt_end)
     print('dkwargs:', dkwargs)
 
@@ -162,8 +168,8 @@ def runstrat(args=None):
     cerebro = bt.Cerebro(stdstats=False)
 
     cerebro.adddata(data)
-    # 设置投资金额100000.0
-    cerebro.broker.setcash(100000.0)
+    # 设置投资金额1000000
+    cerebro.broker.setcash(1000000)
 
     # # <editor-fold desc="折叠代码:交易手续费设置方式一">
     # cerebro.broker.setcommission(
@@ -207,6 +213,7 @@ def runstrat(args=None):
     # <editor-fold desc="折叠代码:交易手续费设置方式二">
     comm = {
         'comm_sqrb': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
+        'comm_zjif': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
         'comm_zqcf': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
     }
     # 添加进 broker
@@ -219,14 +226,10 @@ def runstrat(args=None):
     # 参数调优
     if args.opts:
         kwargs = G_P_PARAM
-        # kwargs['printlog'] = False
-        # print(kwargs)
+        # clock the start of the process
+        tstart = time.perf_counter()
         # 为Cerebro引擎添加策略, 优化策略
-        strats = cerebro.optstrategy(
-            MyStrategy,
-            printlog=False,
-            **kwargs
-        )
+        strats = cerebro.optstrategy(MyStrategy, **kwargs)
         # 添加分析指标
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
         cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
@@ -235,8 +238,6 @@ def runstrat(args=None):
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
         cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
-        # clock the start of the process
-        tstart = time.perf_counter()
         # Run over everything
         results_opt = cerebro.run(
             maxcpus=args.maxcpus,
@@ -339,11 +340,10 @@ def runstrat(args=None):
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        filename = ('{:}_{:}-{:}_{:}_opt.csv'.format(G_FILE_PATH[:15], G_DT_START, G_DT_END, (str(G_P_PARAM).replace(' ', '').replace('\'', '').replace(':', '=')), ))
+        filename = dkwargs['filename'] + '_opt.csv'
         print(filename)  # 打印文件路径
         print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
         res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
-
     # 回测分析
     else:
         # 添加观测器,绘制时显示
@@ -363,14 +363,14 @@ def runstrat(args=None):
         cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
 
         # 添加策略和参数
-        cerebro.addstrategy(MyStrategy, printlog=G_P_PRINTLOG, **dkwargs)
+        cerebro.addstrategy(MyStrategy, printlog=G_P_PRINTLOG, savelog=G_P_SAVELOG, **dkwargs)
 
         # 引擎运行前打印期出资金
-        print('组合期初资金: %.2f' % cerebro.broker.getvalue())
+        print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
         # 启动回测
         result_one = cerebro.run()
         # 引擎运行后打期末资金
-        print('组合期末资金: %.2f' % cerebro.broker.getvalue())
+        print('组合期末资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
         # 提取结果
         print("\n--------------- 累计收益率 -----------------")
         annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
@@ -489,6 +489,36 @@ def runstrat(args=None):
         # 使用quantstats 分析工具并保存到HTML文件
 
 
+def logger_config(log_path, logging_name):
+    """
+    配置log
+    :param log_path: 输出log路径
+    :param logging_name: 记录中name，可随意
+    :return:
+    """
+    '''
+    logger是日志对象，handler是流处理器，console是控制台输出（没有console也可以，将不会在控制台输出，会在日志文件中输出）
+    '''
+    # 获取logger对象,取名
+    logger = logging.getLogger(logging_name)
+    # 输出DEBUG及以上级别的信息，针对所有输出的第一层过滤
+    logger.setLevel(level=logging.DEBUG)
+    # 获取文件日志句柄并设置日志级别，第二层过滤
+    fileHandler = logging.FileHandler(log_path, encoding='UTF-8')
+    fileHandler.setLevel(logging.INFO)  # 设置文件日志输出级别 设置 INFO 时debug信息将不显示
+    # 生成并设置文件日志格式
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fileHandler.setFormatter(formatter)
+    # console相当于控制台输出，handler文件输出。获取流句柄并设置日志级别，第二层过滤
+    streamHandler = logging.StreamHandler(stream=sys.stdout)
+    # logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    streamHandler.setLevel(logging.INFO)  # 设置控制台显示级别 日志级别： debug < info < warning < error < critical
+    # 为logger对象添加句柄
+    logger.addHandler(fileHandler)
+    logger.addHandler(streamHandler)
+    return logger, fileHandler, streamHandler
+
+
 # 在继承 CommInfoBase 基础类的基础上自定义交易费用
 class MyCommission(bt.CommInfoBase):
     # 对应 setcommission 中介绍的那些参数，也可以增添新的全局参数
@@ -538,11 +568,18 @@ class MyStrategy(bt.Strategy):
 
     def log(self, txt, dt=None, printlog=None):
         # 记录策略的执行日志
+        dt = dt or self.datas[0].datetime.datetime(0)
+        # 时间断点调试,调试条件 self.datas[0].dtdt.dtdt(0) >= bt.dtdt.dtdt.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
+        # print('%s, %s' % (dt.isoformat(), txt))
+        txt = ('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
+
+        if self.p.savelog:
+            self.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
+            self.logger.debug(txt)  # 输出debug信息到日志系统
+
         if self.p.printlog or printlog:
-            dt = dt or self.datas[0].datetime.datetime(0)
-            # 时间断点调试,调试条件 self.datas[0].dtdt.dtdt(0) >= bt.dtdt.dtdt.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
-            # print('%s, %s' % (dt.isoformat(), txt))
-            print('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
+            self.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
+            self.logger.debug(txt)  # 输出debug信息到日志系统
 
     params = dict(
         rsp=10,  # 盈亏千分比
@@ -555,13 +592,22 @@ class MyStrategy(bt.Strategy):
         sspp=0,  # 最大回撤千分比
         key=[],  # 加仓方向的关价格点位 key=0无限制,向上穿越 key 时只有多头加仓,向下穿越 key 时只有空头加仓
         valid=None,  # 订单生效时间
-        printlog=False,  # 是否打印日志
+        printlog=False,  # 是否打印日志到控制台
+        savelog=False,  # 是否保存日志到文件
+        filename='.\\',  # 文件路径名
         use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
     )
 
     def __init__(self):
         # super().__init__(*args, **kwargs)
         # self.opts = opts  # 启动参数
+        self.logger = self.fileHandler = self.streamHandler = None
+        if self.p.printlog and self.p.savelog:
+            if self.logger and self.fileHandler and self.streamHandler:  # 使用前先关闭句柄
+                self.streamHandler.close()
+                self.fileHandler.close()
+                self.logger.close()
+            self.logger, self.fileHandler, self.streamHandler = logger_config(log_path=str(self.p.filename) + '_log.txt', logging_name='交易日志')
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
         self.mpr = (self.p.rpp if self.p.rpp else self.p.rsp) / 1000  # 盈利千分比
         self.mps = (self.p.spp if self.p.spp else self.p.rsp) / 1000  # 亏损千分比
@@ -907,8 +953,8 @@ class MyStrategy(bt.Strategy):
 
         # 持仓加仓准备
         if self.sig_longa1 or self.sig_shorta1:
-            self.myorder_entry['上次入场价格'] = (self.myorder_entry['加场价格'] if '加场价格' in self.myorder_entry else self.myorder_entry['入场价格'])  # 上次加仓价格
-            self.myorder_entry['加场价格'] = self.dtclose[0]  # 加场价格
+            self.myorder_entry['上次入场价格'] = (self.myorder_entry['加仓价格'] if '加仓价格' in self.myorder_entry else self.myorder_entry['入场价格'])  # 上次加仓价格
+            self.myorder_entry['加仓价格'] = self.dtclose[0]  # 加仓价格
             self.myentryprice_ref1 = self.myentryprice
             self.myentryprice = self.dtclose[0]  # 入场价格
             self.turtleunits += 1  # 加仓次数加1
@@ -925,15 +971,17 @@ class MyStrategy(bt.Strategy):
             else:
                 # self.mposkk = (self.mposkk * (1 - self.mpposad))  # 上一笔交易亏损时，减少仓位
                 pass
-            if self.mpra > self.mpsa:  # 盈利比>亏损比时,减少盈利比
-                self.mpra = self.mpra / (1 + abs(self.mpra - self.mpsa) / 100)
-                pass
-            elif self.mpsa > self.mpra:  # 亏损比>盈利比时,减少亏损比
-                self.mpsa = self.mpsa / (1 + abs(self.mpra - self.mpsa) / 100)
-                pass
-            elif self.mpsa == self.mpra:  # 亏损比=盈利比时,同时减少盈利和亏损比
-                self.mpra = self.mpra / (1 + self.mpposad)  # 减少盈利比
-                self.mpsa = self.mpsa / (1 + self.mpposad)  # 减少亏损比
+            if True:
+                if self.mpra > self.mpsa:  # 盈利比>亏损比时,减少盈利比
+                    self.mpra = self.mpra / (1 + abs(self.mpra - self.mpsa) / 100)
+                    pass
+                elif self.mpsa > self.mpra:  # 亏损比>盈利比时,减少亏损比
+                    self.mpsa = self.mpsa / (1 + abs(self.mpra - self.mpsa) / 100)
+                    pass
+                elif self.mpsa == self.mpra:  # 亏损比=盈利比时,同时减少盈利和亏损比
+                    self.mpra = self.mpra / (1 + self.mpposad)  # 减少盈利比
+                    self.mpsa = self.mpsa / (1 + self.mpposad)  # 减少亏损比
+                    pass
 
         # 多头加仓价格
         if self.sig_longa1:
@@ -1020,6 +1068,10 @@ class MyStrategy(bt.Strategy):
         #          + ' spp:{:2d} '.format(self.p.spp)
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
         #          , doprint=True)
+        # 在记录日志之后移除句柄
+        # self.logger.removeHandler(self.streamHandler)
+        # self.logger.removeHandler(self.fileHandler)
+        # logging.shutdown()  # 关闭日志系统
 
 
 class Statistics():
