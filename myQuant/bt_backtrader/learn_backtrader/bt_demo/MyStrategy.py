@@ -10,9 +10,9 @@ from enum import Enum
 from datetime import datetime
 from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
 
-G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
-# DT_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
-# G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
+# G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
+# G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
+G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 G_DT_START, G_DT_END = '2013-01-01', '2013-02-01'
 G_COMM = 'comm_' + G_FILE_PATH.split('\\')[1][:4].lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
@@ -22,9 +22,9 @@ G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = True  # 是否输出日志到文件
 G_P_LOG_PRINT = False  # 是否输出日志到控制台
-G_OPTS = False  # 是否参数调优
+G_OPTS = True  # 是否参数调优
 G_P_RPP = [8, True, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
-G_P_SPP = [8, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
+G_P_SPP = [8, False, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_RSP = [10, False, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_KEY = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
@@ -286,8 +286,8 @@ def runstrat(args=None):
             trade_lost_ = (trade['lost']['total']) if 'lost' in trade else 0  # 总亏损次数
             trade_total_ = trade['total']['total']  # 交易次数
             trade_win_rate = (trade_won_ / trade_total_) * 100  # 胜率
-            drawdown_ = drawdown['max']['drawdown']
-            sharpe_ = sharpe['sharperatio']
+            drawdown_ = drawdown['max']['drawdown'] if 'max' in drawdown else 0  # 最大回撤
+            sharpe_ = sharpe['sharperatio'] if 'sharperatio' in sharpe else 0  # 夏普率
             trade_pnl_total_ = (trade['pnl']['gross']['total']) if 'pnl' in trade else 0  # 总盈亏
             trade_pnl_net_ = (trade['pnl']['net']['total']) if 'pnl' in trade else 0  # 总盈亏-手续费
             trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
@@ -299,13 +299,13 @@ def runstrat(args=None):
                 'spp': x[0].p.spp,  # 参数
                 'ojk': x[0].p.ojk,  # 参数
                 'total': '{:0>4d}'.format(trade_total_),  # 交易次数
-                'sharpe': (sharpe_ if sharpe_ else 0),  # 夏普率
+                'sharpe': sharpe_,  # 夏普率
                 'rtot%': returns_rort_,  # 总复合回报
                 'py_rt%': pyFolio_returns_,  # pyFolio总复合回报
                 'won%': trade_win_rate,  # 胜率
                 'rnorm%': returns_rnorm100_,  # 年化归一化回报
-                'maxDD%': (drawdown_ if drawdown_ else 0),  # 最大回撤
-                'comm%': trade_comm_net_p,  # 手续费占比净盈亏百分比
+                'maxDD%': round(drawdown_, 3),  # 最大回撤
+                'comm%': round(trade_comm_net_p, 3),  # 手续费占比净盈亏百分比
                 'pnl_net': '{:8.2f}'.format(trade_pnl_net_),  # 总盈亏余额含手续费
             })
             for k, v in timeReturn.items():  # 把timeReturn统计的月度或年度复合回报添加在后面 # 月度或年度复合回报,由参数timeframe=bt.TimeFrame.Months控制
@@ -347,6 +347,7 @@ def runstrat(args=None):
         print(opts_path)  # 打印文件路径
         print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
         res_df.to_csv(opts_path, sep='\t', float_format='%.2f')  # 保存分析数据到文件
+        print("--------------- 优化结束 -----------------")
     # 回测分析
     else:
         test_kwargs = kwargs['test_kwargs']
@@ -595,7 +596,7 @@ class MyStrategy(bt.Strategy):
         # print('%s, %s' % (dt.isoformat(), txt))
         txt = ('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
         # 使用日志系统输出
-        if self.log_logger:
+        if self.p.log_kwargs and self.log_logger:
             if self.p.log_kwargs['log_save']:
                 if hasattr(self.log_logger, 'fileHandler'):
                     self.log_logger.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
@@ -630,7 +631,8 @@ class MyStrategy(bt.Strategy):
             self.p.log_print = self.p.log_kwargs['log_print']
             self.p.log_save = self.p.log_kwargs['log_save']
             self.log_logger = self.p.log_kwargs['log_logger']  # 获取logger对象
-
+        else:
+            self.log_logger = None
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
         self.mpr = (self.p.rpp if self.p.rpp else self.p.rsp) / 1000  # 盈利千分比
         self.mps = (self.p.spp if self.p.spp else self.p.rsp) / 1000  # 亏损千分比
