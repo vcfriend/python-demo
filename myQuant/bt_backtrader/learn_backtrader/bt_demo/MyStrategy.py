@@ -14,7 +14,7 @@ G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # DT_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2013-01-01', '2016-02-01'
+G_DT_START, G_DT_END = '2013-01-01', '2013-02-01'
 G_COMM = 'comm_' + G_FILE_PATH.split('\\')[1][:4].lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 15  # 合成bar的周期数
@@ -350,12 +350,15 @@ def runstrat(args=None):
     # 回测分析
     else:
         test_kwargs = kwargs['test_kwargs']
+        log_logger = None
+        if G_P_LOG_PRINT or G_P_LOG_FILE:
+            log_logger = logger_config(log_path=(file_name + '_log.txt'), log_name='交易日志')
         # 回测日志参数
-        test_kwargs['log_kwargs'] = dict(log_name='交易日志',
-                                         log_print=G_P_LOG_PRINT,  # 是否打印日志到控制台
-                                         log_save=G_P_LOG_FILE,  # 是否保存日志到文件
-                                         log_path=(file_name + '_log.txt'),  # 日志保存文件路径
-                                         )
+        test_kwargs['log_kwargs'] = dict(
+            log_logger=log_logger,
+            log_print=G_P_LOG_PRINT,  # 是否打印日志到控制台
+            log_save=G_P_LOG_FILE,  # 是否保存日志到文件
+        )
         log_kwargs = test_kwargs['log_kwargs']
         print('dt_start:', dt_start, 'dt_end:', dt_end)
         print('test_kwargs:', test_kwargs)  # 回测参数
@@ -378,9 +381,6 @@ def runstrat(args=None):
 
         # 添加策略和参数
         cerebro.addstrategy(MyStrategy, **test_kwargs)
-        logger = None
-        if G_P_LOG_PRINT or G_P_LOG_FILE:
-            logger = logger_config(log_path=str(log_kwargs['log_path']), log_name=log_kwargs['log_name'])
 
         # 引擎运行前打印期出资金
         print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
@@ -424,10 +424,8 @@ def runstrat(args=None):
         print("\n--------------- test end -----------------")
         # 在记录日志之后移除句柄
         if G_P_LOG_PRINT or G_P_LOG_FILE:
-            if logger.streamHandler:
-                logger.streamHandler.close()
-            if logger.fileHandler:
-                logger.fileHandler.close()
+            log_logger.streamHandler.close()
+            log_logger.fileHandler.close()
             logging.shutdown()  # 关闭日志系统
     # 绘图
     if args.plot and not args.opts:
@@ -528,18 +526,18 @@ def logger_config(log_path, log_name):
     # 输出DEBUG及以上级别的信息，针对所有输出的第一层过滤
     logger.setLevel(level=logging.DEBUG)
     # 获取文件日志句柄并设置日志级别，第二层过滤
-    logger.fileHandler = logging.FileHandler(log_path, encoding='UTF-8')
-    logger.fileHandler.setLevel(logging.INFO)  # 设置文件日志输出级别 设置 INFO 时debug信息将不显示
-    # 生成并设置文件日志格式
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logger.fileHandler.setFormatter(formatter)
+    if log_path:
+        logger.fileHandler = logging.FileHandler(log_path, encoding='UTF-8')
+        logger.fileHandler.setLevel(logging.INFO)  # 设置文件日志输出级别 设置 INFO 时debug信息将不显示
+        # 生成并设置文件日志格式
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        logger.fileHandler.setFormatter(formatter)
+        logger.addHandler(logger.fileHandler)  # 为logger对象添加句柄
     # console相当于控制台输出，handler文件输出。获取流句柄并设置日志级别，第二层过滤
     logger.streamHandler = logging.StreamHandler(stream=sys.stdout)
     # logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     logger.streamHandler.setLevel(logging.INFO)  # 设置控制台显示级别 日志级别： debug < info < warning < error < critical
-    # 为logger对象添加句柄
-    logger.addHandler(logger.fileHandler)
-    logger.addHandler(logger.streamHandler)
+    logger.addHandler(logger.streamHandler)  # 为logger对象添加句柄
     return logger
 
 
@@ -597,18 +595,17 @@ class MyStrategy(bt.Strategy):
         # print('%s, %s' % (dt.isoformat(), txt))
         txt = ('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
         # 使用日志系统输出
-        if self.p.log_kwargs:
-            if self.p.log_save:
-                if self.fileHandler:
-                    self.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
-                self.logger.debug(txt)  # 输出debug信息到日志系统
-            if self.p.log_print or printlog:
-                if self.streamHandler:
-                    self.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
-                self.logger.debug(txt)  # 输出debug信息到日志系统
+        if self.log_logger:
+            if self.p.log_kwargs['log_save']:
+                if hasattr(self.log_logger, 'fileHandler'):
+                    self.log_logger.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
+            if self.p.log_kwargs['log_print'] or printlog:
+                if hasattr(self.log_logger, 'streamHandler'):
+                    self.log_logger.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
+            self.log_logger.debug(txt)  # 输出debug信息到日志系统
         # 使用print打印日志
-        # elif self.p.log_print or printlog:
-        #     print(txt)
+        elif self.p.log_print or printlog:
+            print('print:', txt)
 
     params = dict(
         rsp=10,  # 盈亏千分比
@@ -629,16 +626,11 @@ class MyStrategy(bt.Strategy):
 
     def __init__(self):
         # super().__init__(*args, **kwargs)
-        # self.opts = opts  # 启动参数
         if self.p.log_kwargs:
-            # 获取logger对象,取名
-            self.logger = logging.getLogger(self.p.log_kwargs['log_name'])
             self.p.log_print = self.p.log_kwargs['log_print']
             self.p.log_save = self.p.log_kwargs['log_save']
-            if hasattr(self.logger, 'fileHandler'):
-                self.fileHandler = self.logger.fileHandler
-            if hasattr(self.logger, 'streamHandler'):
-                self.streamHandler = self.logger.streamHandler
+            self.log_logger = self.p.log_kwargs['log_logger']  # 获取logger对象
+
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
         self.mpr = (self.p.rpp if self.p.rpp else self.p.rsp) / 1000  # 盈利千分比
         self.mps = (self.p.spp if self.p.spp else self.p.rsp) / 1000  # 亏损千分比
