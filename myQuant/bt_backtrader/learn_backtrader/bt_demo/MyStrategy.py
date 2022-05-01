@@ -20,9 +20,9 @@ G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'd
 G_DT_COMPRESSION = 15  # 合成bar的周期数
 G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-G_P_SAVELOG = True  # 是否输出日志到文件
-G_P_PRINTLOG = True  # 是否输出日志到控制台
-G_OPTS = True  # 是否参数调优
+G_P_LOG_FILE = True  # 是否输出日志到文件
+G_P_LOG_PRINT = False  # 是否输出日志到控制台
+G_OPTS = False  # 是否参数调优
 G_P_RPP = [8, True, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_SPP = [8, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_RSP = [10, False, 2, 5, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
@@ -83,22 +83,24 @@ def parse_args(pargs=None):
 def runstrat(args=None):
     global DT_RESULT_ONE, DT_RESULTS_OPT  # 申明要使用全局变量
     args = parse_args(args)
-    dkwargs = dict()
+    kwargs = dict()  # 参数字典
+    kwargs['test_kwargs'] = dict()  # 回测参数字典
+    kwargs['opts_kwargs'] = dict()  # 优化参数字典
+    kwargs['log_kwargs'] = dict()  # 日志参数字典
 
     file_path_abs = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = None
-
     if args.dtformat is not None:
         dt_format = args.dtformat
         dt_dtformat = dt_format[:dt_format.find('%d') + len('%d')]
         dt_tmformat = dt_format[dt_format.find('%H'):]
-        # dkwargs['dtformat'] = dt_format
-        # dkwargs['tmformat'] = dt_tmformat
+        # kwargs['dtformat'] = dt_format
+        # kwargs['tmformat'] = dt_tmformat
     if args.fromdate is not None:
         dt_start = datetime.strptime(args.fromdate, dt_dtformat).date()
-        # dkwargs['fromdate'] = dt_start
+        # kwargs['fromdate'] = dt_start
     if args.todate is not None:
         dt_end = datetime.strptime(args.todate, dt_dtformat).date()
-        # dkwargs['todate'] = dt_end
+        # kwargs['todate'] = dt_end
     if args.data is not None:
         file_path = args.data
         myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
@@ -109,23 +111,19 @@ def runstrat(args=None):
             raise Exception("数据源文件未找到！" + file_path_abs)
     if args.rsp is not None:
         rsp = args.rsp
-        dkwargs['rsp'] = rsp
+        kwargs['test_kwargs']['rsp'] = rsp
     if args.rpp is not None:
         rpp = args.rpp
-        dkwargs['rpp'] = rpp
+        kwargs['test_kwargs']['rpp'] = rpp
     if args.spp is not None:
         spp = args.spp
-        dkwargs['spp'] = spp
+        kwargs['test_kwargs']['spp'] = spp
     if args.ojk is not None:
         ojk = args.ojk
-        dkwargs['ojk'] = ojk
+        kwargs['test_kwargs']['ojk'] = ojk
     if args.key is not None:
         key = args.key
-        dkwargs['key'] = key
-
-    dkwargs['filename'] = ('{:}_{:}_{:}_{:}_{:}'.format(G_FILE_PATH[:12], (str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1])), G_DT_START, G_DT_END, (str(G_P_PARAM).replace(' ', '').replace('\'', '').replace(':', '=')), ))
-    print('dt_start:', dt_start, 'dt_end:', dt_end)
-    print('dkwargs:', dkwargs)
+        kwargs['test_kwargs']['key'] = key
 
     # 加载数据
     df = pd.read_csv(filepath_or_buffer=file_path_abs,
@@ -158,7 +156,7 @@ def runstrat(args=None):
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
-    # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)
+    # data = bt.feeds.GenericCSVData(dataname=file_path, **kwargs)
     # 使用pandas数据源创建交易数据集
     data = (bt.feeds.PandasData(dataname=df, fromdate=dt_start, todate=dt_end))
     # 重采样到更大时间框架
@@ -223,13 +221,18 @@ def runstrat(args=None):
     strats = None
     result_one = None
     results_opt = None
+    file_name = '{:}_{:}_{:}_{:}_{:}'.format(G_FILE_PATH[:12], (str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1])), G_DT_START, G_DT_END, (str(G_P_PARAM).replace(' ', '').replace('\'', '').replace(':', '=')), )
+
     # 参数调优
     if args.opts:
-        kwargs = G_P_PARAM
+        kwargs['opts_kwargs'] = G_P_PARAM  # 优化参数字典
+        kwargs['opts_path'] = (file_name + '_opt.csv')  # 优化结果保存路径
+        print('dt_start:', dt_start, 'dt_end:', dt_end)
+        print('opts_kwargs:', kwargs['opts_kwargs'])
         # clock the start of the process
         tstart = time.perf_counter()
         # 为Cerebro引擎添加策略, 优化策略
-        strats = cerebro.optstrategy(MyStrategy, **kwargs)
+        strats = cerebro.optstrategy(MyStrategy, **kwargs['opts_kwargs'])
         # 添加分析指标
         cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
         cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
@@ -340,12 +343,23 @@ def runstrat(args=None):
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
         DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        filename = dkwargs['filename'] + '_opt.csv'
-        print(filename)  # 打印文件路径
+        opts_path = kwargs['opts_path']
+        print(opts_path)  # 打印文件路径
         print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
-        res_df.to_csv(filename, sep='\t', float_format='%.2f')  # 保存分析数据到文件
+        res_df.to_csv(opts_path, sep='\t', float_format='%.2f')  # 保存分析数据到文件
     # 回测分析
     else:
+        test_kwargs = kwargs['test_kwargs']
+        # 回测日志参数
+        test_kwargs['log_kwargs'] = dict(log_name='交易日志',
+                                         log_print=G_P_LOG_PRINT,  # 是否打印日志到控制台
+                                         log_save=G_P_LOG_FILE,  # 是否保存日志到文件
+                                         log_path=(file_name + '_log.txt'),  # 日志保存文件路径
+                                         )
+        log_kwargs = test_kwargs['log_kwargs']
+        print('dt_start:', dt_start, 'dt_end:', dt_end)
+        print('test_kwargs:', test_kwargs)  # 回测参数
+        print('log_kwargs:', log_kwargs)  # 日志参数
         # 添加观测器,绘制时显示
         cerebro.addobserver(bt.observers.Broker)
         cerebro.addobserver(bt.observers.Trades)
@@ -363,7 +377,10 @@ def runstrat(args=None):
         cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
 
         # 添加策略和参数
-        cerebro.addstrategy(MyStrategy, printlog=G_P_PRINTLOG, savelog=G_P_SAVELOG, **dkwargs)
+        cerebro.addstrategy(MyStrategy, **test_kwargs)
+        logger = None
+        if G_P_LOG_PRINT or G_P_LOG_FILE:
+            logger = logger_config(log_path=str(log_kwargs['log_path']), log_name=log_kwargs['log_name'])
 
         # 引擎运行前打印期出资金
         print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
@@ -405,6 +422,13 @@ def runstrat(args=None):
         for k, v in sharpeRatio_A.items():
             print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
         print("\n--------------- test end -----------------")
+        # 在记录日志之后移除句柄
+        if G_P_LOG_PRINT or G_P_LOG_FILE:
+            if logger.streamHandler:
+                logger.streamHandler.close()
+            if logger.fileHandler:
+                logger.fileHandler.close()
+            logging.shutdown()  # 关闭日志系统
     # 绘图
     if args.plot and not args.opts:
         pkwargs = dict(style='bar')
@@ -483,40 +507,40 @@ def runstrat(args=None):
         returns.index = returns.index.tz_convert(None)
         import quantstats
         # 将分析指标保存到HTML文件
-        title = G_FILE_PATH + ' param:{:} dt:{:%H:%M:%S}'.format(str(G_P_PARAM).replace(' ', '').replace('\'', ''), datetime.now())
-        quantstats.reports.html(returns, output='stats.html', title=title)
+        title_report = G_FILE_PATH + ' param:{:} dt:{:%H:%M:%S}'.format(str(G_P_PARAM).replace(' ', '').replace('\'', ''), datetime.now())  # 优化结果网页标题
+        quantstats.reports.html(returns, output='stats.html', title=title_report)
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
         # 使用quantstats 分析工具并保存到HTML文件
 
 
-def logger_config(log_path, logging_name):
+def logger_config(log_path, log_name):
     """
     配置log
     :param log_path: 输出log路径
-    :param logging_name: 记录中name，可随意
+    :param log_name: 记录中name，可随意
     :return:
     """
     '''
     logger是日志对象，handler是流处理器，console是控制台输出（没有console也可以，将不会在控制台输出，会在日志文件中输出）
     '''
     # 获取logger对象,取名
-    logger = logging.getLogger(logging_name)
+    logger = logging.getLogger(log_name)
     # 输出DEBUG及以上级别的信息，针对所有输出的第一层过滤
     logger.setLevel(level=logging.DEBUG)
     # 获取文件日志句柄并设置日志级别，第二层过滤
-    fileHandler = logging.FileHandler(log_path, encoding='UTF-8')
-    fileHandler.setLevel(logging.INFO)  # 设置文件日志输出级别 设置 INFO 时debug信息将不显示
+    logger.fileHandler = logging.FileHandler(log_path, encoding='UTF-8')
+    logger.fileHandler.setLevel(logging.INFO)  # 设置文件日志输出级别 设置 INFO 时debug信息将不显示
     # 生成并设置文件日志格式
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fileHandler.setFormatter(formatter)
+    logger.fileHandler.setFormatter(formatter)
     # console相当于控制台输出，handler文件输出。获取流句柄并设置日志级别，第二层过滤
-    streamHandler = logging.StreamHandler(stream=sys.stdout)
+    logger.streamHandler = logging.StreamHandler(stream=sys.stdout)
     # logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
-    streamHandler.setLevel(logging.INFO)  # 设置控制台显示级别 日志级别： debug < info < warning < error < critical
+    logger.streamHandler.setLevel(logging.INFO)  # 设置控制台显示级别 日志级别： debug < info < warning < error < critical
     # 为logger对象添加句柄
-    logger.addHandler(fileHandler)
-    logger.addHandler(streamHandler)
-    return logger, fileHandler, streamHandler
+    logger.addHandler(logger.fileHandler)
+    logger.addHandler(logger.streamHandler)
+    return logger
 
 
 # 在继承 CommInfoBase 基础类的基础上自定义交易费用
@@ -572,16 +596,19 @@ class MyStrategy(bt.Strategy):
         # 时间断点调试,调试条件 self.datas[0].dtdt.dtdt(0) >= bt.dtdt.dtdt.strptime('2018-01-23 14:05:00','%Y-%m-%d %H:%M:%S')
         # print('%s, %s' % (dt.isoformat(), txt))
         txt = ('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
-
-        if self.p.savelog:
-            if self.fileHandler:
-                self.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
-            self.logger.debug(txt)  # 输出debug信息到日志系统
-
-        if self.p.printlog or printlog:
-            if self.streamHandler:
-                self.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
-            self.logger.debug(txt)  # 输出debug信息到日志系统
+        # 使用日志系统输出
+        if self.p.log_kwargs:
+            if self.p.log_save:
+                if self.fileHandler:
+                    self.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
+                self.logger.debug(txt)  # 输出debug信息到日志系统
+            if self.p.log_print or printlog:
+                if self.streamHandler:
+                    self.streamHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到控制台
+                self.logger.debug(txt)  # 输出debug信息到日志系统
+        # 使用print打印日志
+        # elif self.p.log_print or printlog:
+        #     print(txt)
 
     params = dict(
         rsp=10,  # 盈亏千分比
@@ -594,22 +621,24 @@ class MyStrategy(bt.Strategy):
         sspp=0,  # 最大回撤千分比
         key=[],  # 加仓方向的关价格点位 key=0无限制,向上穿越 key 时只有多头加仓,向下穿越 key 时只有空头加仓
         valid=None,  # 订单生效时间
-        printlog=False,  # 是否打印日志到控制台
-        savelog=False,  # 是否保存日志到文件
-        filename='.\\',  # 文件路径名
+        log_print=False,  # 是否打印日志到控制台
+        log_save=False,  # 是否保存日志到文件
+        log_kwargs=dict(),  # 日志参数字典
         use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
     )
 
     def __init__(self):
         # super().__init__(*args, **kwargs)
         # self.opts = opts  # 启动参数
-        self.logger = self.fileHandler = self.streamHandler = None
-        if self.p.printlog or self.p.savelog:
-            if self.streamHandler:
-                self.streamHandler.close()  # 使用前先关闭句柄
-            if self.fileHandler:
-                self.fileHandler.close()  # 使用前先关闭句柄
-            self.logger, self.fileHandler, self.streamHandler = logger_config(log_path=str(self.p.filename) + '_log.txt', logging_name='交易日志')
+        if self.p.log_kwargs:
+            # 获取logger对象,取名
+            self.logger = logging.getLogger(self.p.log_kwargs['log_name'])
+            self.p.log_print = self.p.log_kwargs['log_print']
+            self.p.log_save = self.p.log_kwargs['log_save']
+            if hasattr(self.logger, 'fileHandler'):
+                self.fileHandler = self.logger.fileHandler
+            if hasattr(self.logger, 'streamHandler'):
+                self.streamHandler = self.logger.streamHandler
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
         self.mpr = (self.p.rpp if self.p.rpp else self.p.rsp) / 1000  # 盈利千分比
         self.mps = (self.p.spp if self.p.spp else self.p.rsp) / 1000  # 亏损千分比
@@ -1070,11 +1099,6 @@ class MyStrategy(bt.Strategy):
         #          + ' spp:{:2d} '.format(self.p.spp)
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
         #          , doprint=True)
-        # 在记录日志之后移除句柄
-        if self.p.printlog or self.p.savelog:
-            self.logger.removeHandler(self.streamHandler)
-            self.logger.removeFilter(self.fileHandler)
-            # logging.shutdown()  # 关闭日志系统
 
 
 class Statistics():
