@@ -517,7 +517,7 @@ def runstrat(args=None):
         returns.index = returns.index.tz_convert(None)
         import quantstats
         # 将分析指标保存到HTML文件
-        title_report = (G_FILE_PATH.split('\\')[1] + ' param={:} dt={:%H%M%S}'  # 替换路径中的空格':和字符串range
+        title_report = (G_FILE_PATH.split('\\')[1] + ' param={:} dt={:%H:%M:%S}'  # 替换路径中的空格':和字符串range
                         .format(str(G_P_PARAM).replace('range', '').translate(str.maketrans({' ': '', '\'': '', ':': '='})), datetime.now()))  # 优化结果网页标题
         quantstats.reports.html(returns, output='stats.html', title=title_report)
         print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
