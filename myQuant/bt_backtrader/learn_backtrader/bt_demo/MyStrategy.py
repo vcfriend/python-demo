@@ -10,6 +10,14 @@ from enum import Enum
 from datetime import datetime
 from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
 
+
+class TargetType(Enum):
+    """枚举开仓类型"""
+    TARGET_SIZE = "数量"  # 成交量
+    TARGET_VALUE = "金额"  # 目标金额
+    TARGET_PERCENT = "百分比"  # 百分比
+
+
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
@@ -23,7 +31,7 @@ G_INI_CASH = 10000 * 10  # 初始金额
 G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = False  # 是否输出日志到文件
-G_P_LOG_PRINT = False  # 是否输出日志到控制台
+G_P_LOG_PRINT = 0  # 是否输出日志到控制台
 G_OPTS = 0  # 是否参数调优
 G_P_RPP = [8, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
 G_P_SPP = [8, True, 2, 10, 1]  # 参数[默认值,是否优化最小值,最大值,步长]
@@ -223,8 +231,8 @@ def runstrat(args=None):
     results_opt = None
     file_name = ('{:}_{:}_{:}_{:}_{:}'
                  .format(G_FILE_PATH[:12], (str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1])), G_DT_START, G_DT_END,
-                         (str(G_P_PARAM).replace('range', '').  # 替换路径中的range字符串
-                          translate(str.maketrans({' ': '', '\'': '', ':': '=', }))),  # 将路径中的空格':字符替换成''或'='
+                         (str(G_P_PARAM).replace('range', '')  # 替换路径中的range字符串
+                          .translate(str.maketrans({' ': '', '\'': '', ':': '=', }))),  # 将路径中的空格':字符替换成''或'='
                          ))
     # 参数调优
     if args.opts:
@@ -583,11 +591,11 @@ class MyCommission(bt.CommInfoBase):
         return value
 
 
-class UseTarget(Enum):
+class Target(Enum):
     """枚举开仓类型"""
-    USE_TARGET_SIZE = 0  # 成交量
-    USE_TARGET_VALUE = 1  # 目标金额
-    USE_TARGET_PERCENT = 2  # 百分比
+    TARGET_SIZE = "数量"  # 成交量
+    TARGET_VALUE = "金额"  # 目标金额
+    TARGET_PERCENT = "百分比"  # 百分比
 
 
 # 创建策略继承bt.Strategy
@@ -616,9 +624,9 @@ class MyStrategy(bt.Strategy):
         rsp=10,  # 盈亏千分比
         rpp=0,  # 盈利千分比
         spp=0,  # 亏损千分比
-        pok=10,  # 入场开仓单位 按(数量,金额,百分比)下单
-        pad=10,  # 加减仓幅度百分比
-        pmax=100,  # 最大开仓单位
+        pok=0,  # 入场开仓单位 按(数量,金额,百分比)下单
+        pad=0,  # 加减仓幅度百分比
+        pmax=0,  # 最大开仓单位
         ojk=1,  # 订单间隔bar周期数
         sspp=0,  # 最大回撤千分比
         key=[],  # 加仓方向的关价格点位 key=0无限制,向上穿越 key 时只有多头加仓,向下穿越 key 时只有空头加仓
@@ -626,7 +634,7 @@ class MyStrategy(bt.Strategy):
         log_print=False,  # 是否打印日志到控制台
         log_save=False,  # 是否保存日志到文件
         log_kwargs=dict(),  # 日志参数字典
-        use_target=UseTarget.USE_TARGET_PERCENT,  # use_target_percent 按目标百分比下单 use_target_size=False,  # 按目标数量下单 use_target_value=False,  # 按目标金额下单
+        target=Target.TARGET_PERCENT.value,  # TARGET_PERCENT 按目标百分比下单 TARGET_SIZE,  # 按目标数量下单 TARGET_VALUE,  # 按目标金额下单
     )
 
     def __init__(self):
@@ -637,6 +645,16 @@ class MyStrategy(bt.Strategy):
             self.log_logger = self.p.log_kwargs['log_logger']  # 获取logger对象
         else:
             self.log_logger = None
+        # 如果未赋值,则使用默认参数
+        if self.p.target == TargetType.TARGET_SIZE.value:
+            self.p.pok = self.p.pok if self.p.pok else 1
+            self.p.pmax = self.p.pmax if self.p.pmax else 100
+        elif self.p.target == TargetType.TARGET_VALUE.value:
+            self.p.pok = self.p.pok if self.p.pok else self.broker.getcash() * 0.10
+            self.p.pmax = self.p.pmax if self.p.pmax else self.broker.getcash()
+        elif self.p.target == TargetType.TARGET_PERCENT.value:
+            self.p.pok = self.p.pok if self.p.pok else 10.0
+            self.p.pmax = self.p.pmax if self.p.pmax else 100.0
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
         self.mpr = (self.p.rpp if self.p.rpp else self.p.rsp) / 1000  # 盈利千分比
         self.mps = (self.p.spp if self.p.spp else self.p.rsp) / 1000  # 亏损千分比
@@ -783,25 +801,23 @@ class MyStrategy(bt.Strategy):
         posmincash = 0.0  # 最小开仓单位
         posmaxcash = 0.0  # 最大开仓单位
         comminfo = self.broker.getcommissioninfo(self.data)
-        margin = comminfo.get_margin(self.dtclose[0]) * 1.01  # 最低开仓保证金
+        margin = comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
         margin_cash = self.broker.getvalue(datas=[self.data])  # 持仓头寸占用资金
         # margin = bt.Order.comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
         get_cash = abs(self.broker.getcash())  # 可用资金
-        get_cash_value = abs(self.broker.getvalue())  # 帐户总资金
+        get_cash_value = abs(self.broker.getvalue())  # 账户总资金
         sign = np.sign(self.mpok)  # 取正负符号
         self.mpok = abs(self.mpok)
         open_profit = sign * self.position.size * (self.position.price - self.dtclose[0])  # 浮动盈亏
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
 
         # 按成交量下单
-        if self.p.use_target == UseTarget.USE_TARGET_SIZE:
-            poskkcash = margin * abs(size)  # 开仓金额
-            posmincash = min(1, int(round((get_cash // margin))))  # 最小开仓金额
-            posmaxcash = min(max(1, (margin * self.mpmax)), int(round((get_cash // margin))))  # 最大开仓金额
-            if size > 0:
-                size = (abs(self.position.size) + self.mpmin)
-            elif size < 0:
-                size = -(abs(self.position.size) + self.mpmin)
+        if self.p.target == TargetType.TARGET_SIZE.value:
+            # poskkcash = margin * abs(size)  # 开仓金额
+            posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
+            posmaxcash = min(max(margin * 1.1, (margin * self.mpmax)), get_cash)  # 最大开仓金额
+            percent = abs(self.mpok * margin / get_cash_value)  # 目标持仓比率
+            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
 
             # 限定使用资金的范围
             poskkcash = abs(  # sign 为开仓方向
@@ -811,15 +827,18 @@ class MyStrategy(bt.Strategy):
                     # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
-            target = sign * int(round(poskkcash // margin))
+            target = int(sign * round((poskkcash + margin_cash) // margin))
             self.myorder = self.order_target_size(target=target)
-            self.mpok = size
+            self.mpok = target
 
         # 按目标金额下单
-        elif self.p.use_target == UseTarget.USE_TARGET_VALUE:
-            poskkcash = (margin_cash // self.turtleunits) + self.mpok if self.turtleunits > 1 else margin_cash + self.mpok  # 开仓金额
+        elif self.p.target == TargetType.TARGET_VALUE.value:
+            # self.mpok为目标持仓金额, > margin_cash时 为加仓, < margin_cash时 为减仓
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
-            posmaxcash = min(max(margin * 1.1, self.mpmax), get_cash)  # 最大开仓金额
+            posmaxcash = min(max(margin * 1.1, (1 * self.mpmax)), get_cash)  # 最大开仓金额
+            percent = abs(self.mpok / get_cash_value)  # 目标持仓比率
+            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
+
             # 限定使用资金的范围
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
@@ -828,12 +847,12 @@ class MyStrategy(bt.Strategy):
                     # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
-            value = sign * poskkcash
+            value = sign * (poskkcash + margin_cash)
             self.myorder = self.order_target_value(target=value)
             self.mpok = poskkcash
 
         # 按目标百分比下单
-        elif self.p.use_target == UseTarget.USE_TARGET_PERCENT:
+        elif self.p.target == TargetType.TARGET_PERCENT.value:
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (get_cash * self.mpmax)), get_cash)  # 最大开仓金额
             # percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
@@ -854,7 +873,6 @@ class MyStrategy(bt.Strategy):
                           else poskkcash)))
 
             percent = sign * abs((poskkcash + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
-            # percent = sign * (abs(poskkcash) / get_cash)  # 计算占可用资金百分比 self.myorder = self.order_target_percent(target=percent)
             self.myorder = self.order_target_percent(target=percent)
             self.mpok = percent * 100
 
@@ -954,7 +972,7 @@ class MyStrategy(bt.Strategy):
         if self.sig_long:
             t_enter += ',买入'
             self.sig_ref1 = self.positionflag = 1  # 记录开仓信号
-            self.mpok = abs(self.mpok + 0.0001)
+            self.mpok = abs(self.mpok + 0.001)
             self.mpok_begin = self.mpok
 
             self.radd = self.myentryprice * (1 + self.mpr)
@@ -963,7 +981,7 @@ class MyStrategy(bt.Strategy):
         elif self.sig_short:
             t_enter += ',卖出'
             self.sig_ref1 = self.positionflag = -1  # 记录开仓信号
-            self.mpok = -abs(self.mpok + 1.0001)
+            self.mpok = -abs(self.mpok + 0.001)
             self.mpok_begin = self.mpok
             # self.radd = self.myentryprice * (1 - self.mpr)
             # self.sexit = self.myentryprice * (1 + self.mps)
@@ -1007,12 +1025,14 @@ class MyStrategy(bt.Strategy):
                 if self.mpra > self.mpsa:  # 盈利比>亏损比时,减少盈利比
                     # self.mpra = self.mpra / (1 + abs(self.mpra - self.mpsa) / abs(self.mpra + self.mpsa))
                     self.mpra = self.mpra / (1 + self.mpad)  # 减少盈利比
+                    self.mpsa = self.mpsa * (1 + self.mpad)  # 增加亏损比
                     pass
                 elif self.mpsa > self.mpra:  # 亏损比>盈利比时,减少亏损比
                     # self.mpsa = self.mpsa / (1 + abs(self.mpra - self.mpsa) / abs(self.mpra + self.mpsa))
                     self.mpsa = self.mpsa / (1 + self.mpad)  # 减少亏损比
+                    self.mpra = self.mpra * (1 + self.mpad)  # 增加盈利比
                     pass
-                elif self.mpsa == self.mpra:  # 亏损比=盈利比时,同时减少盈利和亏损比
+                elif abs(self.mpsa - self.mpra) * 2 / abs(self.mpsa + self.mpra) < abs(self.mpad):  # 亏损比=盈利比时,同时减少盈利和亏损比
                     self.mpra = self.mpra / (1 + self.mpad)  # 减少盈利比
                     self.mpsa = self.mpsa / (1 + self.mpad)  # 减少亏损比
                     pass
