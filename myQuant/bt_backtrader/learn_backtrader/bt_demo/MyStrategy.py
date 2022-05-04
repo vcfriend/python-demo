@@ -13,9 +13,9 @@ from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
 
 class TargetType(Enum):
     """枚举开仓类型"""
-    TARGET_SIZE = "数量"  # 成交量
-    TARGET_VALUE = "金额"  # 目标金额
-    TARGET_PERCENT = "百分比"  # 百分比
+    T_SIZE = "数量"  # 成交量
+    T_VALUE = "金额"  # 目标金额
+    T_PERCENT = "百分比"  # 百分比
 
 
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
@@ -517,11 +517,18 @@ def runstrat(args=None):
         returns.index = returns.index.tz_convert(None)
         import quantstats
         # 将分析指标保存到HTML文件
-        title_report = (G_FILE_PATH.split('\\')[1] + ' param={:} dt={:%H:%M:%S}'  # 替换路径中的空格':和字符串range
-                        .format(str(G_P_PARAM).replace('range', '').translate(str.maketrans({' ': '', '\'': '', ':': '='})), datetime.now()))  # 优化结果网页标题
-        quantstats.reports.html(returns, output='stats.html', title=title_report)
-        print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
-        # 使用quantstats 分析工具并保存到HTML文件
+        title_report = ('{:}-{:} st={:} end={:} param={:} dt={:%H:%M:%S}'  # 优化结果网页标题
+            .format(
+            (G_FILE_PATH.split('\\')[1].split('-')[0]),  # 合约名称
+            str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1]),  # K线周期
+            G_DT_START, G_DT_END,  # 开始结束时间
+            str(G_P_PARAM).replace('range', '')  # 替换参数字典中的字符串
+            .translate(str.maketrans({' ': '', '\'': '', ':': '='})),  # 替换参数字典中的字符
+            datetime.now(),
+        ))
+    quantstats.reports.html(returns, output='stats.html', title=title_report)
+    print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
+    # 使用quantstats 分析工具并保存到HTML文件
 
 
 def logger_config(log_path, log_name):
@@ -634,7 +641,7 @@ class MyStrategy(bt.Strategy):
         log_print=False,  # 是否打印日志到控制台
         log_save=False,  # 是否保存日志到文件
         log_kwargs=dict(),  # 日志参数字典
-        target=Target.TARGET_PERCENT.value,  # TARGET_PERCENT 按目标百分比下单 TARGET_SIZE,  # 按目标数量下单 TARGET_VALUE,  # 按目标金额下单
+        target=Target.TARGET_PERCENT.name,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
     )
 
     def __init__(self):
@@ -646,13 +653,13 @@ class MyStrategy(bt.Strategy):
         else:
             self.log_logger = None
         # 如果未赋值,则使用默认参数
-        if self.p.target == TargetType.TARGET_SIZE.value:
+        if self.p.target == TargetType.T_SIZE.name:
             self.p.pok = self.p.pok if self.p.pok else 1
             self.p.pmax = self.p.pmax if self.p.pmax else 100
-        elif self.p.target == TargetType.TARGET_VALUE.value:
+        elif self.p.target == TargetType.T_VALUE.name:
             self.p.pok = self.p.pok if self.p.pok else self.broker.getcash() * 0.10
             self.p.pmax = self.p.pmax if self.p.pmax else self.broker.getcash()
-        elif self.p.target == TargetType.TARGET_PERCENT.value:
+        elif self.p.target == TargetType.T_PERCENT.name:
             self.p.pok = self.p.pok if self.p.pok else 10.0
             self.p.pmax = self.p.pmax if self.p.pmax else 100.0
         self.mprs = self.p.rsp / 1000  # 盈亏千分比
@@ -812,7 +819,7 @@ class MyStrategy(bt.Strategy):
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
 
         # 按成交量下单
-        if self.p.target == TargetType.TARGET_SIZE.value:
+        if self.p.target == TargetType.T_SIZE.name:
             # poskkcash = margin * abs(size)  # 开仓金额
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (margin * self.mpmax)), get_cash)  # 最大开仓金额
@@ -832,7 +839,7 @@ class MyStrategy(bt.Strategy):
             self.mpok = target
 
         # 按目标金额下单
-        elif self.p.target == TargetType.TARGET_VALUE.value:
+        elif self.p.target == TargetType.T_VALUE.name:
             # self.mpok为目标持仓金额, > margin_cash时 为加仓, < margin_cash时 为减仓
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (1 * self.mpmax)), get_cash)  # 最大开仓金额
@@ -852,7 +859,7 @@ class MyStrategy(bt.Strategy):
             self.mpok = poskkcash
 
         # 按目标百分比下单
-        elif self.p.target == TargetType.TARGET_PERCENT.value:
+        elif self.p.target == TargetType.T_PERCENT.name:
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (get_cash * self.mpmax)), get_cash)  # 最大开仓金额
             # percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
