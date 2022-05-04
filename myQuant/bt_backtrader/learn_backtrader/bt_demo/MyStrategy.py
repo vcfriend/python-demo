@@ -19,11 +19,14 @@ class TargetType(Enum):
 
 
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
-# G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
+# G_DT_START, G_DT_END = '2013-01-01', '2022-02-01'
+G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
+G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 # G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
+# G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
+# G_DT_START, G_DT_END = '2009-04-01', '2013-02-01'
+
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_DT_START, G_DT_END = '2009-04-01', '2013-02-01'
 G_COMM = 'comm_' + G_FILE_PATH.split('\\')[1][:4].lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 5  # 合成bar的周期数
@@ -92,6 +95,10 @@ def parse_args(pargs=None):
 
 def runstrat(args=None):
     global DT_RESULT_ONE, DT_RESULTS_OPT, G_INI_CASH  # 申明要使用全局变量
+    strats = None
+    result_one = None
+    results_opt = None
+
     args = parse_args(args)
     kwargs = dict()  # 参数字典
     kwargs['test_kwargs'] = dict()  # 回测参数字典
@@ -226,9 +233,6 @@ def runstrat(args=None):
     cerebro.broker.addcommissioninfo(comm[G_COMM], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
     # </editor-fold>
 
-    strats = None
-    result_one = None
-    results_opt = None
     file_name = ('{:}_{:}_{:}_{:}_{:}'
                  .format(G_FILE_PATH[:12], (str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1])), G_DT_START, G_DT_END,
                          (str(G_P_PARAM).replace('range', '')  # 替换路径中的range字符串
@@ -323,8 +327,8 @@ def runstrat(args=None):
                 row['{:%Y-%m}'.format(k)] = v
             res_df = res_df.append(row, ignore_index=True)
         res_df[['rpp', 'spp', 'ojk', 'total']] = res_df[['rpp', 'spp', 'ojk', 'total']].astype(int)  # 转换指定类数据类型
-        if not bool(res_df.notnull):
-            print('回测数据不存在,退出')
+        if bool(res_df.empty):
+            print('回测数据不存在')
         if not ('rpp' in G_P_PARAM or 'spp' in G_P_PARAM):
             # 删除未优化的参数列
             res_df = res_df.drop(labels=['rpp', 'spp'], axis=1)
@@ -353,7 +357,8 @@ def runstrat(args=None):
         pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
 
         res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
-        DT_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
+        if not res_df.empty:
+            G_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
         opts_path = kwargs['opts_path']
         print(opts_path)  # 打印文件路径
         print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
@@ -517,18 +522,19 @@ def runstrat(args=None):
         returns.index = returns.index.tz_convert(None)
         import quantstats
         # 将分析指标保存到HTML文件
-        title_report = ('{:}-{:} st={:} end={:} param={:} dt={:%H:%M:%S}'  # 优化结果网页标题
+        title_report = ('{:}-{:} st={:%Y-%m-%d} end={:%Y-%m-%d} pam={:} dt={:%H:%M:%S}'  # 优化结果网页标题
             .format(
             (G_FILE_PATH.split('\\')[1].split('-')[0]),  # 合约名称
             str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1]),  # K线周期
-            G_DT_START, G_DT_END,  # 开始结束时间
-            str(G_P_PARAM).replace('range', '')  # 替换参数字典中的字符串
-            .translate(str.maketrans({' ': '', '\'': '', ':': ''})),  # 替换参数字典中的字符
+            datetime.fromisoformat(G_DT_START), datetime.fromisoformat(G_DT_END),  # 开始结束时间
+            (str(G_P_PARAM).replace('range', '')  # 替换参数字典中的字符串
+             .translate(str.maketrans({' ': '', '\'': '', ':': ''}))),  # 替换参数字典中的字符
             datetime.now(),
         ))
-    quantstats.reports.html(returns, output='stats.html', title=title_report)
-    print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
-    # 使用quantstats 分析工具并保存到HTML文件
+        quantstats.reports.html(returns, output='stats.html', title=title_report)
+        print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
+        # 使用quantstats 分析工具并保存到HTML文件
+        pass
 
 
 def logger_config(log_path, log_name):
