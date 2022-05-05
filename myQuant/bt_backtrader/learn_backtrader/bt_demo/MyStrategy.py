@@ -35,13 +35,13 @@ G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = False  # 是否输出日志到文件
 G_P_LOG_PRINT = 0  # 是否输出日志到控制台
-G_OPTS = 1  # 是否参数调优
-G_P_PW = [8, True, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_OPTS = False  # 是否参数调优
+G_P_PW = [8, False, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [8, False, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PO = [0, True, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PP = [0, True, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PP = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_KPR = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
 G_P_PARAM = {
     'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if G_OPTS and G_P_PW[1] else G_P_PW[0]),
@@ -517,6 +517,9 @@ def runstrat(args=None):
         portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
+        param_one = dict()
+        for pk, pv in G_P_PARAM.items():  # 遍历参数列表,将优化的参数名和值添加到字典里
+            param_one[pk] = result_one[0].p._get(pk)
         import quantstats
         # 将分析指标保存到HTML文件
         title_report = ('{:}-{:} st={:%Y-%m-%d} end={:%Y-%m-%d} pam={:} dt={:%H.%M.%S}'  # 优化结果网页标题
@@ -524,7 +527,7 @@ def runstrat(args=None):
             (G_FILE_PATH.split('\\')[1].split('-')[0]),  # 合约名称
             str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1]),  # K线周期
             datetime.fromisoformat(G_DT_START), datetime.fromisoformat(G_DT_END),  # 开始结束时间
-            (str(G_P_PARAM).replace('range', '')  # 替换参数字典中的字符串
+            (str(param_one).replace('range', '')  # 替换参数字典中的字符串
              .translate(str.maketrans({' ': '', '\'': '', ':': ''}))),  # 替换参数字典中的字符
             datetime.now(),
         ))
@@ -669,10 +672,11 @@ class MyStrategy(bt.Strategy):
         self.p_pwl = self.p.pwl / 1000  # 盈亏千分比
         self.p_pw = (self.p.pw if self.p.pw else self.p.pwl) / 1000  # 盈利千分比
         self.p_pl = (self.p.pl if self.p.pl else self.p.pwl) / 1000  # 亏损千分比
-        self.p_po = self.p.po / 100  # 加减仓幅度百分比
         self.p_ok = self.p.ok  # 开仓单位
         self.p_pok_min = self.p.ok  # 最小开仓单位
         self.p_pok_max = self.p.pmax  # 最大开仓单位
+        self.p_po = self.p.po / 100  # 入场开仓加减幅度百分比
+        self.p_pp = self.p.pp / 100  # 盈亏加减幅度百分比
         self.mpwa = self.p_pw  # 加仓盈利千分比
         self.mpla = self.p_pl  # 加仓亏损千分比
         self.entry_mpok = self.p_ok  # 入场时的开仓单位
@@ -1026,6 +1030,9 @@ class MyStrategy(bt.Strategy):
             automargin_re = automargin * (mpe_r1_ / self.p_pl) if mpe_r1_ else automargin  # 调整保证金比率, 是否根据入场价之间的涨跌幅度调整保证金比率
             # self.broker.setcommission(automargin=automargin_re)  # 设置保证金比率
             if self.ppos_profit_ref1 >= 0:
+                # 连续亏损时,减少下次开仓比率
+                if self.numlosst > 1:
+                    self.p_ok = self.p_ok / (1 + self.p_po)
                 self.numlosst = 0
                 self.p_ok = (self.p_ok * (1 + (self.p_po)))  # 上一笔交易盈利时，增加仓位
             else:
@@ -1034,17 +1041,17 @@ class MyStrategy(bt.Strategy):
             if True:
                 if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
                     # self.mpwa = self.mpwa / (1 + abs(self.mpwa - self.mpla) / abs(self.mpwa + self.mpla))
-                    self.mpwa = self.mpwa / (1 + self.p_po)  # 减少盈利比
-                    self.mpla = self.mpla * (1 + self.p_po)  # 增加亏损比
+                    self.mpwa = self.mpwa / (1 + self.p_pp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 + self.p_pp)  # 增加亏损比
                     pass
                 elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
                     # self.mpla = self.mpla / (1 + abs(self.mpwa - self.mpla) / abs(self.mpwa + self.mpla))
-                    self.mpla = self.mpla / (1 + self.p_po)  # 减少亏损比
-                    self.mpwa = self.mpwa * (1 + self.p_po)  # 增加盈利比
+                    self.mpla = self.mpla / (1 + self.p_pp)  # 减少亏损比
+                    self.mpwa = self.mpwa * (1 + self.p_pp)  # 增加盈利比
                     pass
-                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.p_po):  # 亏损比=盈利比时,同时减少盈利和亏损比
-                    self.mpwa = self.mpwa / (1 + self.p_po)  # 减少盈利比
-                    self.mpla = self.mpla / (1 + self.p_po)  # 减少亏损比
+                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.p_pp):  # 亏损比=盈利比时,同时减少盈利和亏损比
+                    self.mpwa = self.mpwa / (1 + self.p_pp)  # 减少盈利比
+                    self.mpla = self.mpla / (1 + self.p_pp)  # 减少亏损比
                     pass
 
         # 多头加仓价格
@@ -1106,9 +1113,6 @@ class MyStrategy(bt.Strategy):
             # 盈利后,减少下次开仓比率
             if self.turtleunits > 1:
                 self.p_ok = (self.p_ok / self.turtleunits)
-            # 连续亏损时,减少下次开仓比率
-            if self.numlosst > 1:
-                self.p_ok = self.p_ok / (1 + self.p_po)
             self.p_ok = self.p_ok if self.p_ok > self.p_pok_min else self.p_pok_min
             self.exit_price = self.dtclose[0]
             self.position_flag = 0  # 清仓后头寸方向为0
