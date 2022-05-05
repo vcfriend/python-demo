@@ -1029,30 +1029,26 @@ class MyStrategy(bt.Strategy):
             automargin = self.broker.getcommissioninfo(data=self.data).p.automargin  # 获取保证比率*合约乘数
             automargin_re = automargin * (mpe_r1_ / self.p_pl) if mpe_r1_ else automargin  # 调整保证金比率, 是否根据入场价之间的涨跌幅度调整保证金比率
             # self.broker.setcommission(automargin=automargin_re)  # 设置保证金比率
-            if self.ppos_profit_ref1 >= 0:
-                # 连续亏损时,减少下次开仓比率
-                if self.numlosst > 1:
-                    self.p_ok = self.p_ok / (1 + self.p_po)
-                self.numlosst = 0
-                self.p_ok = (self.p_ok * (1 + (self.p_po)))  # 上一笔交易盈利时，增加仓位
+            if self.ppos_profit_ref1 > 0:
+                self.numlosst = 0  # 连续亏损=0
+                self.p_ok = (self.p_ok * (1 + self.p_po))  # 上一笔交易盈利时，增加仓位
             else:
-                self.p_ok = (self.p_ok * (1 - (self.p_po)))  # 上一笔交易亏损时，减少仓位
+                self.p_ok = (self.p_ok * (1 - self.p_po))  # 上一笔交易亏损时，减少仓位
                 pass
             if True:
                 if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
-                    # self.mpwa = self.mpwa / (1 + abs(self.mpwa - self.mpla) / abs(self.mpwa + self.mpla))
-                    self.mpwa = self.mpwa / (1 + self.p_pp)  # 减少盈利比
+                    self.mpwa = self.mpwa * (1 - self.p_pp)  # 减少盈利比
                     self.mpla = self.mpla * (1 + self.p_pp)  # 增加亏损比
                     pass
                 elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
-                    # self.mpla = self.mpla / (1 + abs(self.mpwa - self.mpla) / abs(self.mpwa + self.mpla))
-                    self.mpla = self.mpla / (1 + self.p_pp)  # 减少亏损比
+                    self.mpla = self.mpla * (1 - self.p_pp)  # 减少亏损比
                     self.mpwa = self.mpwa * (1 + self.p_pp)  # 增加盈利比
                     pass
                 elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.p_pp):  # 亏损比=盈利比时,同时减少盈利和亏损比
-                    self.mpwa = self.mpwa / (1 + self.p_pp)  # 减少盈利比
-                    self.mpla = self.mpla / (1 + self.p_pp)  # 减少亏损比
+                    self.mpwa = self.mpwa * (1 - self.p_pp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 - self.p_pp)  # 减少亏损比
                     pass
+            pass
 
         # 多头加仓价格
         if self.sig_longa1:
