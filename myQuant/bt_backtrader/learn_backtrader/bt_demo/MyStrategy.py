@@ -21,13 +21,14 @@ class TargetType(Enum):
 
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2022-02-01'
-G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
-G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
+# G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
+# G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 # G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 # G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-# G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
+G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
 # G_DT_START, G_DT_END = '2009-04-01', '2013-02-01'
+G_DT_START, G_DT_END = '2009-04-01', '2009-05-01'
 
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 G_COMM = 'comm_' + (re.findall(r"datas\\([\D]{2,4})", G_FILE_PATH)[0]).lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
@@ -37,7 +38,7 @@ G_INI_CASH = 10000 * 10  # 初始金额
 G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = False  # 是否输出日志到文件
-G_P_LOG_PRINT = 0  # 是否输出日志到控制台
+G_P_LOG_PRINT = False  # 是否输出日志到控制台
 G_OPTS = False  # 是否参数调优
 G_P_PW = [8, False, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [8, False, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -655,6 +656,31 @@ class MyStrategy(bt.Strategy):
         tar=Target.TARGET_PERCENT.value,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
     )
 
+    def getParams(self):
+        """获取参数"""
+        if self.p.log_kwargs:
+            self.p.log_print = self.p.log_kwargs['log_print']
+            self.p.log_save = self.p.log_kwargs['log_save']
+            self.log_logger = self.p.log_kwargs['log_logger']  # 获取logger对象
+        else:
+            self.log_logger = None
+        # 如果未赋值,则使用默认参数
+        if self.p.tar == TargetType.T_SIZE.value:
+            self.p_ok = self.p.ok if self.p.ok else 1  # 开仓手数
+            self.p_pmax = self.p.pmax if self.p.pmax else 200  # 最大开仓手数
+        elif self.p.tar == TargetType.T_VALUE.value:
+            self.p_ok = self.p.ok if self.p.ok else self.broker.getcash() * 0.10  # 开仓金额
+            self.p_pmax = self.p.pmax if self.p.pmax else self.broker.getcash()  # 最大开仓金额
+        elif self.p.tar == TargetType.T_PERCENT.value:
+            self.p_ok = self.p.ok / 100 if self.p.ok else 0.10  # 开仓百分比
+            self.p_pmax = self.p.pmax / 100 if self.p.pmax else 1.0  # 最大开仓百分比
+        self.p_pwl = self.p.pwl / 1000  # 盈亏千分比
+        self.p_pw = (self.p.pw if self.p.pw else self.p.pwl) / 1000  # 盈利千分比
+        self.p_pl = (self.p.pl if self.p.pl else self.p.pwl) / 1000  # 亏损千分比
+        self.p_po = self.p.po / 100  # 开仓加减幅度百分比
+        self.p_pp = self.p.pp / 100  # 盈亏加减幅度百分比
+        pass
+
     def __init__(self):
         # super().__init__(*args, **kwargs)
         if self.p.log_kwargs:
@@ -665,25 +691,27 @@ class MyStrategy(bt.Strategy):
             self.log_logger = None
         # 如果未赋值,则使用默认参数
         if self.p.tar == TargetType.T_SIZE.value:
-            self.p.ok = self.p.ok if self.p.ok else 1
-            self.p.pmax = self.p.pmax if self.p.pmax else 100
+            self.p_ok = self.p.ok if self.p.ok else 1  # 开仓手数
+            self.p_pmax = self.p.pmax if self.p.pmax else 200  # 最大开仓手数
         elif self.p.tar == TargetType.T_VALUE.value:
-            self.p.ok = self.p.ok if self.p.ok else self.broker.getcash() * 0.10
-            self.p.pmax = self.p.pmax if self.p.pmax else self.broker.getcash()
+            self.p_ok = self.p.ok if self.p.ok else self.broker.getcash() * 0.10  # 开仓金额
+            self.p_pmax = self.p.pmax if self.p.pmax else self.broker.getcash()  # 最大开仓金额
         elif self.p.tar == TargetType.T_PERCENT.value:
-            self.p.ok = self.p.ok if self.p.ok else 10.0
-            self.p.pmax = self.p.pmax if self.p.pmax else 100.0
+            self.p_ok = self.p.ok / 100 if self.p.ok else 0.10  # 开仓百分比
+            self.p_pmax = self.p.pmax / 100 if self.p.pmax else 1.0  # 最大开仓百分比
         self.p_pwl = self.p.pwl / 1000  # 盈亏千分比
         self.p_pw = (self.p.pw if self.p.pw else self.p.pwl) / 1000  # 盈利千分比
         self.p_pl = (self.p.pl if self.p.pl else self.p.pwl) / 1000  # 亏损千分比
-        self.p_ok = self.p.ok  # 开仓单位
-        self.p_pok_min = self.p.ok  # 最小开仓单位
-        self.p_pok_max = self.p.pmax  # 最大开仓单位
-        self.p_po = self.p.po / 100  # 入场开仓加减幅度百分比
+        self.p_po = self.p.po / 100  # 开仓加减幅度百分比
         self.p_pp = self.p.pp / 100  # 盈亏加减幅度百分比
         self.mpwa = self.p_pw  # 加仓盈利千分比
         self.mpla = self.p_pl  # 加仓亏损千分比
-        self.entry_mpok = self.p_ok  # 入场时的开仓单位
+        self.mpok = self.p_ok  # 开仓单位
+        self.mppo = self.p_po  # 开仓加减幅度百分比
+        self.mppp = self.p_pp  # 盈亏加减幅度百分比
+        self.p_pok_min = self.mpok  # 最小开仓单位
+        self.p_pok_max = self.p_pmax  # 最大开仓单位
+        self.entry_pok_begin = self.mpok  # 空仓入场时的开仓单位
         self.entry_order = dict()  # 入场订单
         self.order_datetime: datetime = None  # 订单发生时间
         self.entry_price_begin = 0.0  # 初始入场价格
@@ -712,8 +740,8 @@ class MyStrategy(bt.Strategy):
         self.sig_short_keyPoint = False  # 存在向下穿越关键价格点
         self.mbstop = 0  # 是否触发回撤止损
         self.pl_sum = 0  # 累计连续亏损百分比
-        self.dtopen_month = 0.0  # 记录每月开盘价
-        self.initial_amount = 0.0  # 初始金额
+        self.dtopen_month = self.datas[0].open[0]  # 记录每月开盘价
+        self.initial_amount = self.broker.getcash()  # 初始金额
 
         # 建立对于DataFeed的Open/Close价格的引用参数
         self.dtdt: datetime = self.datas[0].datetime  # 日期时间
@@ -733,6 +761,7 @@ class MyStrategy(bt.Strategy):
         self.myorder = None  # 哨兵避免挂单操作
         self.dtopen_month = self.dtopen[0]
         self.initial_amount = self.broker.getcash()
+        pass
 
     def notify_trade(self, trade):
         """每当有交易订单状态发生改变时通知信息"""
@@ -749,7 +778,7 @@ class MyStrategy(bt.Strategy):
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         # t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
-        t += ',开仓比:{:.0f}%'.format(self.p_ok)
+        t += ',开仓比:{:.0f}%'.format(self.mpok * 100)
 
         self.log(t, dt=self.dtdt.datetime(0))
 
@@ -795,7 +824,7 @@ class MyStrategy(bt.Strategy):
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
-        t += ',开仓比:{:.0f}%'.format(self.p_ok)
+        t += ',开仓比:{:.0f}%'.format(self.mpok * 100)
 
         self.log(t, dt=self.dtdt.datetime(0))
         if not order.alive():
@@ -803,7 +832,7 @@ class MyStrategy(bt.Strategy):
 
     def order_target(self, size=None, data=None):
         """订单开仓头寸管理"""
-        size = size if size else self.p_ok
+        size = size if size else self.mpok
         dt = self.data.datetime[0]
         # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2012-10-18 13:30:00','%Y-%m-%d %H:%M:%S')
         if isinstance(dt, float):
@@ -825,8 +854,8 @@ class MyStrategy(bt.Strategy):
         # margin = bt.Order.comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
         get_cash = abs(self.broker.getcash())  # 可用资金
         get_cash_value = abs(self.broker.getvalue())  # 账户总资金
-        sign = np.sign(self.p_ok)  # 取正负符号
-        self.p_ok = abs(self.p_ok)
+        sign = np.sign(self.mpok)  # 取正负符号
+        self.mpok = abs(self.mpok)
         open_profit = sign * self.position.size * (self.position.price - self.dtclose[0])  # 浮动盈亏
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
 
@@ -835,40 +864,40 @@ class MyStrategy(bt.Strategy):
             # poskkcash = margin * abs(size)  # 开仓金额
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (margin * self.p_pok_max)), get_cash)  # 最大开仓金额
-            percent = abs(self.p_ok * margin / get_cash_value)  # 目标持仓比率
+            percent = abs(self.mpok * margin / get_cash_value)  # 目标持仓比率
             poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
 
             # 限定使用资金的范围
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    (poskkcash * (1.01 + abs(self.p_po))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                    (poskkcash * (1.01 + abs(self.mppo))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
                     # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
-            target = int(sign * round((poskkcash + margin_cash) // margin))
-            self.myorder = self.order_target_size(target=target)
-            self.p_ok = target
+            target = int(round((poskkcash + margin_cash) // margin))
+            self.mpok = sign * target
+            self.myorder = self.order_target_size(target=self.mpok)
 
         # 按目标金额下单
         elif self.p.tar == TargetType.T_VALUE.value:
             # self.mpok为目标持仓金额, > margin_cash时 为加仓, < margin_cash时 为减仓
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (1 * self.p_pok_max)), get_cash)  # 最大开仓金额
-            percent = abs(self.p_ok / get_cash_value)  # 目标持仓比率
+            percent = abs(self.mpok / get_cash_value)  # 目标持仓比率
             poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
 
             # 限定使用资金的范围
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    (poskkcash * (1.01 + abs(self.p_po))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                    (poskkcash * (1.01 + abs(self.mppo))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
                     # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
-            value = sign * (poskkcash + margin_cash)
-            self.myorder = self.order_target_value(target=value)
-            self.p_ok = poskkcash
+            value = (poskkcash + margin_cash)
+            self.mpok = sign * value
+            self.myorder = self.order_target_value(target=self.mpok)
 
         # 按目标百分比下单
         elif self.p.tar == TargetType.T_PERCENT.value:
@@ -876,7 +905,7 @@ class MyStrategy(bt.Strategy):
             posmaxcash = min(max(margin * 1.1, (get_cash * self.p_pok_max)), get_cash)  # 最大开仓金额
             # percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
             # percent = (margin_cash / get_cash_value)  # 持仓头寸占总资金比率
-            percent = abs(self.p_ok / 100)  # 目标持仓比率
+            percent = abs(self.mpok)  # 目标持仓比率
 
             # poskkcash = percent * (get_cash - open_profit)  # (可用资金-浮动盈亏)金额百分比交易
             poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
@@ -886,14 +915,14 @@ class MyStrategy(bt.Strategy):
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    (poskkcash * (1.01 + abs(self.p_po))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
+                    (poskkcash * (1.01 + abs(self.mppo))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
                     # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
 
-            percent = sign * abs((poskkcash + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
-            self.myorder = self.order_target_percent(target=percent)
-            self.p_ok = percent * 100
+            percent = ((poskkcash + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
+            self.mpok = sign * abs(percent)
+            self.myorder = self.order_target_percent(target=self.mpok)
 
         return self.myorder
 
@@ -977,21 +1006,30 @@ class MyStrategy(bt.Strategy):
         # 入场开仓准备
         if self.sig_long or self.sig_short:
             # self.broker.setcommission(automargin=self.p.automargin)  # 设置初始保证金比率
+            p_pw = self.p_pw  # 盈利千分比
+            p_pl = self.p_pl  # 亏损千分比
+            p_ok = self.p_ok  # 开仓单位
+            p_po = self.p_po  # 开仓增减幅度
+            p_pp = self.p_pp  # 盈亏增减幅度
+            self.getParams()  # 获取参数 参数发生改变则使用新的参数
+            self.mpwa = self.p_pw if p_pw != self.p_pw else self.mpwa  # 盈利千分比
+            self.mpla = self.p_pl if p_pl != self.p_pl else self.mpla  # 亏损千分比
+            self.mpok = self.p_ok if p_ok != self.p_ok else self.mpok  # 开仓单位
+            self.mppo = self.p_po if p_po != self.p_po else self.mppo  # 开仓增减幅度
+            self.mppp = self.p_pp if p_pp != self.p_pp else self.mppp  # 盈亏增减幅度
+
+            self.entry_pok_begin = self.mpok  # 空仓时入场开仓单位
             self.entry_order['入场价格'] = self.dtclose[0]  # 入场价格
             self.entry_price = self.dtclose[0]  # 入场价格
             self.entry_price_begin = self.entry_price  # 开始入场价格
             self.turtleunits = 1  # 加仓次数
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.bar_executed = len(self)  # 记录当前交易的bar序列
-            self.p_po = (self.p_po + 0.0000) * 1.000  # 加减仓幅度
-            self.mpwa = self.p_pw  # 盈利千分比
-            self.mpla = self.p_pw  # 亏损千分比
         # 买入开仓价格
         if self.sig_long:
             t_enter += ',买入'
             self.sig_ref1 = self.position_flag = 1  # 记录开仓信号
-            self.p_ok = abs(self.p_ok + 0.001)
-            self.entry_mpok = self.p_ok
+            self.mpok = abs(self.mpok)
 
             self.radd = self.entry_price * (1 + self.p_pw)
             self.lout = self.entry_price / (1 + self.p_pl)
@@ -999,15 +1037,14 @@ class MyStrategy(bt.Strategy):
         elif self.sig_short:
             t_enter += ',卖出'
             self.sig_ref1 = self.position_flag = -1  # 记录开仓信号
-            self.p_ok = -abs(self.p_ok + 0.001)
-            self.entry_mpok = self.p_ok
+            self.mpok = -abs(self.mpok)
             # self.radd = self.entry_price * (1 - self.p_pw)
             # self.lout = self.entry_price * (1 + self.p_pl)
             self.radd = self.entry_price / (1 + self.p_pw)
             self.lout = self.entry_price * (1 + self.p_pl)
         # 入场开仓下单及日志
         if self.sig_long or self.sig_short:
-            self.myorder = self.order_target(self.p_ok)
+            self.myorder = self.order_target(self.mpok)
             if self.myorder and hasattr(self.myorder, 'size'):
                 t_enter += ',开仓中:{:d}'.format(self.myorder.size)
             else:
@@ -1035,36 +1072,36 @@ class MyStrategy(bt.Strategy):
             # self.broker.setcommission(automargin=automargin_re)  # 设置保证金比率
             if self.ppos_profit_ref1 > 0:
                 self.numlosst = 0  # 连续亏损=0
-                self.p_ok = (self.p_ok * (1 + self.p_po))  # 上一笔交易盈利时，增加仓位
+                self.mpok = (self.mpok * (1 + self.mppo))  # 上一笔交易盈利时，增加仓位
             else:
-                self.p_ok = (self.p_ok * (1 - self.p_po))  # 上一笔交易亏损时，减少仓位
+                self.mpok = (self.mpok * (1 - self.mppo))  # 上一笔交易亏损时，减少仓位
                 pass
             if True:
                 if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
-                    self.mpwa = self.mpwa * (1 - self.p_pp)  # 减少盈利比
-                    self.mpla = self.mpla * (1 + self.p_pp)  # 增加亏损比
+                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 + self.mppp)  # 增加亏损比
                     pass
                 elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
-                    self.mpla = self.mpla * (1 - self.p_pp)  # 减少亏损比
-                    self.mpwa = self.mpwa * (1 + self.p_pp)  # 增加盈利比
+                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
+                    self.mpwa = self.mpwa * (1 + self.mppp)  # 增加盈利比
                     pass
-                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.p_pp):  # 亏损比=盈利比时,同时减少盈利和亏损比
-                    self.mpwa = self.mpwa * (1 - self.p_pp)  # 减少盈利比
-                    self.mpla = self.mpla * (1 - self.p_pp)  # 减少亏损比
+                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
+                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
                     pass
             pass
 
         # 多头加仓价格
         if self.sig_longa1:
             t_add += ',买入'
-            self.p_ok = abs(self.p_ok)
+            self.mpok = abs(self.mpok)
 
             self.radd = self.entry_price * (1 + self.mpwa)
             self.lout = self.entry_price / (1 + self.mpla)
         # 空头加仓价格
         if self.sig_shorta1:
             t_add += ',卖出'
-            self.p_ok = -abs(self.p_ok)
+            self.mpok = -abs(self.mpok)
 
             # self.radd = self.entry_price * (1 - self.p_pw)
             # self.lout = self.entry_price * (1 + self.p_pl)
@@ -1072,7 +1109,7 @@ class MyStrategy(bt.Strategy):
             self.lout = self.entry_price * (1 + self.mpla)
         # 加仓下单及日志
         if self.sig_longa1 or self.sig_shorta1:
-            self.myorder = self.order_target(self.p_ok)  # 加仓中
+            self.myorder = self.order_target(self.mpok)  # 加仓中
             if self.myorder and hasattr(self.myorder, 'size'):
                 t_add += ',加仓中:{:d}'.format(self.myorder.size)
             else:
@@ -1085,16 +1122,16 @@ class MyStrategy(bt.Strategy):
 
         # 多头减仓头寸
         if self.sig_long_dec:
-            self.p_ok = abs(self.p_pok_min)  # 保留最小头寸
+            self.mpok = abs(self.p_pok_min)  # 保留最小头寸
         # 空头减仓头寸
         if self.sig_short_dec:
-            self.p_ok = -abs(self.p_pok_min)  # 保留最小头寸
+            self.mpok = -abs(self.p_pok_min)  # 保留最小头寸
         # 减仓离场下单及日志
         if self.sig_long_dec or self.sig_short_dec:
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.sig_long_keyPoint = False  # 清除信号
             self.sig_short_keyPoint = False  # 清除信号
-            self.myorder = self.order_target(self.p_ok)
+            self.myorder = self.order_target(self.mpok)
             t_dec += ',多头' if self.sig_longx1 else ',空头'
             t_dec += ',减仓中:{:}'.format(self.position.size)
             t_dec += ',price:{:.2f}'.format(self.dtclose[0])
@@ -1112,8 +1149,8 @@ class MyStrategy(bt.Strategy):
         if self.sig_longx1 or self.sig_shortx1:
             # 盈利后,减少下次开仓比率
             if self.turtleunits > 1:
-                self.p_ok = (self.p_ok / self.turtleunits)
-            self.p_ok = self.p_ok if self.p_ok > self.p_pok_min else self.p_pok_min
+                self.mpok = (self.mpok / self.turtleunits)
+            self.mpok = self.mpok if self.mpok > self.p_pok_min else self.p_pok_min
             self.exit_price = self.dtclose[0]
             self.position_flag = 0  # 清仓后头寸方向为0
             self.turtleunits = 0  # 加仓次数
