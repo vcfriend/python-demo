@@ -1,4 +1,5 @@
 import os, sys
+import re
 import time
 import backtrader as bt
 import logging
@@ -20,14 +21,16 @@ class TargetType(Enum):
 
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2022-02-01'
+G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
+G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 # G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 # G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
-G_DT_START, G_DT_END = '2009-04-01', '2013-02-01'
+# G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
+# G_DT_START, G_DT_END = '2009-04-01', '2013-02-01'
 
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_COMM = 'comm_' + G_FILE_PATH.split('\\')[1][:4].lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
+G_COMM = 'comm_' + (re.findall(r"datas\\([\D]{2,4})", G_FILE_PATH)[0]).lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
 G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 G_DT_COMPRESSION = 5  # 合成bar的周期数
 G_INI_CASH = 10000 * 10  # 初始金额
@@ -227,7 +230,8 @@ def runstrat(args=None):
     comm = {
         'comm_sqrb': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
         'comm_zjif': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
-        'comm_zqcf': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
+        'comm_dqc': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
+        'comm_zqcf': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=6.3, margin_rate=0.11, mult=5.0),  # 棉花合约信息
     }
     # 添加进 broker
     cerebro.broker.addcommissioninfo(comm[G_COMM], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
