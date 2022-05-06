@@ -21,14 +21,15 @@ class TargetType(Enum):
 
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2022-02-01'
-# G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
-# G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
+G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
+G_DT_START, G_DT_END = '2013-01-01', '2019-02-01'
+# G_DT_START, G_DT_END = '2013-01-01', '2015-02-01'
 # G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
 # G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
-# G_DT_START, G_DT_END = '2009-04-01', '2013-02-01'
-G_DT_START, G_DT_END = '2009-04-01', '2009-05-01'
+# G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
+# G_DT_START, G_DT_END = '2009-04-01', '2015-02-01'
+# G_DT_START, G_DT_END = '2009-04-01', '2009-05-01'
 
 G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
 G_COMM = 'comm_' + (re.findall(r"datas\\([\D]{2,4})", G_FILE_PATH)[0]).lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
@@ -39,14 +40,18 @@ G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = False  # 是否输出日志到文件
 G_P_LOG_PRINT = False  # 是否输出日志到控制台
-G_OPTS = False  # 是否参数调优
-G_P_PW = [8, False, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PL = [8, False, 2, 10, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_OPTS = 0  # 是否参数调优
+G_P_PW = [9, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PL = [2, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PP = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_KPR = [False, 4100, 3400, 1800, 6000]  # 关键价格[是否启用, 价格1, 价格2]
+G_P_KPR = [True,  # 关键价格[是否启用, {日期1: 价格1,日期2: 价格2,}]
+           {datetime(2013, 1, 31).date().strftime('(%Y%m%d)'): 2448,
+            datetime(2013, 10, 31).date().strftime('(%Y%m%d)'): 2323,
+            datetime(2015, 3, 31).date().strftime('(%Y%m%d)'): 2500,
+            }]
 G_P_PARAM = {
     'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if G_OPTS and G_P_PW[1] else G_P_PW[0]),
     'pl': (range(G_P_PL[2], G_P_PL[3], G_P_PL[4]) if G_OPTS and G_P_PL[1] else G_P_PL[0]),
@@ -54,7 +59,7 @@ G_P_PARAM = {
     # 'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
     # 'po': (range(G_P_PO[2], G_P_PO[3], G_P_PO[4]) if G_OPTS and G_P_PO[1] else G_P_PO[0]),
     # 'pp': (range(G_P_PP[2], G_P_PP[3], G_P_PP[4]) if G_OPTS and G_P_PP[1] else G_P_PP[0]),
-    # 'kpr': G_P_KPR[1:] if G_P_KPR[0] else None,
+    # 'kpr': G_P_KPR[1] if G_P_KPR[0] else None
 
 }
 
@@ -77,7 +82,7 @@ def parse_args(pargs=None):
                         choices=['minutes', 'daily', 'weekly', 'monthly'],
                         help='重新采样到的时间范围')
     parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION, help='将 n 条压缩为 1, 最小周期为原数据周期')
-    parser.add_argument('--kpr', required=False, type=list, default=G_P_PARAM['kpr'] if 'kpr' in G_P_PARAM else None, help='当穿越关键价格后加仓限制，列表类型 [price1, price2]'),
+    parser.add_argument('--kpr', required=False, type=dict, default=G_P_PARAM['kpr'] if 'kpr' in G_P_PARAM else None, help='当穿越关键价格后加仓限制，字典类型 {日期1:价格1, 日期2:价格2,}'),
     parser.add_argument('--pwl', required=False, type=list, default=G_P_PARAM['pwl'] if 'pwl' in G_P_PARAM else None, help='--pwl 盈亏千分比'),
     parser.add_argument('--pw', required=False, type=list, default=G_P_PARAM['pw'] if 'pw' in G_P_PARAM else None, help='--pw 盈利千分比'),
     parser.add_argument('--pl', required=False, type=list, default=G_P_PARAM['pl'] if 'pl' in G_P_PARAM else None, help='--pl 亏损千分比'),
@@ -247,6 +252,8 @@ def runstrat(args=None):
     if args.opts:
         kwargs['opts_kwargs'] = G_P_PARAM  # 优化参数字典
         kwargs['opts_path'] = (file_name + '_opt.csv')  # 优化结果保存路径
+        if 'kpr' in kwargs['opts_kwargs']:  # 删除不需要优化的参数
+            del kwargs['opts_kwargs']['kpr']
         print('dt_start:', dt_start, 'dt_end:', dt_end)
         print('opts_kwargs:', kwargs['opts_kwargs'])
         # clock the start of the process
@@ -648,7 +655,7 @@ class MyStrategy(bt.Strategy):
         pmax=0,  # 最大开仓单位
         ojk=1,  # 订单间隔bar周期数
         llp=0,  # 最大回撤千分比
-        kpr=[],  # 加仓方向的关价格点位 kpr=0无限制,向上穿越 kpr 时只有多头加仓,向下穿越 kpr 时只有空头加仓
+        kpr=dict(),  # 仓位控制的关价格点位
         valid=None,  # 订单生效时间
         log_print=False,  # 是否打印日志到控制台
         log_save=False,  # 是否保存日志到文件
@@ -704,6 +711,7 @@ class MyStrategy(bt.Strategy):
         self.p_pl = (self.p.pl if self.p.pl else self.p.pwl) / 1000  # 亏损千分比
         self.p_po = self.p.po / 100  # 开仓加减幅度百分比
         self.p_pp = self.p.pp / 100  # 盈亏加减幅度百分比
+        self.p_kpr = self.p.kpr  # 关键价格字典
         self.mpwa = self.p_pw  # 加仓盈利千分比
         self.mpla = self.p_pl  # 加仓亏损千分比
         self.mpok = self.p_ok  # 开仓单位
@@ -942,7 +950,21 @@ class MyStrategy(bt.Strategy):
         # 如果有订单正在挂起，不操作
         if self.myorder:
             return
-        if (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)):  # 记录每个月open价
+        # 关键价不为空时且价格在关键价附近时调整加仓幅度
+        if bool(self.p_kpr):
+            if hasattr(self.p_kpr, 'dict'):
+                p_kpr = ({kd: kp for kd, kp in dict(self.p_kpr).items() if kd >= self.dtdate(0)})  # 过滤<当前日期的关键价
+                for kd, kp in dict(p_kpr).items():
+                    if abs(self.dtclose[-1] - kp) / self.dtclose[-1] <= self.mpla:  # 前一日价格与关键价的的幅度<=亏损比时
+                        self.dtopen_month = kp
+                        self.mppo = self.mpok  # 加仓幅度
+                        pass
+                    else:
+                        if self.position.size == 0 and self.ppos_profit_ref1 > 0:  # 空仓时且上笔交易盈利时恢复初始值
+                            self.mppo = self.p_po  # 加仓幅度
+                        if (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)):  # 记录每个月open价
+                            self.dtopen_month = self.dtopen[0]
+        elif (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)):  # 记录每个月open价
             self.dtopen_month = self.dtopen[0]
         self.order_this_bar = 0  # 标记该周期的交易状态
         assets = self.broker.getvalue()  # 当前总资产
@@ -961,14 +983,7 @@ class MyStrategy(bt.Strategy):
                 and self.dtclose[0] < self.dtopen[0]
                 and assets > 0  # 当前总资产>0
         )
-        if self.p.kpr:
-            for kp in self.p.kpr:
-                if self.dtclose[-1] >= kp and (self.dtclose[-2] < kp):  # 向上穿越关键点后加多仓
-                    self.sig_long_keyPoint = True
-                    self.sig_short_keyPoint = False
-                if self.dtclose[-1] <= kp and (self.dtclose[-2] > kp):  # 向下穿越关键点后加空仓
-                    self.sig_long_keyPoint = False
-                    self.sig_short_keyPoint = True
+
         # 多头加仓条件
         self.sig_longa1 = (self.position_flag == 1
                            and (self.dtclose[0] > self.dtopen_month)
