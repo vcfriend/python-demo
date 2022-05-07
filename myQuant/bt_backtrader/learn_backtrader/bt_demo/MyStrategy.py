@@ -8,7 +8,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timedelta
 from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
 
 
@@ -22,7 +22,7 @@ class TargetType(Enum):
 # G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2022-02-01'
 G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
-G_DT_START, G_DT_END = '2013-01-01', '2019-02-01'
+G_DT_START, G_DT_END = '2013-01-01', '2017-02-01'
 # G_DT_START, G_DT_END = '2013-01-01', '2015-02-01'
 # G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
@@ -41,17 +41,16 @@ G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = False  # 是否输出日志到文件
 G_P_LOG_PRINT = False  # 是否输出日志到控制台
 G_OPTS = 0  # 是否参数调优
-G_P_PW = [9, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PL = [2, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PW = [10, True, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PL = [10, True, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PP = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_KPR = [True,  # 关键价格[是否启用, {日期1: 价格1,日期2: 价格2,}]
-           {datetime(2013, 1, 31).date().strftime('(%Y%m%d)'): 2448,
-            datetime(2013, 10, 31).date().strftime('(%Y%m%d)'): 2323,
-            datetime(2015, 3, 31).date().strftime('(%Y%m%d)'): 2500,
-            }]
+G_P_KPR = [True, {  # 关键价格[是否启用, {日期1: dict({'kps':[价格区间1]},日期2: {'kps':[价格区间2]},})]
+    datetime(2013, 10, 30).date(): {'kps': [2448, 2323], },
+    datetime(2015, 4, 30).date(): {'kps': [2323, 2450], },
+}]
 G_P_PARAM = {
     'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if G_OPTS and G_P_PW[1] else G_P_PW[0]),
     'pl': (range(G_P_PL[2], G_P_PL[3], G_P_PL[4]) if G_OPTS and G_P_PL[1] else G_P_PL[0]),
@@ -82,7 +81,7 @@ def parse_args(pargs=None):
                         choices=['minutes', 'daily', 'weekly', 'monthly'],
                         help='重新采样到的时间范围')
     parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION, help='将 n 条压缩为 1, 最小周期为原数据周期')
-    parser.add_argument('--kpr', required=False, type=dict, default=G_P_PARAM['kpr'] if 'kpr' in G_P_PARAM else None, help='当穿越关键价格后加仓限制，字典类型 {日期1:价格1, 日期2:价格2,}'),
+    parser.add_argument('--kpr', required=False, type=dict, default=G_P_PARAM['kpr'] if 'kpr' in G_P_PARAM else None, help="当穿越关键价格后加仓限制，字典类型 {日期1:{'kps':[价格1,价格2]}, 日期2:{'kps':[价格1,价格2]},}"),
     parser.add_argument('--pwl', required=False, type=list, default=G_P_PARAM['pwl'] if 'pwl' in G_P_PARAM else None, help='--pwl 盈亏千分比'),
     parser.add_argument('--pw', required=False, type=list, default=G_P_PARAM['pw'] if 'pw' in G_P_PARAM else None, help='--pw 盈利千分比'),
     parser.add_argument('--pl', required=False, type=list, default=G_P_PARAM['pl'] if 'pl' in G_P_PARAM else None, help='--pl 亏损千分比'),
@@ -539,8 +538,8 @@ def runstrat(args=None):
             (G_FILE_PATH.split('\\')[1].split('-')[0]),  # 合约名称
             str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1]),  # K线周期
             datetime.fromisoformat(G_DT_START), datetime.fromisoformat(G_DT_END),  # 开始结束时间
-            (str(param_one).replace('range', '')  # 替换参数字典中的字符串
-             .translate(str.maketrans({' ': '', '\'': '', ':': ''}))),  # 替换参数字典中的字符
+            (str(param_one).replace('range', '').replace('datetime.date', '')  # 替换参数字典中的字符串
+             .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 替换参数字典中的字符
             datetime.now(),
         ))
         quantstats.reports.html(returns, output='stats.html', title=title_report)
@@ -746,10 +745,13 @@ class MyStrategy(bt.Strategy):
         self.sig_shortx1 = 0  # 空头离场条件
         self.sig_long_keyPoint = False  # 存在向上穿越关键价格点
         self.sig_short_keyPoint = False  # 存在向下穿越关键价格点
+        self.sig_keyRange = False  # 价格在关键价范围内
+        self.sig_keyPoint = False  # 价格在关键价附近
         self.mbstop = 0  # 是否触发回撤止损
         self.pl_sum = 0  # 累计连续亏损百分比
         self.dtopen_month = self.datas[0].open[0]  # 记录每月开盘价
         self.initial_amount = self.broker.getcash()  # 初始金额
+        self.cacheVarDict = dict()  # 用于缓存运行时变量dict(变量名=变量值)
 
         # 建立对于DataFeed的Open/Close价格的引用参数
         self.dtdt: datetime = self.datas[0].datetime  # 日期时间
@@ -950,22 +952,29 @@ class MyStrategy(bt.Strategy):
         # 如果有订单正在挂起，不操作
         if self.myorder:
             return
+        # 记录每个月open价
+        dtopen_month = self.dtopen[0] if (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)) else self.dtopen_month
         # 关键价不为空时且价格在关键价附近时调整加仓幅度
         if bool(self.p_kpr):
-            if hasattr(self.p_kpr, 'dict'):
-                p_kpr = ({kd: kp for kd, kp in dict(self.p_kpr).items() if kd >= self.dtdate(0)})  # 过滤<当前日期的关键价
-                for kd, kp in dict(p_kpr).items():
-                    if abs(self.dtclose[-1] - kp) / self.dtclose[-1] <= self.mpla:  # 前一日价格与关键价的的幅度<=亏损比时
-                        self.dtopen_month = kp
-                        self.mppo = self.mpok  # 加仓幅度
-                        pass
-                    else:
-                        if self.position.size == 0 and self.ppos_profit_ref1 > 0:  # 空仓时且上笔交易盈利时恢复初始值
-                            self.mppo = self.p_po  # 加仓幅度
-                        if (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)):  # 记录每个月open价
-                            self.dtopen_month = self.dtopen[0]
-        elif (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)):  # 记录每个月open价
-            self.dtopen_month = self.dtopen[0]
+            if isinstance(self.p_kpr, dict):
+                v_kprs = ([v_kpr for k_kpr, v_kpr in dict(self.p_kpr).items() if (k_kpr + timedelta(days=30 * 6)) >= self.dtdate(0)])  # 过滤6个月前的值
+                for kps in v_kprs:
+                    for kp in kps['kps']:
+                        if (abs(self.dtclose[0] - kp) / self.dtclose[0]) <= 2 * max(self.mpla, self.mpwa):  # 价格与关键价的的幅度<=2倍最大盈亏比时
+                            self.sig_keyPoint = True  # 价格在关键价附近
+                            self.dtopen_month = dtopen_month
+                            pass
+                        else:
+                            self.sig_keyPoint = False
+                            pass
+                    if min(kps['kps']) < self.dtclose[-1] < max(kps['kps']):  # 价格在区间内
+                        self.sig_keyRange = True  # 价格在关键价区间内
+                    else:  # 价格在区间外
+                        self.sig_keyRange = False
+                        self.dtopen_month = dtopen_month
+        else:  # 关键价为空时
+            self.dtopen_month = dtopen_month
+
         self.order_this_bar = 0  # 标记该周期的交易状态
         assets = self.broker.getvalue()  # 当前总资产
 
@@ -1018,7 +1027,52 @@ class MyStrategy(bt.Strategy):
                 or self.sig_longx1 or self.sig_shortx1):
             self.order_datetime = self.dtdt.datetime(0)  # 订单时间
 
-        # 入场开仓准备
+        # 空仓开仓和持仓加仓准备
+        if (self.sig_long or self.sig_short) or (self.sig_longa1 or self.sig_shorta1):
+            # 关键价不为空时且价格在关键价附近时调整加仓幅度
+            if bool(self.p_kpr):
+                # 关键价区间外时缓存变量
+                if not self.sig_keyRange:
+                    self.cacheVarDict['mpok'] = self.mpok
+                    self.cacheVarDict['mppo'] = self.mppo
+                sign = np.sign(self.mpok)  # 取正负符号
+                mps0 = [self.mpok, self.p_ok, self.mppo, self.p_po, self.mppp, self.p_pp]  # 参数列表
+                mps1 = [x for x in mps0 if x != 0]  # 非0的参数列表
+                if self.sig_keyPoint:  # 关键价附近
+                    self.mpok = sign * max(mps0, key=lambda x: abs(x))  # 开仓单位取最大值3
+                    self.mppo = min(mps0, key=lambda x: abs(x))  # 加仓幅度取最小值4
+                    pass
+                if self.sig_keyRange:  # 关键价区间内
+                    self.mpok = min(mps1, key=lambda x: abs(x))  # 开仓单位取最小值1
+                    self.mppo = max(mps1)  # 加仓幅度取最大值2
+                    pass
+                else:  # 关键价区间外恢复原值
+                    self.mpok = self.cacheVarDict['mpok'] if 'mpok' in self.cacheVarDict else self.mpok
+                    self.mppo = self.cacheVarDict['mppo'] if 'mppo' in self.cacheVarDict else self.mppo
+            # 头寸管理:盈利增加,亏损减少
+            if self.ppos_profit_ref1 > 0:
+                self.numlosst = 0  # 连续亏损=0
+                self.mpok = (self.mpok * (1 + self.mppo))  # 上一笔交易盈利时，增加仓位
+            else:
+                self.mpok = (self.mpok * (1 - self.mppo))  # 上一笔交易亏损时，减少仓位
+                pass
+            # 盈亏比率平衡
+            if True:
+                if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
+                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 + self.mppp)  # 增加亏损比
+                    pass
+                elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
+                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
+                    self.mpwa = self.mpwa * (1 + self.mppp)  # 增加盈利比
+                    pass
+                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
+                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
+                    pass
+            pass
+
+        # 空仓开仓准备
         if self.sig_long or self.sig_short:
             # self.broker.setcommission(automargin=self.p.automargin)  # 设置初始保证金比率
             p_pw = self.p_pw  # 盈利千分比
@@ -1057,18 +1111,6 @@ class MyStrategy(bt.Strategy):
             # self.lout = self.entry_price * (1 + self.p_pl)
             self.radd = self.entry_price / (1 + self.p_pw)
             self.lout = self.entry_price * (1 + self.p_pl)
-        # 入场开仓下单及日志
-        if self.sig_long or self.sig_short:
-            self.myorder = self.order_target(self.mpok)
-            if self.myorder and hasattr(self.myorder, 'size'):
-                t_enter += ',开仓中:{:d}'.format(self.myorder.size)
-            else:
-                t_enter += ',开仓中'
-            t_enter += ',持仓:{:}'.format(self.position.size)
-            t_enter += ',price:{:.2f}'.format(self.dtclose[0])
-            t_enter += ',总资产:{:.2f}'.format(assets)
-            # self.log(t_enter)
-            pass
 
         # 持仓加仓准备
         if self.sig_longa1 or self.sig_shorta1:
@@ -1085,27 +1127,8 @@ class MyStrategy(bt.Strategy):
             automargin = self.broker.getcommissioninfo(data=self.data).p.automargin  # 获取保证比率*合约乘数
             automargin_re = automargin * (mpe_r1_ / self.p_pl) if mpe_r1_ else automargin  # 调整保证金比率, 是否根据入场价之间的涨跌幅度调整保证金比率
             # self.broker.setcommission(automargin=automargin_re)  # 设置保证金比率
-            if self.ppos_profit_ref1 > 0:
-                self.numlosst = 0  # 连续亏损=0
-                self.mpok = (self.mpok * (1 + self.mppo))  # 上一笔交易盈利时，增加仓位
-            else:
-                self.mpok = (self.mpok * (1 - self.mppo))  # 上一笔交易亏损时，减少仓位
-                pass
-            if True:
-                if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
-                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
-                    self.mpla = self.mpla * (1 + self.mppp)  # 增加亏损比
-                    pass
-                elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
-                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
-                    self.mpwa = self.mpwa * (1 + self.mppp)  # 增加盈利比
-                    pass
-                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
-                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
-                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
-                    pass
-            pass
 
+            pass
         # 多头加仓价格
         if self.sig_longa1:
             t_add += ',买入'
@@ -1122,7 +1145,20 @@ class MyStrategy(bt.Strategy):
             # self.lout = self.entry_price * (1 + self.p_pl)
             self.radd = self.entry_price / (1 + self.mpwa)
             self.lout = self.entry_price * (1 + self.mpla)
-        # 加仓下单及日志
+
+        # 空仓开仓下单及日志
+        if self.sig_long or self.sig_short:
+            self.myorder = self.order_target(self.mpok)
+            if self.myorder and hasattr(self.myorder, 'size'):
+                t_enter += ',开仓中:{:d}'.format(self.myorder.size)
+            else:
+                t_enter += ',开仓中'
+            t_enter += ',持仓:{:}'.format(self.position.size)
+            t_enter += ',price:{:.2f}'.format(self.dtclose[0])
+            t_enter += ',总资产:{:.2f}'.format(assets)
+            # self.log(t_enter)
+            pass
+        # 持仓加仓下单及日志
         if self.sig_longa1 or self.sig_shorta1:
             self.myorder = self.order_target(self.mpok)  # 加仓中
             if self.myorder and hasattr(self.myorder, 'size'):
@@ -1135,10 +1171,10 @@ class MyStrategy(bt.Strategy):
             # self.log(t_add)
             pass
 
-        # 多头减仓头寸
+        # 多头减仓
         if self.sig_long_dec:
             self.mpok = abs(self.p_pok_min)  # 保留最小头寸
-        # 空头减仓头寸
+        # 空头减仓
         if self.sig_short_dec:
             self.mpok = -abs(self.p_pok_min)  # 保留最小头寸
         # 减仓离场下单及日志
