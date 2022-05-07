@@ -40,9 +40,9 @@ G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
 G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
 G_P_LOG_FILE = False  # 是否输出日志到文件
 G_P_LOG_PRINT = False  # 是否输出日志到控制台
-G_OPTS = 0  # 是否参数调优
+G_OPTS = 1  # 是否参数调优
 G_P_PW = [10, True, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PL = [10, True, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PL = [10, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -81,11 +81,11 @@ def parse_args(pargs=None):
                         choices=['minutes', 'daily', 'weekly', 'monthly'],
                         help='重新采样到的时间范围')
     parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION, help='将 n 条压缩为 1, 最小周期为原数据周期')
-    parser.add_argument('--kpr', required=False, type=dict, default=G_P_PARAM['kpr'] if 'kpr' in G_P_PARAM else None, help="当穿越关键价格后加仓限制，字典类型 {日期1:{'kps':[价格1,价格2]}, 日期2:{'kps':[价格1,价格2]},}"),
-    parser.add_argument('--pwl', required=False, type=list, default=G_P_PARAM['pwl'] if 'pwl' in G_P_PARAM else None, help='--pwl 盈亏千分比'),
-    parser.add_argument('--pw', required=False, type=list, default=G_P_PARAM['pw'] if 'pw' in G_P_PARAM else None, help='--pw 盈利千分比'),
-    parser.add_argument('--pl', required=False, type=list, default=G_P_PARAM['pl'] if 'pl' in G_P_PARAM else None, help='--pl 亏损千分比'),
-    parser.add_argument('--ojk', required=False, type=list, default=G_P_PARAM['ojk'] if 'ojk' in G_P_PARAM else None, help='--ojk 订单间隔bar周期数'),
+    parser.add_argument('--kpr', required=False, type=dict, default=G_P_PARAM.get('kpr'), help="当穿越关键价格后加仓限制，字典类型 {日期1:{'kps':[价格1,价格2]}, 日期2:{'kps':[价格1,价格2]},}"),
+    parser.add_argument('--pwl', required=False, type=list, default=G_P_PARAM.get('pwl'), help='--pwl 盈亏千分比'),
+    parser.add_argument('--pw', required=False, type=list, default=G_P_PARAM.get('pw'), help='--pw 盈利千分比'),
+    parser.add_argument('--pl', required=False, type=list, default=G_P_PARAM.get('pl'), help='--pl 亏损千分比'),
+    parser.add_argument('--ojk', required=False, type=list, default=G_P_PARAM.get('ojk'), help='--ojk 订单间隔bar周期数'),
     parser.add_argument('--opts', required=False, type=bool, default=G_OPTS, help='是否策略优化')
     parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS, help='是否使用 quantstats 分析测试结果')
     parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15, help=('Number of CPUs to use in the optimization'
@@ -305,14 +305,14 @@ def runstrat(args=None):
             returns_rort_ = returns['rtot'] * 100  # 总复合回报
             pyFolio_returns_ = sum(pyFolio['returns'].values()) * 100  # pyFolio总复合回报
             returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
-            trade_won_ = (trade['won']['total']) if 'won' in trade else 0  # 总盈利次数
-            trade_lost_ = (trade['lost']['total']) if 'lost' in trade else 0  # 总亏损次数
+            trade_won_ = (trade.get('won')['total'])  # 总盈利次数
+            trade_lost_ = (trade.get('lost')['total']) if 'lost' in trade else 0  # 总亏损次数
             trade_total_ = trade['total']['total']  # 交易次数
             trade_win_rate = (trade_won_ / trade_total_) * 100  # 胜率
-            drawdown_ = drawdown['max']['drawdown'] if 'max' in drawdown else 0  # 最大回撤
-            sharpe_ = sharpe['sharperatio'] if 'sharperatio' in sharpe else 0  # 夏普率
-            trade_pnl_total_ = (trade['pnl']['gross']['total']) if 'pnl' in trade else 0  # 总盈亏
-            trade_pnl_net_ = (trade['pnl']['net']['total']) if 'pnl' in trade else 0  # 总盈亏-手续费
+            drawdown_ = drawdown.get('max')['drawdown'] if 'max' in drawdown else 0  # 最大回撤
+            sharpe_ = sharpe.get('sharperatio', 0)  # 夏普率
+            trade_pnl_total_ = (trade.get('pnl')['gross']['total']) if 'pnl' in trade else 0  # 总盈亏
+            trade_pnl_net_ = (trade.get('pnl')['net']['total']) if 'pnl' in trade else 0  # 总盈亏-手续费
             trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
             trade_comm_net_p = ((trade_pnl_comm_ / trade_pnl_net_) * 100) if trade_pnl_net_ != 0 else 0  # 手续费占比净盈亏百分比
 
@@ -788,7 +788,7 @@ class MyStrategy(bt.Strategy):
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         # t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
-        t += ',开仓比:{:.0f}%'.format(self.mpok * 100)
+        t += ',开仓比:{:.2f}%'.format(self.mpok * 100)
 
         self.log(t, dt=self.dtdt.datetime(0))
 
@@ -834,7 +834,7 @@ class MyStrategy(bt.Strategy):
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
         t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
-        t += ',开仓比:{:.0f}%'.format(self.mpok * 100)
+        t += ',开仓比:{:.2f}%'.format(self.mpok * 100)
 
         self.log(t, dt=self.dtdt.datetime(0))
         if not order.alive():
@@ -846,14 +846,7 @@ class MyStrategy(bt.Strategy):
         dt = self.data.datetime[0]
         # 时间断点调试,调试条件 self.datas[0].datetime.datetime(0) >= bt.datetime.datetime.strptime('2012-10-18 13:30:00','%Y-%m-%d %H:%M:%S')
         if isinstance(dt, float):
-            dt = bt.num2date(dt)
-
-        # data = data if data else self.data
-        # if isinstance(data, str):
-        #     data = self.getdatabyname(data)
-        # elif data is None:
-        #     data = self.databyname(data)
-        # # print('%04d - %s - Order Target Size: %02d' % (len(self), dt.isoformat(), size))
+            dt = bt.num2date(dt)  # 时间断点调试,调试条件 bt.num2date(dt) >= datetime.strptime('2013-10-18 13:30:00','%Y-%m-%d %H:%M:%S')
 
         poskkcash = 0.0  # 开仓单位
         posmincash = 0.0  # 最小开仓单位
@@ -881,8 +874,7 @@ class MyStrategy(bt.Strategy):
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    (poskkcash * (1.01 + abs(self.mppo))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
-                    # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
             target = int(round((poskkcash + margin_cash) // margin))
@@ -901,8 +893,7 @@ class MyStrategy(bt.Strategy):
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    (poskkcash * (1.01 + abs(self.mppo))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
-                    # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
             value = (poskkcash + margin_cash)
@@ -918,18 +909,16 @@ class MyStrategy(bt.Strategy):
             percent = abs(self.mpok)  # 目标持仓比率
 
             # poskkcash = percent * (get_cash - open_profit)  # (可用资金-浮动盈亏)金额百分比交易
-            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
             # poskkcash = percent * (get_cash_value - open_profit)  # 帐户总资金百分比交易
+            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
 
             # 限定使用资金的范围
             poskkcash = abs(  # sign 为开仓方向
                 get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
                 else (  # 最小开仓金额<可用金额时
-                    (poskkcash * (1.01 + abs(self.mppo))) if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,适当增加开仓比率
-                    # posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
                     else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
                           else poskkcash)))
-
             percent = ((poskkcash + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
             self.mpok = sign * abs(percent)
             self.myorder = self.order_target_percent(target=self.mpok)
@@ -1047,8 +1036,8 @@ class MyStrategy(bt.Strategy):
                     self.mppo = max(mps1)  # 加仓幅度取最大值2
                     pass
                 else:  # 关键价区间外恢复原值
-                    self.mpok = self.cacheVarDict['mpok'] if 'mpok' in self.cacheVarDict else self.mpok
-                    self.mppo = self.cacheVarDict['mppo'] if 'mppo' in self.cacheVarDict else self.mppo
+                    self.mpok = self.cacheVarDict.get('mpok', self.mpok)
+                    self.mppo = self.cacheVarDict.get('mppo', self.mppo)
             # 头寸管理:盈利增加,亏损减少
             if self.ppos_profit_ref1 > 0:
                 self.numlosst = 0  # 连续亏损=0
@@ -1088,7 +1077,8 @@ class MyStrategy(bt.Strategy):
             self.mppp = self.p_pp if p_pp != self.p_pp else self.mppp  # 盈亏增减幅度
 
             self.entry_pok_begin = self.mpok  # 空仓时入场开仓单位
-            self.entry_order['入场价格'] = self.dtclose[0]  # 入场价格
+            self.entry_order['入场价'] = self.dtclose[0]  # 入场价格
+            self.entry_order['开仓价'] = self.dtclose[0]  # 开仓价格
             self.entry_price = self.dtclose[0]  # 入场价格
             self.entry_price_begin = self.entry_price  # 开始入场价格
             self.turtleunits = 1  # 加仓次数
@@ -1114,8 +1104,9 @@ class MyStrategy(bt.Strategy):
 
         # 持仓加仓准备
         if self.sig_longa1 or self.sig_shorta1:
-            self.entry_order['上次入场价格'] = (self.entry_order['加仓价格'] if '加仓价格' in self.entry_order else self.entry_order['入场价格'])  # 上次加仓价格
-            self.entry_order['加仓价格'] = self.dtclose[0]  # 加仓价格
+            self.entry_order['上次开仓价'] = (self.entry_order.get('开仓价', self.entry_order.get('入场价', self.dtclose[0])))  # 上次加仓价格
+            self.entry_order['加仓价'] = self.dtclose[0]  # 加仓价格
+            self.entry_order['开仓价'] = self.dtclose[0]  # 开仓价格
             self.entry_price_ref1 = self.entry_price
             self.entry_price = self.dtclose[0]  # 入场价格
             self.turtleunits += 1  # 加仓次数加1
