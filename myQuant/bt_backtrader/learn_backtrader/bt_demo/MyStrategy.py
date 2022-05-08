@@ -10,6 +10,7 @@ import numpy as np
 from enum import Enum
 from datetime import datetime, timedelta
 from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
+import global_variable as glv  # 全局变量模块
 
 
 class TargetType(Enum):
@@ -19,28 +20,33 @@ class TargetType(Enum):
     T_PERCENT = "百分比"  # 百分比
 
 
-# G_FILE_PATH = "datas\\ZJIF13-5m-20100416-20220427.csv"
-# G_DT_START, G_DT_END = '2013-01-01', '2022-02-01'
-G_FILE_PATH = "datas\\DQC13-5m-20120709-20220330.csv"
-G_DT_START, G_DT_END = '2013-01-01', '2017-02-01'
-# G_DT_START, G_DT_END = '2013-01-01', '2015-02-01'
-# G_FILE_PATH = "datas\\ZQCF13-5m-20121224-20220415.csv"
-# G_DT_START, G_DT_END = '2013-01-01', '2014-02-01'
-# G_FILE_PATH = "datas\\SQRB13-5m-20121224-20220330.csv"
-# G_FILE_PATH = "datas\\SQRBOC-5m-20090327-20211231.csv"
-# G_DT_START, G_DT_END = '2009-04-01', '2015-02-01'
-# G_DT_START, G_DT_END = '2009-04-01', '2009-05-01'
+glv.init()
+kwargs = dict()
+# kwargs['G_FILE_PATH'] = "datas\\ZJIF13-5m-20100416-20220427.csv"
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2016-02-01'
+kwargs['G_FILE_PATH'] = "datas\\DQC13-5m-20120709-20220330.csv"
+kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2017-02-01'
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2017-01-01', '2022-02-01'
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-01-01', '2022-02-01'
+# kwargs['G_FILE_PATH'] = "datas\\ZQCF13-5m-20121224-20220415.csv"
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2022-02-01'
+# kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
+# kwargs['G_FILE_PATH'] = "datas\\SQRBOC-5m-20090327-20211231.csv"
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
+# kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-06-25', '2019-02-01'
 
-G_DT_DTFORMAT = '%Y-%m-%d %H:%M:%S'
-G_COMM = 'comm_' + (re.findall(r"datas\\([\D]{2,4})", G_FILE_PATH)[0]).lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
-G_DT_TIMEFRAME = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
-G_DT_COMPRESSION = 5  # 合成bar的周期数
-G_INI_CASH = 10000 * 10  # 初始金额
-G_PLOT = False  # 是否绘图,可提供绘图参数:'style="candle"'
-G_QUANTSTATS = True  # 是否使用 quantstats 分析测试结果
-G_P_LOG_FILE = False  # 是否输出日志到文件
-G_P_LOG_PRINT = False  # 是否输出日志到控制台
-G_OPTS = 1  # 是否参数调优
+kwargs['G_DT_DTFORMAT'] = '%Y-%m-%d %H:%M:%S'
+kwargs['G_COMM'] = 'comm_' + (re.findall(r"datas\\([\D]{2,4})", kwargs['G_FILE_PATH'])[0]).lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
+kwargs['G_DT_TIMEFRAME'] = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
+kwargs['G_DT_COMPRESSION'] = 5  # 合成bar的周期数
+kwargs['G_INI_CASH'] = 10000 * 10  # 初始金额
+kwargs['G_PLOT'] = False  # 是否绘图,可提供绘图参数:'style="candle"'
+kwargs['G_QUANTSTATS'] = True  # 是否使用 quantstats 分析测试结果
+kwargs['G_P_LOG_FILE'] = False  # 是否输出日志到文件
+kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
+kwargs['G_OPTS'] = 0  # 是否参数调优
+kwargs['G_OPTS_IS_USE'] = 0  # 是否使用上次优化结果
 G_P_PW = [10, True, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [10, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -51,9 +57,9 @@ G_P_KPR = [True, {  # 关键价格[是否启用, {日期1: dict({'kps':[价格�
     datetime(2013, 10, 30).date(): {'kps': [2448, 2323], },
     datetime(2015, 4, 30).date(): {'kps': [2323, 2450], },
 }]
-G_P_PARAM = {
-    'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if G_OPTS and G_P_PW[1] else G_P_PW[0]),
-    'pl': (range(G_P_PL[2], G_P_PL[3], G_P_PL[4]) if G_OPTS and G_P_PL[1] else G_P_PL[0]),
+kwargs['G_P_PARAM'] = {
+    'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if kwargs['G_OPTS'] and G_P_PW[1] else G_P_PW[0]),
+    'pl': (range(G_P_PL[2], G_P_PL[3], G_P_PL[4]) if kwargs['G_OPTS'] and G_P_PL[1] else G_P_PL[0]),
     # 'pwl': (range(G_P_PWL[2], G_P_PWL[3], G_P_PWL[4]) if G_OPTS and G_P_PWL[1] else G_P_PWL[0]),
     # 'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
     # 'po': (range(G_P_PO[2], G_P_PO[3], G_P_PO[4]) if G_OPTS and G_P_PO[1] else G_P_PO[0]),
@@ -63,31 +69,33 @@ G_P_PARAM = {
 }
 
 
+# args命令行参数解析
 def parse_args(pargs=None):
+    kwargs = glv.get('kwargs', dict())
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for Order Target')
 
     parser.add_argument('--data', required=False,
-                        default=G_FILE_PATH,
+                        default=kwargs['G_FILE_PATH'],
                         help='Specific data to be read in')
-    parser.add_argument('--dtformat', required=False, default=G_DT_DTFORMAT,
+    parser.add_argument('--dtformat', required=False, default=kwargs['G_DT_DTFORMAT'],
                         help='Ending date in data datetime format')
-    parser.add_argument('--fromdate', required=False, default=G_DT_START,
+    parser.add_argument('--fromdate', required=False, default=kwargs['G_DT_START'],
                         help='Starting date in `dtformat` format')
-    parser.add_argument('--todate', required=False, default=G_DT_END,
+    parser.add_argument('--todate', required=False, default=kwargs['G_DT_END'],
                         help='Ending date in `dtformat` format')
-    parser.add_argument('--timeframe', required=False, default=G_DT_TIMEFRAME,
+    parser.add_argument('--timeframe', required=False, default=kwargs['G_DT_TIMEFRAME'],
                         choices=['minutes', 'daily', 'weekly', 'monthly'],
                         help='重新采样到的时间范围')
-    parser.add_argument('--compression', required=False, type=int, default=G_DT_COMPRESSION, help='将 n 条压缩为 1, 最小周期为原数据周期')
-    parser.add_argument('--kpr', required=False, type=dict, default=G_P_PARAM.get('kpr'), help="当穿越关键价格后加仓限制，字典类型 {日期1:{'kps':[价格1,价格2]}, 日期2:{'kps':[价格1,价格2]},}"),
-    parser.add_argument('--pwl', required=False, type=list, default=G_P_PARAM.get('pwl'), help='--pwl 盈亏千分比'),
-    parser.add_argument('--pw', required=False, type=list, default=G_P_PARAM.get('pw'), help='--pw 盈利千分比'),
-    parser.add_argument('--pl', required=False, type=list, default=G_P_PARAM.get('pl'), help='--pl 亏损千分比'),
-    parser.add_argument('--ojk', required=False, type=list, default=G_P_PARAM.get('ojk'), help='--ojk 订单间隔bar周期数'),
-    parser.add_argument('--opts', required=False, type=bool, default=G_OPTS, help='是否策略优化')
-    parser.add_argument('--quantstats', required=False, type=int, default=G_QUANTSTATS, help='是否使用 quantstats 分析测试结果')
+    parser.add_argument('--compression', required=False, type=int, default=kwargs['G_DT_COMPRESSION'], help='将 n 条压缩为 1, 最小周期为原数据周期')
+    parser.add_argument('--kpr', required=False, type=dict, default=kwargs.get('G_P_PARAM', dict()).get('kpr'), help="当穿越关键价格后加仓限制，字典类型 {日期1:{'kps':[价格1,价格2]}, 日期2:{'kps':[价格1,价格2]},}"),
+    parser.add_argument('--pwl', required=False, type=list, default=kwargs.get('G_P_PARAM', dict()).get('pwl'), help='--pwl 盈亏千分比'),
+    parser.add_argument('--pw', required=False, type=list, default=kwargs.get('G_P_PARAM', dict()).get('pw'), help='--pw 盈利千分比'),
+    parser.add_argument('--pl', required=False, type=list, default=kwargs.get('G_P_PARAM', dict()).get('pl'), help='--pl 亏损千分比'),
+    parser.add_argument('--ojk', required=False, type=list, default=kwargs.get('G_P_PARAM', dict()).get('ojk'), help='--ojk 订单间隔bar周期数'),
+    parser.add_argument('--opts', required=False, type=bool, default=kwargs.get('G_OPTS', False), help='是否策略优化')
+    parser.add_argument('--quantstats', required=False, type=int, default=kwargs['G_QUANTSTATS'], help='是否使用 quantstats 分析测试结果')
     parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15, help=('Number of CPUs to use in the optimization'
                                                                                        '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
     parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
@@ -96,7 +104,7 @@ def parse_args(pargs=None):
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
-                        metavar='kwargs', const=True, default=G_PLOT,
+                        metavar='kwargs', const=True, default=kwargs['G_PLOT'],
                         help=('绘制应用传递的任何 kwargs 的读取数据\n'
                               '\n''例如:\n''\n''  --plot style="candle" (to plot candles)\n'))
     parser.add_argument("-f", "--file", default="file")  # 接收这个-f参数
@@ -107,35 +115,36 @@ def parse_args(pargs=None):
 
 
 def runstrat(args=None):
-    global DT_RESULT_ONE, DT_RESULTS_OPT, G_INI_CASH  # 申明要使用全局变量
+    global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
     strats = None
-    result_one = None
-    results_opt = None
+    result_one = glv.get('G_RESULT_ONE')
+    results_opt = glv.get('G_RESULTS_OPT')
 
     args = parse_args(args)
-    kwargs = dict()  # 参数字典
+    glv.set('args', args)
+    kwargs = glv.get('kwargs')  # 参数字典
     kwargs['test_kwargs'] = dict()  # 回测参数字典
-    kwargs['opts_kwargs'] = dict()  # 优化参数字典
-    kwargs['log_kwargs'] = dict()  # 日志参数字典
 
-    file_path_abs = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = None
+    file_path_abs = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = ""
+
     if args.dtformat is not None:
         dt_format = args.dtformat
         dt_dtformat = dt_format[:dt_format.find('%d') + len('%d')]
         dt_tmformat = dt_format[dt_format.find('%H'):]
-        # kwargs['dtformat'] = dt_format
-        # kwargs['tmformat'] = dt_tmformat
+        # dkwargs['dtformat'] = dt_format
+        # dkwargs['tmformat'] = dt_tmformat
     if args.fromdate is not None:
         dt_start = datetime.strptime(args.fromdate, dt_dtformat).date()
-        # kwargs['fromdate'] = dt_start
+        # dkwargs['fromdate'] = dt_start
     if args.todate is not None:
         dt_end = datetime.strptime(args.todate, dt_dtformat).date()
-        # kwargs['todate'] = dt_end
+        # dkwargs['todate'] = dt_end
     if args.data is not None:
         file_path = args.data
         myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
         file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
         print(file_path_abs)
+        print('dt_start:', dt_start, 'dt_end:', dt_end)
         # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
         if not os.path.exists(file_path_abs):
             raise Exception("数据源文件未找到！" + file_path_abs)
@@ -151,13 +160,13 @@ def runstrat(args=None):
         kwargs['test_kwargs']['kpr'] = args.kpr
 
     # 加载数据
-    df = pd.read_csv(filepath_or_buffer=file_path_abs,
-                     # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
-                     parse_dates=['datetime'],
-                     index_col='datetime',
-                     infer_datetime_format=True,
-                     usecols=['datetime', 'open', 'close'],  # 要使用的数据列
-                     )
+    df_data = pd.read_csv(filepath_or_buffer=file_path_abs,
+                          # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
+                          parse_dates=['datetime'],
+                          index_col='datetime',
+                          infer_datetime_format=True,
+                          usecols=['datetime', 'open', 'close'],
+                          )
 
     # df.sort_values(by=["datetime"], ascending=True, inplace=True)  # 按日期先后排序
     # df.sort_values(by=["date", "time"], ascending=True, inplace=True)  # 按日期时间列先后排序
@@ -169,19 +178,20 @@ def runstrat(args=None):
     # df.index = pd.to_datetime(df.pop('date')) + pd.to_timedelta(df.pop('time'))  # 方式5: 将日期列和时间合并后转换成日期类型,并设置成列索引
     # df.index = pd.to_datetime(df['date'].str.cat(df['time'], sep=' '), format=dt_format)  # 方式6: 将日期列和时间合并后转换成日期类型,并设置成列索引
     # 截取时间段内样本数据
-    df = df[dt_start:dt_end]
-    # df['openinterest'] = 0.00  # 增加一列openinterest
-    # df = df[['open', 'high', 'low', 'close', 'volume']]  # 取出特定的列
-    # df.rename(columns={"volume": "vol"}, inplace=True)  # 列名修改
+    df_data = df_data[dt_start:dt_end]
+    # df_data['openinterest'] = 0.00  # 增加一列openinterest
+    # df_data = df_data[['open', 'high', 'low', 'close', 'volume']]  # 取出特定的列
+    # df_data.rename(columns={"volume": "vol"}, inplace=True)  # 列名修改
 
     tframes = dict(
         minutes=bt.TimeFrame.Minutes,
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
-    # data = bt.feeds.GenericCSVData(dataname=file_path, **kwargs)
+
     # 使用pandas数据源创建交易数据集
-    data = (bt.feeds.PandasData(dataname=df, fromdate=dt_start, todate=dt_end))
+    # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)
+    data = (bt.feeds.PandasData(dataname=df_data, fromdate=dt_start, todate=dt_end))
     # 重采样到更大时间框架
     if args.timeframe and args.compression:
         data.resample(timeframe=tframes[args.timeframe], compression=args.compression)
@@ -190,14 +200,53 @@ def runstrat(args=None):
 
     cerebro.adddata(data)
     # 设置投资金额1000000
-    cerebro.broker.setcash(G_INI_CASH)
+    cerebro.broker.setcash(kwargs.get('G_INI_CASH', 10000 * 10))
 
-    # # <editor-fold desc="折叠代码:交易手续费设置方式一">
+    # 设置手续费
+    commissioninfo(cerebro=cerebro)
+
+    # 由数据数据合约id+数据周期+开始日期+结束时期+参数组成的文件名
+    file_name = ('{:}_{:}_{:}_{:}_{:}'
+                 .format(kwargs['G_FILE_PATH'][:12], (str(kwargs['G_DT_COMPRESSION']) + (kwargs['G_DT_TIMEFRAME'][:1])), kwargs['G_DT_START'], kwargs['G_DT_END'],
+                         (str(kwargs['G_P_PARAM']).replace('range', '')  # 替换路径中的range字符串
+                          .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 将路径中的空格':字符替换成''
+                         ))
+    file_name = (file_name + ('_rs' if kwargs['G_OPTS_IS_USE'] else ''))
+    kwargs['file_name'] = file_name
+
+    # 参数调优
+    if args.opts:
+        optimize(cerebro=cerebro)
+        pass
+    # 回测分析
+    if not args.opts:
+        backing(cerebro=cerebro)
+        pass
+    # plot绘图
+    if args.plot and not args.opts:
+        pkwargs = dict(style='bar')
+        if args.plot is not True:  # evals to True but is not True
+            npkwargs = eval('dict(' + args.plot + ')')  # args were passed
+            pkwargs.update(npkwargs)
+
+        cerebro.plot(volume=False, **pkwargs)  # 绘图BT观察器结果
+        pyplot(result_one=result_one)  # 结合pyfolio工具 计算并绘制收益评价指标
+    # 回测分析保存到文件
+    if args.quantstats and not args.opts:
+        # 使用quantstats 分析工具并保存到HTML文件
+        quantstats_reports_html(result_one=glv.get('G_RESULT_ONE'))
+        # 使用quantstats 分析工具并保存到HTML文件
+
+
+# 设置手续费
+def commissioninfo(cerebro):
+    """设置手续费"""
+    # # <editor-fold desc="折叠代码:交易手续费设置一">
     # cerebro.broker.setcommission(
     #     # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-    #     commission=0.00015,
-    #     # commission=2.4,
-    #     # 期货保证金，决定着交易费用的类型,只有在 stocklike=False 和 automargin=False时起作用
+    #     commission=0.0015,
+    #     # commission=4,
+    #     # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
     #     margin=0,
     #     # 乘数，盈亏会按该乘数进行放大
     #     mult=10.0,
@@ -223,7 +272,7 @@ def runstrat(args=None):
     #     # 自动计算保证金
     #     # 如果 False, 则通过margin参数确定保证金
     #     # 如果automargin<0, 通过mult*price确定保证金
-    #     # 如果automargin>0, 如果automargin*price确定保证金
+    #     # 如果automargin>0, 如果 automargin*price确定保证金 automargin=mult*margin
     #     automargin=10 * 0.13,
     #     # 交易费用设置作用的数据集(也就是作用的标的)
     #     # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
@@ -237,37 +286,41 @@ def runstrat(args=None):
         'comm_zjif': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
         'comm_dqc': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
         'comm_zqcf': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=6.3, margin_rate=0.11, mult=5.0),  # 棉花合约信息
+        'comm_sqcu': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
     }
     # 添加进 broker
-    cerebro.broker.addcommissioninfo(comm[G_COMM], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
+    cerebro.broker.addcommissioninfo(comm[kwargs['G_COMM']], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
     # </editor-fold>
+    pass
 
-    file_name = ('{:}_{:}_{:}_{:}_{:}'
-                 .format(G_FILE_PATH[:12], (str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1])), G_DT_START, G_DT_END,
-                         (str(G_P_PARAM).replace('range', '')  # 替换路径中的range字符串
-                          .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 将路径中的空格':字符替换成''
-                         ))
-    # 参数调优
-    if args.opts:
-        kwargs['opts_kwargs'] = G_P_PARAM  # 优化参数字典
-        kwargs['opts_path'] = (file_name + '_opt.csv')  # 优化结果保存路径
-        if 'kpr' in kwargs['opts_kwargs']:  # 删除不需要优化的参数
-            del kwargs['opts_kwargs']['kpr']
-        print('dt_start:', dt_start, 'dt_end:', dt_end)
-        print('opts_kwargs:', kwargs['opts_kwargs'])
-        # clock the start of the process
-        tstart = time.perf_counter()
-        # 为Cerebro引擎添加策略, 优化策略
-        strats = cerebro.optstrategy(MyStrategy, **kwargs['opts_kwargs'])
-        # 添加分析指标
-        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
-        cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
-        cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")  # 回撤
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
-        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
-        cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
-        # Run over everything
+
+# 参数调优
+def optimize(cerebro):
+    """参数调优"""
+    args = glv.get('args')
+    kwargs = glv.get('kwargs')
+    kwargs['opts_kwargs'] = dict()  # 优化参数字典
+    kwargs['opts_kwargs'] = kwargs.get('G_P_PARAM')  # 优化参数字典
+    kwargs['opts_path'] = (kwargs.get('file_name') + '_opt.csv')  # 优化结果保存路径
+    print('opts_kwargs:', kwargs['opts_kwargs'])
+    # clock the start of the process
+    tstart = time.perf_counter()
+    print('now datetime:', datetime.now())
+    # 为Cerebro引擎添加策略, 优化策略
+    strats = cerebro.optstrategy(MyStrategy, **kwargs['opts_kwargs'])
+    # 添加分析指标
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
+    cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")  # 回撤
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
+    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
+    cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
+    # Run over everything
+    if kwargs['G_OPTS_IS_USE'] and kwargs['G_RESULTS_OPT']:  # 是否使用上次参数优化结果
+        results_opt = kwargs['G_RESULTS_OPT']
+        print("--------------- 上次参数优化结果 -----------------")
+    else:
         results_opt = cerebro.run(
             maxcpus=args.maxcpus,
             optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
@@ -275,279 +328,303 @@ def runstrat(args=None):
             # optreturn=False,
             # stdstats=False,
         )
-        # clock the end of the process
-        tend = time.perf_counter()
-        # print out the result_one
-        print('Time used:', str(tend - tstart))
-        print("--------------- 分析结果 -----------------")
+        glv.set('G_RESULTS_OPT', results_opt)
+        print("--------------- 参数优化结果 -----------------")
+    # clock the end of the process
+    tend = time.perf_counter()
+    # print out the results_opt
+    print('\nTime used:', str(tend - tstart))
 
-        # 每个策略实例的结果以列表的形式保存在列表中。优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
-        res_list = [[]]
-        res_timereturn_title = []  # 列标题
+    # 每个策略实例的结果以列表的形式保存在列表中。优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
+    res_list = [[]]
+    res_timereturn_title = []  # 列标题
 
-        timeReturn = results_opt[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
-        for k, v in timeReturn.items():
-            res_timereturn_title.append('{:%Y-%m}'.format(k))
-        res_df = pd.DataFrame()  # 新建一个空的pandas列表,内容由字典填充
+    timeReturn = results_opt[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
+    for k, v in timeReturn.items():
+        res_timereturn_title.append('{:%Y-%m}'.format(k))
+    res_df = pd.DataFrame()  # 新建一个空的pandas列表,内容由字典填充
 
-        for i, x in enumerate(results_opt):
-            trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
-            my_trade = x[0].analyzers.my_tradeAnalyzer.get_analysis()  # 交易分析引用
-            returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
-            pyFolio = x[0].analyzers.pyFolio.get_analysis()  # pyFolio分析引用
-            drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
-            sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
-            timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
+    for i, x in enumerate(results_opt):
+        trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
+        my_trade = x[0].analyzers.my_tradeAnalyzer.get_analysis()  # 交易分析引用
+        returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
+        pyFolio = x[0].analyzers.pyFolio.get_analysis()  # pyFolio分析引用
+        drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
+        sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
+        timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
 
-            if trade['total']['total'] == 0:
-                continue  # 忽略交易次数为0 的数据
+        if trade['total']['total'] == 0:
+            continue  # 忽略交易次数为0 的数据
 
-            returns_rort_ = returns['rtot'] * 100  # 总复合回报
-            pyFolio_returns_ = sum(pyFolio['returns'].values()) * 100  # pyFolio总复合回报
-            returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
-            trade_won_ = (trade.get('won')['total'])  # 总盈利次数
-            trade_lost_ = (trade.get('lost')['total']) if 'lost' in trade else 0  # 总亏损次数
-            trade_total_ = trade['total']['total']  # 交易次数
-            trade_win_rate = (trade_won_ / trade_total_) * 100  # 胜率
-            drawdown_ = drawdown.get('max')['drawdown'] if 'max' in drawdown else 0  # 最大回撤
-            sharpe_ = sharpe.get('sharperatio', 0)  # 夏普率
-            trade_pnl_total_ = (trade.get('pnl')['gross']['total']) if 'pnl' in trade else 0  # 总盈亏
-            trade_pnl_net_ = (trade.get('pnl')['net']['total']) if 'pnl' in trade else 0  # 总盈亏-手续费
-            trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
-            trade_comm_net_p = ((trade_pnl_comm_ / trade_pnl_net_) * 100) if trade_pnl_net_ != 0 else 0  # 手续费占比净盈亏百分比
+        returns_rort_ = returns['rtot'] * 100  # 总复合回报
+        pyFolio_returns_ = sum(pyFolio['returns'].values()) * 100  # pyFolio总复合回报
+        returns_rnorm100_ = returns['rnorm100'] * 100  # 年化归一化回报
+        trade_won_ = (trade.get('won')['total'])  # 总盈利次数
+        trade_lost_ = (trade.get('lost')['total'])  # 总亏损次数
+        trade_total_ = trade['total']['total']  # 交易次数
+        trade_win_rate = (trade_won_ / trade_total_) * 100  # 胜率
+        drawdown_ = drawdown.get('max').get('drawdown', 0)  # 最大回撤
+        sharpe_ = sharpe.get('sharperatio', 0)  # 夏普率
+        trade_pnl_total_ = (trade.get('pnl').get('gross').get('total', 0))  # 总盈亏
+        trade_pnl_net_ = (trade.get('pnl')['net']['total'])  # 总盈亏-手续费
+        trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
+        trade_comm_net_p = ((trade_pnl_comm_ / trade_pnl_net_) * 100) if trade_pnl_net_ != 0 else 0  # 手续费占比净盈亏百分比
 
-            row = dict()
-            for pk, pv in G_P_PARAM.items():  # 遍历参数列表,将需要优化的参数名和值添加到字典里
-                if type(pv) == list or type(pv) == range:
-                    row[pk] = x[0].p._get(pk)
-            row.update({
-                'pwl': x[0].p.pwl,  # 参数
-                'pw': x[0].p.pw,  # 参数
-                'pl': x[0].p.pl,  # 参数
-                'ojk': x[0].p.ojk,  # 参数
-                'total': '{:0>4d}'.format(trade_total_),  # 交易次数
-                'sharpe': sharpe_,  # 夏普率
-                'rtot%': returns_rort_,  # 总复合回报
-                'py_rt%': pyFolio_returns_,  # pyFolio总复合回报
-                'won%': trade_win_rate,  # 胜率
-                'rnorm%': returns_rnorm100_,  # 年化归一化回报
-                'maxDD%': round(drawdown_, 3),  # 最大回撤
-                'comm%': round(trade_comm_net_p, 3),  # 手续费占比净盈亏百分比
-                'pnl_net': '{:8.2f}'.format(trade_pnl_net_),  # 总盈亏余额含手续费
-            })
-            for k, v in timeReturn.items():  # 把timeReturn统计的月度或年度复合回报添加在后面 # 月度或年度复合回报,由参数timeframe=bt.TimeFrame.Months控制
-                row['{:%Y-%m}'.format(k)] = v
-            res_df = res_df.append(row, ignore_index=True)
-        res_df.loc[:, :'total'] = res_df.loc[:, :'total'].astype(int)  # 转换指定total列前的数据类型
-        if bool(res_df.empty):
-            print('回测数据不存在')
-        if not ('pw' in G_P_PARAM or 'pl' in G_P_PARAM):
-            # 删除未优化的参数列
-            res_df = res_df.drop(labels=['pw', 'pl'], axis=1)
-        if not ('ojk' in G_P_PARAM):
-            res_df = res_df.drop(labels=['ojk'], axis=1)
-        if not ('pwl' in G_P_PARAM):
-            res_df = res_df.drop(labels=['pwl'], axis=1)
+        row = dict()
+        for pk, pv in kwargs['G_P_PARAM'].items():  # 遍历参数列表,将需要优化的参数名和值添加到字典里
+            if type(pv) == list or type(pv) == range:
+                row[pk] = x[0].p._get(pk)
+        row.update({
+            'pwl': x[0].p.pwl,  # 参数
+            'pw': x[0].p.pw,  # 参数
+            'pl': x[0].p.pl,  # 参数
+            'ojk': x[0].p.ojk,  # 参数
+            'total': '{:0>4d}'.format(trade_total_),  # 交易次数
+            'sharpe': sharpe_,  # 夏普率
+            'rtot%': returns_rort_,  # 总复合回报
+            'py_rt%': pyFolio_returns_,  # pyFolio总复合回报
+            'won%': trade_win_rate,  # 胜率
+            'rnorm%': returns_rnorm100_,  # 年化归一化回报
+            'maxDD%': round(drawdown_, 3),  # 最大回撤
+            'comm%': round(trade_comm_net_p, 3),  # 手续费占比净盈亏百分比
+            'pnl_net': '{:8.2f}'.format(trade_pnl_net_),  # 总盈亏余额含手续费
+        })
+        for k, v in timeReturn.items():  # 把timeReturn统计的月度或年度复合回报添加在后面 # 月度或年度复合回报,由参数timeframe=bt.TimeFrame.Months控制
+            row['{:%Y-%m}'.format(k)] = v
+        res_df = res_df.append(row, ignore_index=True)
+    res_df.loc[:, :'total'] = res_df.loc[:, :'total'].astype(int)  # 转换指定total列前的数据类型
+    if bool(res_df.empty):
+        print('回测数据不存在')
+    if not ('pw' in kwargs['G_P_PARAM'] or 'pl' in kwargs['G_P_PARAM']):
+        # 删除未优化的参数列
+        res_df = res_df.drop(labels=['pw', 'pl'], axis=1)
+    if not ('ojk' in kwargs['G_P_PARAM']):
+        res_df = res_df.drop(labels=['ojk'], axis=1)
+    if not ('pwl' in kwargs['G_P_PARAM']):
+        res_df = res_df.drop(labels=['pwl'], axis=1)
 
-        res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
-        # res_df[['pw', 'pl', 'ojk', 'total']] = res_df[['pw', 'pl', 'ojk', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
-        res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
+    res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
+    # res_df[['pw', 'pl', 'ojk', 'total']] = res_df[['pw', 'pl', 'ojk', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
+    res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
 
-        res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
-        # res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
-        res_df.index.name = 'id'  # 设置索引名称
-        pd.set_option('precision', 3)  # 显示小数点后的位数
-        pd.set_option('display.min_rows', 300)  # 确定显示的部分有多少行
-        pd.set_option('display.max_rows', 300)  # 确定显示的部分有多少行
-        pd.set_option('display.max_columns', 20)  # 确定显示的部分有多少列
-        pd.set_option('display.float_format', '{:,.2f}'.format)  # 逗号格式化大值数字,设置数据精度
-        pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
-        pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
+    res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
+    # res_df.reset_index(drop=True, inplace=True)  # 重设索引id,删除旧索引,替换新索引
+    res_df.index.name = 'id'  # 设置索引名称
+    pd.set_option('precision', 3)  # 显示小数点后的位数
+    pd.set_option('display.min_rows', 300)  # 确定显示的部分有多少行
+    pd.set_option('display.max_rows', 300)  # 确定显示的部分有多少行
+    pd.set_option('display.max_columns', 20)  # 确定显示的部分有多少列
+    pd.set_option('display.float_format', '{:,.2f}'.format)  # 逗号格式化大值数字,设置数据精度
+    pd.set_option('expand_frame_repr', False)  # True就是可以换行显示。设置成False的时候不允许换行
+    pd.set_option('display.width', 180)  # 设置打印宽度(**重要**)
 
-        res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
-        if not res_df.empty:
-            G_RESULT_ONE = result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        opts_path = kwargs['opts_path']
-        print(opts_path)  # 打印文件路径
-        print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
-        res_df.to_csv(opts_path, sep='\t', float_format='%.2f')  # 保存分析数据到文件
-        print("--------------- 优化结束 -----------------")
-    # 回测分析
-    else:
-        # test_kwargs = kwargs['test_kwargs']
-        test_kwargs = G_P_PARAM  # 回测参数
-        log_logger = None
-        if G_P_LOG_PRINT or G_P_LOG_FILE:
-            log_logger = logger_config(log_path=(file_name + '_log.txt'), log_name='交易日志')
-        # 回测日志参数
-        log_kwargs = dict(
-            log_logger=log_logger,
-            log_print=G_P_LOG_PRINT,  # 是否打印日志到控制台
-            log_save=G_P_LOG_FILE,  # 是否保存日志到文件
-        )
-        print('dt_start:', dt_start, 'dt_end:', dt_end)
-        print('test_kwargs:', test_kwargs)  # 回测参数
-        print('log_kwargs:', log_kwargs)  # 日志参数
-        # 添加观测器,绘制时显示
-        cerebro.addobserver(bt.observers.Broker)
-        cerebro.addobserver(bt.observers.Trades)
-        cerebro.addobserver(bt.observers.BuySell)
-        # cerebro.addobserver(bt.observers.TimeReturn)
-        cerebro.addobserver(bt.observers.DrawDown)
-        # 添加分析指标
-        cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualReturn')  # 返回年初至年末的年度收益率
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
-        cerebro.addanalyzer(bt.analyzers.Returns, _name='returns', tann=252)  # 计算年化收益：日度收益
-        cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')
-        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
-        cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
+    res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
+    if not res_df.empty:
+        result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
+        glv.set('G_RESULT_ONE', result_one)
+    opts_path = kwargs['opts_path']
+    print(opts_path)  # 打印文件路径
+    print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
+    res_df.to_csv(opts_path, sep='\t', float_format='%.2f')  # 保存分析数据到文件
+    print("--------------- 优化结束 -----------------")
+    pass
 
-        # 添加策略和参数
-        cerebro.addstrategy(MyStrategy, log_kwargs=log_kwargs, **test_kwargs)
 
-        # 引擎运行前打印期出资金
-        print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
-        # 启动回测
-        result_one = cerebro.run()
-        # 引擎运行后打期末资金
-        print('组合期末资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
-        # 提取结果
-        print("\n--------------- 累计收益率 -----------------")
-        returns = result_one[0].analyzers.returns.get_analysis()
-        pyFolio = result_one[0].analyzers.pyFolio.get_analysis()
-        print(" Cumulative Return%: {:.2f}%".format(returns['rtot'] * 100))
-        print(" pyFolio Cumulative Return%: {:,.2f}".format(sum(pyFolio['returns'].values()) * 100))
-        print("\n--------------- 年度收益率 -----------------")
-        annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
-        # print(' 收益率k,v', get_analysis.items())
-        for k, v in annualReturn.items():
-            print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
-        print("\n--------------- 最大回撤 -----------------")
-        drawDown = result_one[0].analyzers.drawDown.get_analysis()
-        for k, v in drawDown.items():
-            if not isinstance(v, dict):
-                t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
+# 回测
+def backing(cerebro):
+    """回测"""
+    kwargs = glv.get('kwargs')
+    # test_kwargs = kwargs['test_kwargs']
+    test_kwargs = kwargs['G_P_PARAM']  # 回测参数
+    log_logger = None
+    if kwargs.get('G_P_LOG_PRINT') or kwargs.get('G_P_LOG_FILE'):
+        log_logger = logger_config(log_path=(kwargs.get('file_name') + '_log.txt'), log_name='交易日志')
+    # 回测日志参数
+    log_kwargs = dict(
+        log_logger=log_logger,
+        log_print=kwargs.get('G_P_LOG_PRINT', False),  # 是否打印日志到控制台
+        log_save=kwargs.get('G_P_LOG_FILE', False),  # 是否保存日志到文件
+    )
+    print('test_kwargs:', test_kwargs)  # 回测参数
+    print('log_kwargs:', log_kwargs)  # 日志参数
+    # clock the start of the process
+    tstart = time.perf_counter()
+    print('now datetime:', datetime.now())
+    # 添加观测器,绘制时显示
+    cerebro.addobserver(bt.observers.Broker)
+    cerebro.addobserver(bt.observers.Trades)
+    cerebro.addobserver(bt.observers.BuySell)
+    # cerebro.addobserver(bt.observers.TimeReturn)
+    cerebro.addobserver(bt.observers.DrawDown)
+    # 添加分析指标
+    cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualReturn')  # 返回年初至年末的年度收益率
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
+    cerebro.addanalyzer(bt.analyzers.Returns, _name='returns', tann=252)  # 计算年化收益：日度收益
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
+    cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
+
+    # 添加策略和参数
+    cerebro.addstrategy(MyStrategy, log_kwargs=log_kwargs, **test_kwargs)
+    # 引擎运行前打印期出资金
+    print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
+    # 启动回测
+    result_one = cerebro.run()
+    glv.set('G_RESULT_ONE', result_one)
+    # clock the end of the process
+    tend = time.perf_counter()
+    # print out the result_one
+    print('Time used:', str(tend - tstart))
+    print("\n--------------- 回测结果 -----------------")
+    # 引擎运行后打期末资金
+    print('组合期末资金: %s' % format(cerebro.broker.getvalue(), ',.2f'), end='')
+    # 回测结果提取分析
+    result_analysis(result_one=result_one)
+    # 在记录日志之后移除句柄
+    if kwargs.get('G_P_LOG_PRINT') or kwargs.get('G_P_LOG_FILE'):
+        log_logger.streamHandler.close()
+        log_logger.fileHandler.close()
+        logging.shutdown()  # 关闭日志系统
+    pass
+
+
+# 回测结果提取分析
+def result_analysis(result_one=glv.get('G_RESULT_ONE')):
+    """回测结果提取分析"""
+    # 提取结果
+    print("\n--------------- 累计收益率 -----------------")
+    returns = result_one[0].analyzers.returns.get_analysis()
+    pyFolio = result_one[0].analyzers.pyFolio.get_analysis()
+    print(" Cumulative Return: {:.2f}".format(returns['rtot'] * 100))
+    print(" pyFolio Cumulative Return%: {:,.2f}".format(sum(pyFolio['returns'].values()) * 100))
+    print("\n--------------- 年度收益率 -----------------")
+    annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
+    # print(' 收益率k,v', get_analysis.items())
+    for k, v in annualReturn.items():
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
+    print("\n--------------- 最大回撤 -----------------")
+    drawDown = result_one[0].analyzers.drawDown.get_analysis()
+    for k, v in drawDown.items():
+        if not isinstance(v, dict):
+            t = (" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v)
+            print(t, end='')
+        else:
+            for kk, vv in v.items():
+                t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
                 print(t, end='')
-            else:
-                for kk, vv in v.items():
-                    t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
-                    print(t, end='')
-        print("\n--------------- 年化收益：日度收益 -----------------")
-        an_returns = result_one[0].analyzers.returns.get_analysis()
-        for k, v in an_returns.items():
-            print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
-        print("\n--------------- 年化夏普比率：日度收益 -----------------")
-        sharpeRatio = (result_one[0].analyzers.sharpeRatio.get_analysis())
-        for k, v in sharpeRatio.items():
-            print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
-        print("\n--------------- SharpeRatio_A -----------------")
-        sharpeRatio_A = result_one[0].analyzers.sharpeRatio_A.get_analysis()
-        for k, v in sharpeRatio_A.items():
-            print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
-        print("\n--------------- test end -----------------")
-        # 在记录日志之后移除句柄
-        if G_P_LOG_PRINT or G_P_LOG_FILE:
-            log_logger.streamHandler.close()
-            log_logger.fileHandler.close()
-            logging.shutdown()  # 关闭日志系统
-    # 绘图
-    if args.plot and not args.opts:
-        pkwargs = dict(style='bar')
-        if args.plot is not True:  # evals to True but is not True
-            npkwargs = eval('dict(' + args.plot + ')')  # args were passed
-            pkwargs.update(npkwargs)
-
-        cerebro.plot(volume=False, **pkwargs)  # 绘图BT观察器结果
-
-        # 结合pyfolio工具 计算并绘制收益评价指标
-        import pyfolio as pf
-        # 绘制图形
-        import matplotlib.pyplot as plt
-        plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
-        import matplotlib.ticker as ticker  # 导入设置坐标轴的模块
-        # plt.style.use('seaborn')
-        plt.style.use('dark_background')
-
-        # 提取收益序列
-        pnl = pd.Series(result_one[0].analyzers.timeReturn.get_analysis())
-        # 计算累计收益
-        cumulative = (pnl + 1).cumprod()
-        # 计算回撤序列
-        max_return = cumulative.cummax()
-        drawdown = (cumulative - max_return) / max_return
-        # 按年统计收益指标
-        perf_stats_year = pnl.groupby(pnl.index.to_period('y')).apply(lambda data: pf.timeseries.perf_stats(data)).unstack()
-        # 统计所有时间段的收益指标
-        perf_stats_all = pf.timeseries.perf_stats(pnl).to_frame(name='all')
-        perf_stats = pd.concat([perf_stats_year, perf_stats_all.T], axis=0)
-        perf_stats_ = round(perf_stats, 4).reset_index()
-
-        fig, (ax0, ax1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [3, 4]}, figsize=(24, 16))
-        cols_names = ['date', 'Annual\nreturn', 'Cumulative\nreturns', 'Annual\n volatility',
-                      'Sharpe\nratio', 'Calmar\nratio', 'Stability', 'Max\ndrawdown',
-                      'Omega\nratio', 'Sortino\nratio', 'Skew', 'Kurtosis', 'Tail\nratio',
-                      'Daily value\nat risk']
-        # 绘制表格
-        ax0.set_axis_off()  # 除去坐标轴
-        table = ax0.table(cellText=perf_stats_.values,
-                          bbox=(0, 0, 1, 1),  # 设置表格位置， (x0, y0, width, height)
-                          rowLoc='left',  # 行标题居中
-                          cellLoc='left',
-                          colLabels=cols_names,  # 设置列标题
-                          colLoc='left',  # 列标题居中
-                          edges='open'  # 不显示表格边框
-                          )
-        table.set_fontsize(13)
-
-        # 绘制累计收益曲线
-        ax2 = ax1.twinx()
-        ax1.yaxis.set_ticks_position('right')  # 将回撤曲线的 y 轴移至右侧
-        ax2.yaxis.set_ticks_position('left')  # 将累计收益曲线的 y 轴移至左侧
-        # 绘制回撤曲线
-        drawdown.plot.area(ax=ax1, label='drawdown (right)', rot=0, alpha=0.3, fontsize=13, grid=False)
-        # 绘制累计收益曲线
-        cumulative.plot(ax=ax2, color='#F1C40F', lw=2.0, label='cumret (left)', rot=0, fontsize=13, grid=False)
-        # 不然 x 轴留有空白
-        ax2.set_xbound(lower=cumulative.index.min(), upper=cumulative.index.max())
-        # 主轴定位器：每 5 个月显示一个日期：根据具体天数来做排版
-        ax2.xaxis.set_major_locator(ticker.MultipleLocator(120))
-        # 同时绘制双轴的图例
-        h1, l1 = ax1.get_legend_handles_labels()
-        h2, l2 = ax2.get_legend_handles_labels()
-
-        plt.legend(h1 + h2, l1 + l2, fontsize=12, loc='upper left', ncol=1)
-        fig.tight_layout()  # 规整排版
-        plt.show()
-        # 结合pyfolio工具 计算并绘制收益评价指标
-    # 回测分析保存到文件
-    if args.quantstats and not args.opts:
-        # 使用quantstats 分析工具并保存到HTML文件
-        import quantstats
-        portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
-        returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
-        returns.index = returns.index.tz_convert(None)
-        param_one = dict()
-        for pk, pv in G_P_PARAM.items():  # 遍历参数列表,将优化的参数名和值添加到字典里
-            param_one[pk] = result_one[0].p._get(pk)
-        import quantstats
-        # 将分析指标保存到HTML文件
-        title_report = ('{:}-{:} st={:%Y-%m-%d} end={:%Y-%m-%d} pam={:} dt={:%H.%M.%S}'  # 优化结果网页标题
-            .format(
-            (G_FILE_PATH.split('\\')[1].split('-')[0]),  # 合约名称
-            str(G_DT_COMPRESSION) + (G_DT_TIMEFRAME[:1]),  # K线周期
-            datetime.fromisoformat(G_DT_START), datetime.fromisoformat(G_DT_END),  # 开始结束时间
-            (str(param_one).replace('range', '').replace('datetime.date', '')  # 替换参数字典中的字符串
-             .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 替换参数字典中的字符
-            datetime.now(),
-        ))
-        quantstats.reports.html(returns, output='stats.html', title=title_report)
-        print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
-        # 使用quantstats 分析工具并保存到HTML文件
-        pass
+    print("\n--------------- 年化收益：日度收益 -----------------")
+    an_returns = result_one[0].analyzers.returns.get_analysis()
+    for k, v in an_returns.items():
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
+    print("\n--------------- 年化夏普比率：日度收益 -----------------")
+    sharpeRatio = (result_one[0].analyzers.sharpeRatio.get_analysis())
+    for k, v in sharpeRatio.items():
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
+    print("\n--------------- SharpeRatio_A -----------------")
+    sharpeRatio_A = result_one[0].analyzers.sharpeRatio_A.get_analysis()
+    for k, v in sharpeRatio_A.items():
+        print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
+    print("\n--------------- test end -----------------")
+    pass
 
 
+# """pyfolio分析结果绘图"""
+def pyplot(result_one=glv.get('G_RESULT_ONE')):
+    """pyfolio分析结果绘图"""
+    # 结合pyfolio工具 计算并绘制收益评价指标
+    import pyfolio as pf
+    # 绘制图形
+    import matplotlib.pyplot as plt
+    plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+    import matplotlib.ticker as ticker  # 导入设置坐标轴的模块
+    # plt.style.use('seaborn')
+    plt.style.use('dark_background')
+
+    # 提取收益序列
+    pnl = pd.Series(result_one[0].analyzers.timeReturn.get_analysis())
+    # 计算累计收益
+    cumulative = (pnl + 1).cumprod()
+    # 计算回撤序列
+    max_return = cumulative.cummax()
+    drawdown = (cumulative - max_return) / max_return
+    # 按年统计收益指标
+    perf_stats_year = pnl.groupby(pnl.index.to_period('y')).apply(lambda data: pf.timeseries.perf_stats(data)).unstack()
+    # 统计所有时间段的收益指标
+    perf_stats_all = pf.timeseries.perf_stats(pnl).to_frame(name='all')
+    perf_stats = pd.concat([perf_stats_year, perf_stats_all.T], axis=0)
+    perf_stats_ = round(perf_stats, 4).reset_index()
+
+    fig, (ax0, ax1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [3, 4]}, figsize=(24, 16))
+    cols_names = ['date', 'Annual\nreturn', 'Cumulative\nreturns', 'Annual\n volatility',
+                  'Sharpe\nratio', 'Calmar\nratio', 'Stability', 'Max\ndrawdown',
+                  'Omega\nratio', 'Sortino\nratio', 'Skew', 'Kurtosis', 'Tail\nratio',
+                  'Daily value\nat risk']
+    # 绘制表格
+    ax0.set_axis_off()  # 除去坐标轴
+    table = ax0.table(cellText=perf_stats_.values,
+                      bbox=(0, 0, 1, 1),  # 设置表格位置， (x0, y0, width, height)
+                      rowLoc='left',  # 行标题居中
+                      cellLoc='left',
+                      colLabels=cols_names,  # 设置列标题
+                      colLoc='left',  # 列标题居中
+                      edges='open'  # 不显示表格边框
+                      )
+    table.set_fontsize(13)
+
+    # 绘制累计收益曲线
+    ax2 = ax1.twinx()
+    ax1.yaxis.set_ticks_position('right')  # 将回撤曲线的 y 轴移至右侧
+    ax2.yaxis.set_ticks_position('left')  # 将累计收益曲线的 y 轴移至左侧
+    # 绘制回撤曲线
+    drawdown.plot.area(ax=ax1, label='drawdown (right)', rot=0, alpha=0.3, fontsize=13, grid=False)
+    # 绘制累计收益曲线
+    cumulative.plot(ax=ax2, color='#F1C40F', lw=2.0, label='cumret (left)', rot=0, fontsize=13, grid=False)
+    # 不然 x 轴留有空白
+    ax2.set_xbound(lower=cumulative.index.min(), upper=cumulative.index.max())
+    # 主轴定位器：每 5 个月显示一个日期：根据具体天数来做排版
+    ax2.xaxis.set_major_locator(ticker.MultipleLocator(120))
+    # 同时绘制双轴的图例
+    h1, l1 = ax1.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+
+    plt.legend(h1 + h2, l1 + l2, fontsize=12, loc='upper left', ncol=1)
+    fig.tight_layout()  # 规整排版
+    plt.show()
+    # 结合pyfolio工具 计算并绘制收益评价指标
+    pass
+
+
+# """quantstats分析报告html"""
+def quantstats_reports_html(result_one=glv.get('G_RESULT_ONE')):
+    # 使用quantstats 分析工具并保存到HTML文件
+    kwargs = glv.get('kwargs')
+    portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
+    returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
+    returns.index = returns.index.tz_convert(None)
+    param_one = dict()
+    for pk, pv in kwargs.get('G_P_PARAM').items():  # 遍历参数列表,将优化的参数名和值添加到字典里
+        param_one[pk] = result_one[0].p._get(pk)
+    import quantstats
+    # 将分析指标保存到HTML文件
+    title_report = ('{:}-{:} st={:%Y-%m-%d} end={:%Y-%m-%d} pam={:} dt={:%H.%M.%S}'  # 优化结果网页标题
+        .format(
+        (kwargs.get('G_FILE_PATH').split('\\')[1].split('-')[0]),  # 合约名称
+        str(kwargs.get('G_DT_COMPRESSION')) + (kwargs.get('G_DT_TIMEFRAME')[:1]),  # K线周期
+        datetime.fromisoformat(kwargs.get('G_DT_START')), datetime.fromisoformat(kwargs.get('G_DT_END')),  # 开始结束时间
+        str(param_one).replace('range', '').replace('datetime.date', '')  # 替换参数字典中的字符串
+        .translate(str.maketrans({' ': '', '\'': '', ':': ''})),  # 替换参数字典中的字符
+        datetime.now(),
+    ))
+    quantstats.reports.html(returns, output='stats.html', title=title_report)
+    print(title_report)
+    print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
+    # 使用quantstats 分析工具并保存到HTML文件
+    pass
+
+
+# """日志配置"""
 def logger_config(log_path, log_name):
     """
     配置log
@@ -571,7 +648,7 @@ def logger_config(log_path, log_name):
         logger.fileHandler.setFormatter(formatter)
         logger.addHandler(logger.fileHandler)  # 为logger对象添加句柄
     # console相当于控制台输出，handler文件输出。获取流句柄并设置日志级别，第二层过滤
-    logger.streamHandler = logging.StreamHandler(stream=sys.stdout)
+    logger.streamHandler = logging.StreamHandler(stream=sys.stdout)  # stream=sys.stdout 不设置日志字体颜色是红色
     # logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     logger.streamHandler.setLevel(logging.INFO)  # 设置控制台显示级别 日志级别： debug < info < warning < error < critical
     logger.addHandler(logger.streamHandler)  # 为logger对象添加句柄
@@ -1041,23 +1118,23 @@ class MyStrategy(bt.Strategy):
             # 头寸管理:盈利增加,亏损减少
             if self.ppos_profit_ref1 > 0:
                 self.numlosst = 0  # 连续亏损=0
-                self.mpok = (self.mpok * (1 + self.mppo))  # 上一笔交易盈利时，增加仓位
+                self.mpok = (self.mpok / (1 - self.mppo))  # 上一笔交易盈利时，增加仓位
             else:
-                self.mpok = (self.mpok * (1 - self.mppo))  # 上一笔交易亏损时，减少仓位
+                self.mpok = (self.mpok / (1 + self.mppo))  # 上一笔交易亏损时，减少仓位
                 pass
             # 盈亏比率平衡
             if True:
                 if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
-                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
-                    self.mpla = self.mpla * (1 + self.mppp)  # 增加亏损比
+                    self.mpwa = self.mpwa / (1 + self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla / (1 - self.mppp)  # 增加亏损比
                     pass
                 elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
-                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
-                    self.mpwa = self.mpwa * (1 + self.mppp)  # 增加盈利比
+                    self.mpla = self.mpla / (1 + self.mppp)  # 减少亏损比
+                    self.mpwa = self.mpwa / (1 - self.mppp)  # 增加盈利比
                     pass
                 elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
-                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
-                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
+                    self.mpwa = self.mpwa / (1 + self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla / (1 + self.mppp)  # 减少亏损比
                     pass
             pass
 
@@ -1283,4 +1360,5 @@ class Statistics():
 
 """-------主函数---------"""
 if __name__ == '__main__':
+    glv.set('kwargs', kwargs)
     runstrat()
