@@ -143,6 +143,7 @@ def runstrat(args=None):
         file_path = args.data
         myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
         file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
+        print("run time:", datetime.now())
         print(file_path_abs)
         print('dt_start:', dt_start, 'dt_end:', dt_end)
         # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
@@ -299,15 +300,13 @@ def optimize(cerebro):
     """参数调优"""
     args = glv.get('args')
     kwargs = glv.get('kwargs')
-    kwargs['opts_kwargs'] = dict()  # 优化参数字典
-    kwargs['opts_kwargs'] = kwargs.get('G_P_PARAM')  # 优化参数字典
+    opts_kwargs = kwargs.get('G_P_PARAM')  # 优化参数字典
     kwargs['opts_path'] = (kwargs.get('file_name') + '_opt.csv')  # 优化结果保存路径
-    print('opts_kwargs:', kwargs['opts_kwargs'])
+    print('opts_kwargs:', opts_kwargs)
     # clock the start of the process
     tstart = time.perf_counter()
-    print('now datetime:', datetime.now())
     # 为Cerebro引擎添加策略, 优化策略
-    strats = cerebro.optstrategy(MyStrategy, **kwargs['opts_kwargs'])
+    strats = cerebro.optstrategy(MyStrategy, **opts_kwargs)
     # 添加分析指标
     cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
     cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
@@ -317,7 +316,7 @@ def optimize(cerebro):
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
     cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
     # Run over everything
-    if kwargs['G_OPTS_IS_USE'] and kwargs['G_RESULTS_OPT']:  # 是否使用上次参数优化结果
+    if kwargs['G_OPTS_IS_USE'] and glv.get('G_RESULTS_OPT'):  # 是否使用上次参数优化结果
         results_opt = kwargs['G_RESULTS_OPT']
         print("--------------- 上次参数优化结果 -----------------")
     else:
@@ -395,12 +394,12 @@ def optimize(cerebro):
     res_df.loc[:, :'total'] = res_df.loc[:, :'total'].astype(int)  # 转换指定total列前的数据类型
     if bool(res_df.empty):
         print('回测数据不存在')
-    if not ('pw' in kwargs['G_P_PARAM'] or 'pl' in kwargs['G_P_PARAM']):
+    if not ('pw' in opts_kwargs or 'pl' in opts_kwargs):
         # 删除未优化的参数列
         res_df = res_df.drop(labels=['pw', 'pl'], axis=1)
-    if not ('ojk' in kwargs['G_P_PARAM']):
+    if not ('ojk' in opts_kwargs):
         res_df = res_df.drop(labels=['ojk'], axis=1)
-    if not ('pwl' in kwargs['G_P_PARAM']):
+    if not ('pwl' in opts_kwargs):
         res_df = res_df.drop(labels=['pwl'], axis=1)
 
     res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
@@ -434,7 +433,6 @@ def optimize(cerebro):
 def backing(cerebro):
     """回测"""
     kwargs = glv.get('kwargs')
-    # test_kwargs = kwargs['test_kwargs']
     test_kwargs = kwargs['G_P_PARAM']  # 回测参数
     log_logger = None
     if kwargs.get('G_P_LOG_PRINT') or kwargs.get('G_P_LOG_FILE'):
@@ -449,7 +447,6 @@ def backing(cerebro):
     print('log_kwargs:', log_kwargs)  # 日志参数
     # clock the start of the process
     tstart = time.perf_counter()
-    print('now datetime:', datetime.now())
     # 添加观测器,绘制时显示
     cerebro.addobserver(bt.observers.Broker)
     cerebro.addobserver(bt.observers.Trades)
@@ -1118,23 +1115,23 @@ class MyStrategy(bt.Strategy):
             # 头寸管理:盈利增加,亏损减少
             if self.ppos_profit_ref1 > 0:
                 self.numlosst = 0  # 连续亏损=0
-                self.mpok = (self.mpok / (1 - self.mppo))  # 上一笔交易盈利时，增加仓位
+                self.mpok = (self.mpok * (1 + self.mppo))  # 上一笔交易盈利时，增加仓位
             else:
-                self.mpok = (self.mpok / (1 + self.mppo))  # 上一笔交易亏损时，减少仓位
+                self.mpok = (self.mpok * (1 - self.mppo))  # 上一笔交易亏损时，减少仓位
                 pass
             # 盈亏比率平衡
             if True:
                 if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
-                    self.mpwa = self.mpwa / (1 + self.mppp)  # 减少盈利比
-                    self.mpla = self.mpla / (1 - self.mppp)  # 增加亏损比
+                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 + self.mppp)  # 增加亏损比
                     pass
                 elif self.mpla > self.mpwa:  # 亏损比>盈利比时,减少亏损比
-                    self.mpla = self.mpla / (1 + self.mppp)  # 减少亏损比
-                    self.mpwa = self.mpwa / (1 - self.mppp)  # 增加盈利比
+                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
+                    self.mpwa = self.mpwa * (1 + self.mppp)  # 增加盈利比
                     pass
                 elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
-                    self.mpwa = self.mpwa / (1 + self.mppp)  # 减少盈利比
-                    self.mpla = self.mpla / (1 + self.mppp)  # 减少亏损比
+                    self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
+                    self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
                     pass
             pass
 
