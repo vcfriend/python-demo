@@ -326,7 +326,7 @@ def optimize(cerebro):
     # Run over everything
     if kwargs['G_OPTS_IS_USE'] and gvc.get('G_RESULTS_OPT'):  # 是否使用上次参数优化结果
         results_opt = gvc.get('G_RESULTS_OPT')
-        print("--------------- 上次参数优化结果 -----------------")
+        print("\n--------------- 上次参数优化结果 -----------------")
     else:
         results_opt = cerebro.run(
             maxcpus=args.maxcpus,
@@ -336,11 +336,11 @@ def optimize(cerebro):
             # stdstats=False,
         )
         gvc.set('G_RESULTS_OPT', results_opt)
-        print("--------------- 参数优化结果 -----------------")
+        print("\n--------------- 参数优化结果 -----------------")
     # clock the end of the process
     tend = time.perf_counter()
     # print out the results_opt
-    print('\nTime used:', str(tend - tstart))
+    print('Time used:', '{:.2f}s'.format(tend - tstart))
 
     res_df = pd.DataFrame()  # 新建一个空的pandas列表,内容由字典填充
 
@@ -473,8 +473,8 @@ def backing(cerebro):
     # clock the end of the process
     tend = time.perf_counter()
     # print out the result_one
-    print('Time used:', str(tend - tstart))
     print("\n--------------- 回测结果 -----------------")
+    print('Time used:', '{:.2f}s'.format(tend - tstart))
     # 引擎运行后打期末资金
     print('组合期末资金: %s' % format(cerebro.broker.getvalue(), ',.2f'), end='')
     # 回测结果提取分析
@@ -1076,8 +1076,8 @@ class MyStrategy(bt.Strategy):
             else:
                 self.mpok = (self.mpok * (1 - self.mppo))  # 上一笔交易亏损时，减少仓位
                 pass
-            # 盈亏比率平衡
-            if True:
+            # 加仓时的盈亏比率平衡
+            if self.sig_longa1 or self.sig_shorta1:
                 if self.mpwa > self.mpla:  # 盈利比>亏损比时,减少盈利比
                     self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
                     self.mpla = self.mpla * (1 + self.mppp)  # 增加亏损比
@@ -1086,7 +1086,7 @@ class MyStrategy(bt.Strategy):
                     self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
                     self.mpwa = self.mpwa * (1 + self.mppp)  # 增加盈利比
                     pass
-                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) < abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
+                elif abs(self.mpla - self.mpwa) * 2 / abs(self.mpla + self.mpwa) <= abs(self.mppp):  # 亏损比=盈利比时,同时减少盈利和亏损比
                     self.mpwa = self.mpwa * (1 - self.mppp)  # 减少盈利比
                     self.mpla = self.mpla * (1 - self.mppp)  # 减少亏损比
                     pass
