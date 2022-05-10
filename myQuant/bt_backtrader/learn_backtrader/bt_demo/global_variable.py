@@ -6,7 +6,7 @@
 def init():
     """在主模块初始化"""
     global GLOBALS_DICT
-    GLOBALS_DICT = {}
+    GLOBALS_DICT = dict()
 
 
 def set(name, value):

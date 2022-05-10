@@ -1,9 +1,9 @@
-import os, sys
+import os
+import sys
 import re
 import time
 import backtrader as bt
 import logging
-import quantstats
 import argparse
 import pandas as pd
 import numpy as np
@@ -20,24 +20,26 @@ class TargetType(Enum):
     T_PERCENT = "百分比"  # 百分比
 
 
-glv.init()
+global GLOBALS_DICT
+
 kwargs = dict()
 # kwargs['G_FILE_PATH'] = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2016-02-01'
 kwargs['G_FILE_PATH'] = "datas\\DQC13-5m-20120709-20220330.csv"
-kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2017-02-01'
+kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2014-02-01'
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2017-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2017-01-01', '2022-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
-# kwargs['G_FILE_PATH'] = "datas\\SQRBOC-5m-20090327-20211231.csv"
+# kwargs['G_FILE_PATH'] = "datas\\SQRB13-OC-5m-20090327-20211231.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-06-25', '2019-02-01'
 
 kwargs['G_DT_DTFORMAT'] = '%Y-%m-%d %H:%M:%S'
-kwargs['G_COMM'] = 'comm_' + (re.findall(r"datas\\([\D]{2,4})", kwargs['G_FILE_PATH'])[0]).lower()  # 合约信息,提前预设好 保证金,手续费率,合约乘数等
+kwargs['G_CONT_ID'] = (re.findall(r"datas\\([\w]{2,6})", kwargs['G_FILE_PATH'])[0])  # 从文件名中提取2-6个字符由字母数字_组成的合约ID
 kwargs['G_DT_TIMEFRAME'] = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 kwargs['G_DT_COMPRESSION'] = 5  # 合成bar的周期数
 kwargs['G_INI_CASH'] = 10000 * 10  # 初始金额
@@ -45,10 +47,10 @@ kwargs['G_PLOT'] = False  # 是否绘图,可提供绘图参数:'style="candle"'
 kwargs['G_QUANTSTATS'] = True  # 是否使用 quantstats 分析测试结果
 kwargs['G_P_LOG_FILE'] = False  # 是否输出日志到文件
 kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
-kwargs['G_OPTS'] = 0  # 是否参数调优
+kwargs['G_OPTS'] = 1  # 是否参数调优
 kwargs['G_OPTS_IS_USE'] = 0  # 是否使用上次优化结果
-G_P_PW = [10, True, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PL = [10, False, 2, 11, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PW = [10, True, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PL = [10, False, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -69,8 +71,9 @@ kwargs['G_P_PARAM'] = {
 }
 
 
-# args命令行参数解析
+# """命令行参数解析"""
 def parse_args(pargs=None):
+    """命令行参数解析"""
     kwargs = glv.get('kwargs', dict())
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -118,9 +121,8 @@ def runstrat(args=None):
     global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
     strats = None
     result_one = glv.get('G_RESULT_ONE')
-    results_opt = glv.get('G_RESULTS_OPT')
 
-    args = parse_args(args)
+    args = parse_args(args)  # 解析命令行参数
     glv.set('args', args)
     kwargs = glv.get('kwargs')  # 参数字典
     kwargs['test_kwargs'] = dict()  # 回测参数字典
@@ -143,12 +145,12 @@ def runstrat(args=None):
         file_path = args.data
         myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
         file_path_abs = os.path.join(myQuant_ROOT, file_path)  # 文件路径
+        file_path_hdf_abs = file_path_abs.replace('.csv', '.hdf')  # hdf文件路径
+        # hdf文件的key, key=合约id_数据周期
+        kwargs['hdf_key'] = hdf_key = str(kwargs['G_CONT_ID'])
         print("run time:", datetime.now())
-        print(file_path_abs)
         print('dt_start:', dt_start, 'dt_end:', dt_end)
         # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
-        if not os.path.exists(file_path_abs):
-            raise Exception("数据源文件未找到！" + file_path_abs)
     if args.pwl is not None:
         kwargs['test_kwargs']['pwl'] = args.pwl
     if args.pw is not None:
@@ -160,39 +162,61 @@ def runstrat(args=None):
     if args.kpr is not None:
         kwargs['test_kwargs']['kpr'] = args.kpr
 
-    # 加载数据
-    df_data = pd.read_csv(filepath_or_buffer=file_path_abs,
-                          # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
-                          parse_dates=['datetime'],
-                          index_col='datetime',
-                          infer_datetime_format=True,
-                          usecols=['datetime', 'open', 'close'],
-                          )
+    df_data = None
+    if not os.path.exists(file_path_abs):
+        print(file_path_abs)
+        raise Exception("数据源文件未找到！" + file_path_abs)
+    # 从hdf文件加载数据 hdf文件加载速度要比用read_csv从csv文件中加载数据快很多
+    elif os.path.exists(file_path_hdf_abs):
+        print(file_path_hdf_abs)
+        # 读取hdf文件数据
+        hdf_store = pd.HDFStore(file_path_hdf_abs, mode='r')
+        # 从hdf文件中加载指定key的数据
+        df_data = hdf_store.get(hdf_key)
+        # 关闭hdf文件
+        hdf_store.close()
+        pass
+    # 从csv文件中加载数据
+    elif os.path.exists(file_path_abs):
+        print(file_path_abs)
+        # 加载数据
+        df_data = pd.read_csv(filepath_or_buffer=file_path_abs,
+                              # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
+                              parse_dates=['datetime'],
+                              index_col='datetime',
+                              infer_datetime_format=True,
+                              usecols=['datetime', 'open', 'close'],
+                              )
+        # df.sort_values(by=["datetime"], ascending=True, inplace=True)  # 按日期先后排序
+        # df.sort_values(by=["date", "time"], ascending=True, inplace=True)  # 按日期时间列先后排序
 
-    # df.sort_values(by=["datetime"], ascending=True, inplace=True)  # 按日期先后排序
-    # df.sort_values(by=["date", "time"], ascending=True, inplace=True)  # 按日期时间列先后排序
+        # df.index = pd.to_datetime(df.date + ' ' + df.time, format=dt_format)  # 方式1: 将日期列和时间合并后转换成日期类型,并设置成列索引
+        # df.index = pd.to_datetime(df.date.astype(str) + ' ' + df.time.astype(str), format=dt_format)  # 方式2: 将日期列和时间合并后转换成日期类型,并设置成列索引
+        # df.index = pd.to_datetime(df['date'] + ' ' + df['time'], format=dt_format)  # 方式3: 将日期列和时间合并后转换成日期类型,并设置成列索引
+        # df.index = pd.to_datetime(df['date'], format=dt_dtformat) + pd.to_timedelta(df['time'])  # 方式4: 将日期列和时间合并后转换成日期类型,并设置成列索引
+        # df.index = pd.to_datetime(df.pop('date')) + pd.to_timedelta(df.pop('time'))  # 方式5: 将日期列和时间合并后转换成日期类型,并设置成列索引
+        # df.index = pd.to_datetime(df['date'].str.cat(df['time'], sep=' '), format=dt_format)  # 方式6: 将日期列和时间合并后转换成日期类型,并设置成列索引
+        # df_data['openinterest'] = 0.00  # 增加一列openinterest
+        # df_data = df_data[['open', 'high', 'low', 'close', 'volume']]  # 取出特定的列
+        # df_data.rename(columns={"volume": "vol"}, inplace=True)  # 列名修改
+        pass
+        # 将当前周期数据保存到hdf文件中,创建hdf文件
+        hdf_store = pd.HDFStore(file_path_hdf_abs, mode='w')
+        # 存储数据到hdf中
+        hdf_store[hdf_key] = df_data
+        # 关闭hdf文件
+        hdf_store.close()
+        pass
 
-    # df.index = pd.to_datetime(df.date + ' ' + df.time, format=dt_format)  # 方式1: 将日期列和时间合并后转换成日期类型,并设置成列索引
-    # df.index = pd.to_datetime(df.date.astype(str) + ' ' + df.time.astype(str), format=dt_format)  # 方式2: 将日期列和时间合并后转换成日期类型,并设置成列索引
-    # df.index = pd.to_datetime(df['date'] + ' ' + df['time'], format=dt_format)  # 方式3: 将日期列和时间合并后转换成日期类型,并设置成列索引
-    # df.index = pd.to_datetime(df['date'], format=dt_dtformat) + pd.to_timedelta(df['time'])  # 方式4: 将日期列和时间合并后转换成日期类型,并设置成列索引
-    # df.index = pd.to_datetime(df.pop('date')) + pd.to_timedelta(df.pop('time'))  # 方式5: 将日期列和时间合并后转换成日期类型,并设置成列索引
-    # df.index = pd.to_datetime(df['date'].str.cat(df['time'], sep=' '), format=dt_format)  # 方式6: 将日期列和时间合并后转换成日期类型,并设置成列索引
     # 截取时间段内样本数据
-    df_data = df_data[dt_start:dt_end]
-    # df_data['openinterest'] = 0.00  # 增加一列openinterest
-    # df_data = df_data[['open', 'high', 'low', 'close', 'volume']]  # 取出特定的列
-    # df_data.rename(columns={"volume": "vol"}, inplace=True)  # 列名修改
-
+    df_data = df_data[dt_start:dt_end]  # 截取时间段内的数据
+    # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)  # 使用GenericCSVData数据源创建交易数据集, 对于日期和时间是同一列的不太适用
+    data = (bt.feeds.PandasData(dataname=df_data, fromdate=dt_start, todate=dt_end))  # 使用pandas数据源创建交易数据集
     tframes = dict(
         minutes=bt.TimeFrame.Minutes,
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
-
-    # 使用pandas数据源创建交易数据集
-    # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)
-    data = (bt.feeds.PandasData(dataname=df_data, fromdate=dt_start, todate=dt_end))
     # 重采样到更大时间框架
     if args.timeframe and args.compression:
         data.resample(timeframe=tframes[args.timeframe], compression=args.compression)
@@ -208,7 +232,9 @@ def runstrat(args=None):
 
     # 由数据数据合约id+数据周期+开始日期+结束时期+参数组成的文件名
     file_name = ('{:}_{:}_{:}_{:}_{:}'
-                 .format(kwargs['G_FILE_PATH'][:12], (str(kwargs['G_DT_COMPRESSION']) + (kwargs['G_DT_TIMEFRAME'][:1])), kwargs['G_DT_START'], kwargs['G_DT_END'],
+                 .format((str(kwargs['G_FILE_PATH'][:6]) + kwargs['G_CONT_ID']),
+                         (str(kwargs['G_DT_COMPRESSION']) + (kwargs['G_DT_TIMEFRAME'][:1])),
+                         kwargs['G_DT_START'], kwargs['G_DT_END'],
                          (str(kwargs['G_P_PARAM']).replace('range', '')  # 替换路径中的range字符串
                           .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 将路径中的空格':字符替换成''
                          ))
@@ -239,7 +265,7 @@ def runstrat(args=None):
         # 使用quantstats 分析工具并保存到HTML文件
 
 
-# 设置手续费
+# """设置手续费"""
 def commissioninfo(cerebro):
     """设置手续费"""
     # # <editor-fold desc="折叠代码:交易手续费设置一">
@@ -283,23 +309,25 @@ def commissioninfo(cerebro):
     pass
     # <editor-fold desc="折叠代码:交易手续费设置方式二">
     comm = {
-        'comm_sqrb': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
-        'comm_zjif': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
-        'comm_dqc': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
-        'comm_zqcf': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=6.3, margin_rate=0.11, mult=5.0),  # 棉花合约信息
-        'comm_sqcu': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
+        'ZJIF13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
+        'SQRB13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
+        'SQCU13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
+        'DQC13': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
+        'ZQCF13': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=4.0, margin_rate=0.11, mult=5.0),  # 棉花合约信息
+
     }
     # 添加进 broker
-    cerebro.broker.addcommissioninfo(comm[kwargs['G_COMM']], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
+    cerebro.broker.addcommissioninfo(comm[kwargs['G_CONT_ID']], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
     # </editor-fold>
     pass
 
 
-# 参数调优
+# """参数调优"""
 def optimize(cerebro):
     """参数调优"""
     args = glv.get('args')
     kwargs = glv.get('kwargs')
+    results_opt = glv.get('G_RESULTS_OPT')
     opts_kwargs = kwargs.get('G_P_PARAM')  # 优化参数字典
     kwargs['opts_path'] = (kwargs.get('file_name') + '_opt.csv')  # 优化结果保存路径
     print('opts_kwargs:', opts_kwargs)
@@ -317,13 +345,13 @@ def optimize(cerebro):
     cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
     # Run over everything
     if kwargs['G_OPTS_IS_USE'] and glv.get('G_RESULTS_OPT'):  # 是否使用上次参数优化结果
-        results_opt = kwargs['G_RESULTS_OPT']
+        results_opt = glv.get('G_RESULTS_OPT')
         print("--------------- 上次参数优化结果 -----------------")
     else:
         results_opt = cerebro.run(
             maxcpus=args.maxcpus,
             optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
-            optreturn=not args.no_optreturn,  # optreturn（默认值：True)如果优化结果不是完整的对象（以及所有数据、指标、观察器等），而是具有以下属性的对象 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西。如果需要对（例如）指标的生成值进行详细分析，请将其关闭
+            optreturn=not args.no_optreturn,  # optreturn（默认值：True) 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西,优化结果不是完整的对象,而是具有以下属性的对象（以及所有数据、指标、观察器等）。如果需要对（例如）指标的生成值进行详细分析，请将其关闭
             # optreturn=False,
             # stdstats=False,
         )
@@ -334,15 +362,9 @@ def optimize(cerebro):
     # print out the results_opt
     print('\nTime used:', str(tend - tstart))
 
-    # 每个策略实例的结果以列表的形式保存在列表中。优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
-    res_list = [[]]
-    res_timereturn_title = []  # 列标题
-
-    timeReturn = results_opt[0][0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
-    for k, v in timeReturn.items():
-        res_timereturn_title.append('{:%Y-%m}'.format(k))
     res_df = pd.DataFrame()  # 新建一个空的pandas列表,内容由字典填充
 
+    # 每个策略实例的结果以列表的形式保存在列表中。优化运行模式下，返回值是列表的列表,内列表只含一个元素，即策略实例
     for i, x in enumerate(results_opt):
         trade = x[0].analyzers.tradeAnalyzer.get_analysis()  # 交易分析引用
         my_trade = x[0].analyzers.my_tradeAnalyzer.get_analysis()  # 交易分析引用
@@ -365,7 +387,7 @@ def optimize(cerebro):
         drawdown_ = drawdown.get('max').get('drawdown', 0)  # 最大回撤
         sharpe_ = sharpe.get('sharperatio', 0)  # 夏普率
         trade_pnl_total_ = (trade.get('pnl').get('gross').get('total', 0))  # 总盈亏
-        trade_pnl_net_ = (trade.get('pnl')['net']['total'])  # 总盈亏-手续费
+        trade_pnl_net_ = (trade.get('pnl')['net']['total'])  # (净盈亏)总盈亏-手续费
         trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
         trade_comm_net_p = ((trade_pnl_comm_ / trade_pnl_net_) * 100) if trade_pnl_net_ != 0 else 0  # 手续费占比净盈亏百分比
 
@@ -377,7 +399,6 @@ def optimize(cerebro):
             'pwl': x[0].p.pwl,  # 参数
             'pw': x[0].p.pw,  # 参数
             'pl': x[0].p.pl,  # 参数
-            'ojk': x[0].p.ojk,  # 参数
             'total': '{:0>4d}'.format(trade_total_),  # 交易次数
             'sharpe': sharpe_,  # 夏普率
             'rtot%': returns_rort_,  # 总复合回报
@@ -397,13 +418,11 @@ def optimize(cerebro):
     if not ('pw' in opts_kwargs or 'pl' in opts_kwargs):
         # 删除未优化的参数列
         res_df = res_df.drop(labels=['pw', 'pl'], axis=1)
-    if not ('ojk' in opts_kwargs):
-        res_df = res_df.drop(labels=['ojk'], axis=1)
     if not ('pwl' in opts_kwargs):
         res_df = res_df.drop(labels=['pwl'], axis=1)
 
     res_df = res_df.dropna(how='any', axis=0)  # 删除所有带NaN的行
-    # res_df[['pw', 'pl', 'ojk', 'total']] = res_df[['pw', 'pl', 'ojk', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
+    # res_df[['pw', 'pl', 'total']] = res_df[['pw', 'pl', 'total']].apply(pd.to_numeric, downcast='signed', axis=1)  # 转换指定列数据类型为整形
     res_df[['rtot%', 'pnl_net']] = res_df[['rtot%', 'pnl_net']].apply(pd.to_numeric, errors='ignore', axis=1)
 
     res_df.sort_values(by=['pnl_net', 'rtot%'], ascending=False, inplace=True)  # 按累计盈亏和总复合回报排序
@@ -429,7 +448,7 @@ def optimize(cerebro):
     pass
 
 
-# 回测
+# """回测"""
 def backing(cerebro):
     """回测"""
     kwargs = glv.get('kwargs')
@@ -487,8 +506,8 @@ def backing(cerebro):
     pass
 
 
-# 回测结果提取分析
-def result_analysis(result_one=glv.get('G_RESULT_ONE')):
+# """回测结果提取分析"""
+def result_analysis(result_one):
     """回测结果提取分析"""
     # 提取结果
     print("\n--------------- 累计收益率 -----------------")
@@ -528,7 +547,7 @@ def result_analysis(result_one=glv.get('G_RESULT_ONE')):
 
 
 # """pyfolio分析结果绘图"""
-def pyplot(result_one=glv.get('G_RESULT_ONE')):
+def pyplot(result_one):
     """pyfolio分析结果绘图"""
     # 结合pyfolio工具 计算并绘制收益评价指标
     import pyfolio as pf
@@ -594,7 +613,7 @@ def pyplot(result_one=glv.get('G_RESULT_ONE')):
 
 
 # """quantstats分析报告html"""
-def quantstats_reports_html(result_one=glv.get('G_RESULT_ONE')):
+def quantstats_reports_html(result_one):
     # 使用quantstats 分析工具并保存到HTML文件
     kwargs = glv.get('kwargs')
     portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
@@ -603,7 +622,6 @@ def quantstats_reports_html(result_one=glv.get('G_RESULT_ONE')):
     param_one = dict()
     for pk, pv in kwargs.get('G_P_PARAM').items():  # 遍历参数列表,将优化的参数名和值添加到字典里
         param_one[pk] = result_one[0].p._get(pk)
-    import quantstats
     # 将分析指标保存到HTML文件
     title_report = ('{:}-{:} st={:%Y-%m-%d} end={:%Y-%m-%d} pam={:} dt={:%H.%M.%S}'  # 优化结果网页标题
         .format(
@@ -614,6 +632,7 @@ def quantstats_reports_html(result_one=glv.get('G_RESULT_ONE')):
         .translate(str.maketrans({' ': '', '\'': '', ':': ''})),  # 替换参数字典中的字符
         datetime.now(),
     ))
+    import quantstats
     quantstats.reports.html(returns, output='stats.html', title=title_report)
     print(title_report)
     print("quantstats 测试分析结果已保存至目录所在文件 quantstats-tearsheet.html")
@@ -689,11 +708,68 @@ class MyCommission(bt.CommInfoBase):
         return value
 
 
-class Target(Enum):
-    """枚举开仓类型"""
-    TARGET_SIZE = "数量"  # 成交量
-    TARGET_VALUE = "金额"  # 目标金额
-    TARGET_PERCENT = "百分比"  # 百分比
+class Statistics():
+    """策略统计,成交记录"""
+    # 记录每笔交易的成交与账户持仓等信息
+    trade_record = {
+        'datetime': [],  # 记录每笔交易发生的时间
+        '订单': [],  # 订单类型: 多,空,净
+        '执行': [],  # 执行操作: 开,平,平令,平昨
+        '交易量': [],  # 发送订单的交易数量
+        '成交量': [],  # 已成交的数量
+        '多头持仓': [],  # 多头持仓数量
+        '空头持仓': [],  # 空头持仓数量
+        '成交价': [],  # 开仓时成交价为开仓价, 平仓时成交价为平仓价
+        '持仓均价': [],  # 账户头寸持仓均价
+        '平仓盈亏%': [],  # 平仓时统计盈亏比率
+        '浮动盈亏%': [],  # 开仓时浮动盈亏比率
+        '收益率%': [],  # 累计收益率
+        '保证金%': [],  # 保证金率
+        '仓位%': [],  # 保证金占用总资金百分比的持仓仓位
+        '回撤%': [],  # 账户金额创新高后的回撤率
+        '帐户金额': [],  # 账户金额
+        '浮动盈亏': [],  # 开仓时浮动盈亏>0为盈利,<0为亏损
+        '平仓盈亏': [],  # 平仓时统计盈亏>0为盈利,<0为亏损
+        '手续费': [],  # 交易手续费
+    }
+    # 时间段内的统计分析
+    analysis_date = {
+        'date': [],  # 时间段 日,月,年
+        '收益率%': [],  # 收益率
+        '胜率%': [],  # 胜率
+        '手续费%': [],  # 交易费/(利润扣除手续费的净盈亏)
+        '盈亏比': [],  # 盈亏比=平均盈利/平均亏损
+        '回撤%': [],  # 账户金额创新高后的回撤率
+        '交易次数': [],  # 交易次数
+        '净利润': [],  # 净利润
+        '总盈利': [],  # 总盈利
+        '总亏损': [],  # 总亏损
+        '平均盈利': [],  # 平均盈利
+        '平均亏损': [],  # 平均亏损
+        '手续费': [],  # 交易手续费
+    }
+    datetime_begin: datetime = None  # 第一笔交易开始时间
+    datetime_end: datetime = None  # 最后一笔交易开始时间
+    gross_profit = 0.0  # 总盈利=策略盈利总额（未扣除手续费）
+    cumulative_return = 0.0  # 累计收益率
+    gross_loss = 0.0  # 总亏损=策略亏损总额（未扣除手续费）
+    gross_num_trade = 0  # 总交易次数
+    num_trade_win = 0  # 盈利交易次数
+    num_trade_loss = 0  # 亏损交易次数
+    max_num_seq_loss = 0  # 最大连续亏损次数
+    avg_num_seq_loss = 0  # 平均连续亏损次数
+    max_num_seq_win = 0  # 最大连续盈利次数
+    avg_num_seq_win = 0  # 平均连续盈利次数
+    percent_win = 0  # 胜率=盈利交易占总交易次数的比例
+    payoff_rate = 0.0  # 盈亏比=平均盈利/平均亏损
+    avg_payoff = 0.0  # 平均盈亏 = 净利润 / 交易次数.
+    avg_win = 0.0  # 平均盈利=总盈利/盈利交易次数
+    avg_loss = 0.0  # 平均亏损=总亏损/亏损交易次数
+    comm_profit_net = 0.0  # 交易费/(利润扣除手续费的净盈亏)
+    max_drawdown = 0.0  # 最大回撤
+    sharp_rate = 0.0  # 夏普率
+
+    pass
 
 
 # 创建策略继承bt.Strategy
@@ -733,7 +809,7 @@ class MyStrategy(bt.Strategy):
         log_print=False,  # 是否打印日志到控制台
         log_save=False,  # 是否保存日志到文件
         log_kwargs=dict(),  # 日志参数字典
-        tar=Target.TARGET_PERCENT.value,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
+        tar=TargetType.T_PERCENT.value,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
     )
 
     def getParams(self):
@@ -793,7 +869,7 @@ class MyStrategy(bt.Strategy):
         self.p_pok_min = self.mpok  # 最小开仓单位
         self.p_pok_max = self.p_pmax  # 最大开仓单位
         self.entry_pok_begin = self.mpok  # 空仓入场时的开仓单位
-        self.entry_order = dict()  # 入场订单
+        self.sig_order = dict()  # 策略信号生成的订单
         self.order_datetime: datetime = None  # 订单发生时间
         self.entry_price_begin = 0.0  # 初始入场价格
         self.entry_price = 0.0  # 入场价格
@@ -862,7 +938,7 @@ class MyStrategy(bt.Strategy):
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
         # t += ',回撤:{:.2f}'.format(self.stats.drawdown.drawdown[0])
         # t += ',收益率:{:.3f}'.format(self.stats.timereturn.line[0])
-        t += ',开仓比:{:.2f}%'.format(self.mpok * 100)
+        t += ',开仓:{:.3f}'.format(self.mpok)
 
         self.log(t, dt=self.dtdt.datetime(0))
 
@@ -887,7 +963,7 @@ class MyStrategy(bt.Strategy):
                 order.executed.size,  # 成交量 开仓数量
                 self.position.size,  # 持仓
                 order.executed.price,  # 成交价
-                order.executed.value,  # 占成交额 用保证金
+                order.executed.value,  # 成交金额 成交占用的保证金
                 order.executed.comm))  # 佣金 手续费
             self.bar_executed = len(self)
 
@@ -903,12 +979,12 @@ class MyStrategy(bt.Strategy):
         t += ',add:{:.2f}'.format(self.radd)
         t += ',lout:{:.2f}'.format(self.lout)
         t += ',open_m:{:}'.format(self.dtopen_month)
-        t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证比率
-        t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低开仓保证金
+        t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证金率
+        t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低成交1手所需保证金
         t += ',可用资金:{:.2f}'.format(self.broker.getcash())
-        t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))
+        t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))  # 持仓市值,持仓占用的保证金
         t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
-        t += ',开仓比:{:.2f}%'.format(self.mpok * 100)
+        t += ',开仓:{:.3f}'.format(self.mpok)
 
         self.log(t, dt=self.dtdt.datetime(0))
         if not order.alive():
@@ -927,8 +1003,8 @@ class MyStrategy(bt.Strategy):
         posmaxcash = 0.0  # 最大开仓单位
         comminfo = self.broker.getcommissioninfo(self.data)
         margin = comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
-        margin_cash = self.broker.getvalue(datas=[self.data])  # 持仓头寸占用资金
         # margin = bt.Order.comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
+        margin_cash = self.broker.getvalue(datas=[self.data])  # 持仓头寸占用资金
         get_cash = abs(self.broker.getcash())  # 可用资金
         get_cash_value = abs(self.broker.getvalue())  # 账户总资金
         sign = np.sign(self.mpok)  # 取正负符号
@@ -1151,8 +1227,8 @@ class MyStrategy(bt.Strategy):
             self.mppp = self.p_pp if p_pp != self.p_pp else self.mppp  # 盈亏增减幅度
 
             self.entry_pok_begin = self.mpok  # 空仓时入场开仓单位
-            self.entry_order['入场价'] = self.dtclose[0]  # 入场价格
-            self.entry_order['开仓价'] = self.dtclose[0]  # 开仓价格
+            self.sig_order['入场价'] = self.dtclose[0]  # 入场价格
+            self.sig_order['开仓价'] = self.dtclose[0]  # 开仓价格
             self.entry_price = self.dtclose[0]  # 入场价格
             self.entry_price_begin = self.entry_price  # 开始入场价格
             self.turtleunits = 1  # 加仓次数
@@ -1178,9 +1254,9 @@ class MyStrategy(bt.Strategy):
 
         # 持仓加仓准备
         if self.sig_longa1 or self.sig_shorta1:
-            self.entry_order['上次开仓价'] = (self.entry_order.get('开仓价', self.entry_order.get('入场价', self.dtclose[0])))  # 上次加仓价格
-            self.entry_order['加仓价'] = self.dtclose[0]  # 加仓价格
-            self.entry_order['开仓价'] = self.dtclose[0]  # 开仓价格
+            self.sig_order['上次开仓价'] = (self.sig_order.get('开仓价', self.sig_order.get('入场价', self.dtclose[0])))  # 上次加仓价格
+            self.sig_order['加仓价'] = self.dtclose[0]  # 加仓价格
+            self.sig_order['开仓价'] = self.dtclose[0]  # 开仓价格
             self.entry_price_ref1 = self.entry_price
             self.entry_price = self.dtclose[0]  # 入场价格
             self.turtleunits += 1  # 加仓次数加1
@@ -1215,11 +1291,11 @@ class MyStrategy(bt.Strategy):
         if self.sig_long or self.sig_short:
             self.myorder = self.order_target(self.mpok)
             if self.myorder and hasattr(self.myorder, 'size'):
-                t_enter += ',开仓中:{:d}'.format(self.myorder.size)
+                t_enter += ',开仓:{:d}'.format(self.myorder.size)
             else:
-                t_enter += ',开仓中'
+                t_enter += ',开仓'
             t_enter += ',持仓:{:}'.format(self.position.size)
-            t_enter += ',price:{:.2f}'.format(self.dtclose[0])
+            t_enter += ',价格:{:.2f}'.format(self.dtclose[0])
             t_enter += ',总资产:{:.2f}'.format(assets)
             # self.log(t_enter)
             pass
@@ -1227,11 +1303,11 @@ class MyStrategy(bt.Strategy):
         if self.sig_longa1 or self.sig_shorta1:
             self.myorder = self.order_target(self.mpok)  # 加仓中
             if self.myorder and hasattr(self.myorder, 'size'):
-                t_add += ',加仓中:{:d}'.format(self.myorder.size)
+                t_add += ',加仓:{:d}'.format(self.myorder.size)
             else:
-                t_add += ',加仓中'
+                t_add += ',加仓'
             t_add += ',持仓:{:}'.format(self.position.size)
-            t_add += ',price:{:.2f}'.format(self.dtclose[0])
+            t_add += ',价格:{:.2f}'.format(self.dtclose[0])
             t_add += ',总资产:{:.2f}'.format(assets)
             # self.log(t_add)
             pass
@@ -1249,8 +1325,8 @@ class MyStrategy(bt.Strategy):
             self.sig_short_keyPoint = False  # 清除信号
             self.myorder = self.order_target(self.mpok)
             t_dec += ',多头' if self.sig_longx1 else ',空头'
-            t_dec += ',减仓中:{:}'.format(self.position.size)
-            t_dec += ',price:{:.2f}'.format(self.dtclose[0])
+            t_dec += ',减仓:{:}'.format(self.position.size)
+            t_dec += ',价格:{:.2f}'.format(self.dtclose[0])
             t_dec += ',总资产:{:.2f}'.format(assets)
             # self.log(t_dec)
             pass
@@ -1278,8 +1354,8 @@ class MyStrategy(bt.Strategy):
             # 全部平仓
             self.myorder = self.close()
             t_exit += ',多头' if self.sig_longx1 else ',空头'
-            t_exit += ',平仓中:{:}'.format(self.position.size)
-            t_exit += ',price:{:.2f}'.format(self.dtclose[0])
+            t_exit += ',平仓:{:}'.format(self.position.size)
+            t_exit += ',价格:{:.2f}'.format(self.dtclose[0])
             t_exit += ',总资产:{:.2f}'.format(assets)
             # self.log(t_exit)
             pass
@@ -1292,70 +1368,8 @@ class MyStrategy(bt.Strategy):
         #          , doprint=True)
 
 
-class Statistics():
-    """策略统计,成交记录"""
-    # 记录每笔交易的成交与账户持仓等信息
-    trade_record = {
-        'datetime': [],  # 记录每笔交易发生的时间
-        '交易类型': [],  # 交易类型 开多,开空, 平多,平空
-        '交易量': [],  # 发送订单的交易数量
-        '成交量': [],  # 已成交的数量
-        '多头持仓': [],  # 多头持仓数量
-        '空头持仓': [],  # 空头持仓数量
-        '成交价': [],  # 开仓时成交价为开仓价, 平仓时成交价为平仓价
-        '持仓均价': [],  # 账户头寸持仓均价
-        '平仓盈亏%': [],  # 平仓时统计盈亏比率
-        '浮动盈亏%': [],  # 开仓时浮动盈亏比率
-        '收益率%': [],  # 累计收益率
-        '保证金%': [],  # 保证金率
-        '仓位%': [],  # 保证金占用总资金百分比的持仓仓位
-        '回撤%': [],  # 账户金额创新高后的回撤率
-        '帐户金额': [],  # 账户金额
-        '浮动盈亏': [],  # 开仓时浮动盈亏>0为盈利,<0为亏损
-        '平仓盈亏': [],  # 平仓时统计盈亏>0为盈利,<0为亏损
-        '手续费': [],  # 交易手续费
-    }
-    # 时间段内的统计分析
-    analysis_date = {
-        'date': [],  # 时间段 日,月,年
-        '收益率%': [],  # 收益率
-        '胜率%': [],  # 胜率
-        '手续费%': [],  # 交易费/(利润扣除手续费的净盈亏)
-        '盈亏比': [],  # 盈亏比=平均盈利/平均亏损
-        '回撤%': [],  # 账户金额创新高后的回撤率
-        '交易次数': [],  # 交易次数
-        '净利润': [],  # 净利润
-        '总盈利': [],  # 总盈利
-        '总亏损': [],  # 总亏损
-        '平均盈利': [],  # 平均盈利
-        '平均亏损': [],  # 平均亏损
-        '手续费': [],  # 交易手续费
-    }
-    datetime_begin: datetime = None  # 第一笔交易开始时间
-    datetime_end: datetime = None  # 最后一笔交易开始时间
-    gross_profit = 0.0  # 总盈利=策略盈利总额（未扣除手续费）
-    cumulative_return = 0.0  # 累计收益率
-    gross_loss = 0.0  # 总亏损=策略亏损总额（未扣除手续费）
-    gross_num_trade = 0  # 总交易次数
-    num_trade_win = 0  # 盈利交易次数
-    num_trade_loss = 0  # 亏损交易次数
-    max_num_seq_loss = 0  # 最大连续亏损次数
-    avg_num_seq_loss = 0  # 平均连续亏损次数
-    max_num_seq_win = 0  # 最大连续盈利次数
-    avg_num_seq_win = 0  # 平均连续盈利次数
-    percent_win = 0  # 胜率=盈利交易占总交易次数的比例
-    payoff_rate = 0.0  # 盈亏比=平均盈利/平均亏损
-    avg_payoff = 0.0  # 平均盈亏 = 净利润 / 交易次数.
-    avg_win = 0.0  # 平均盈利=总盈利/盈利交易次数
-    avg_loss = 0.0  # 平均亏损=总亏损/亏损交易次数
-    comm_profit_net = 0.0  # 交易费/(利润扣除手续费的净盈亏)
-    max_drawdown = 0.0  # 最大回撤
-    sharp_rate = 0.0  # 夏普率
-
-    pass
-
-
 """-------主函数---------"""
 if __name__ == '__main__':
+    glv.init()
     glv.set('kwargs', kwargs)
     runstrat()
