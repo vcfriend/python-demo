@@ -10,7 +10,10 @@ import numpy as np
 from enum import Enum
 from datetime import datetime, timedelta
 from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
+from my_strategy_config import MyCommission  # 自定义合约信息
 import global_variable as glv  # 全局变量模块
+
+glv.init()
 
 
 class TargetType(Enum):
@@ -19,8 +22,6 @@ class TargetType(Enum):
     T_VALUE = "金额"  # 目标金额
     T_PERCENT = "百分比"  # 百分比
 
-
-global GLOBALS_DICT
 
 kwargs = dict()
 # kwargs['G_FILE_PATH'] = "datas\\ZJIF13-5m-20100416-20220427.csv"
@@ -47,7 +48,7 @@ kwargs['G_PLOT'] = False  # 是否绘图,可提供绘图参数:'style="candle"'
 kwargs['G_QUANTSTATS'] = True  # 是否使用 quantstats 分析测试结果
 kwargs['G_P_LOG_FILE'] = False  # 是否输出日志到文件
 kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
-kwargs['G_OPTS'] = 1  # 是否参数调优
+kwargs['G_OPTS'] = 0  # 是否参数调优
 kwargs['G_OPTS_IS_USE'] = 0  # 是否使用上次优化结果
 G_P_PW = [10, True, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [10, False, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -79,18 +80,11 @@ def parse_args(pargs=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for Order Target')
 
-    parser.add_argument('--data', required=False,
-                        default=kwargs['G_FILE_PATH'],
-                        help='Specific data to be read in')
-    parser.add_argument('--dtformat', required=False, default=kwargs['G_DT_DTFORMAT'],
-                        help='Ending date in data datetime format')
-    parser.add_argument('--fromdate', required=False, default=kwargs['G_DT_START'],
-                        help='Starting date in `dtformat` format')
-    parser.add_argument('--todate', required=False, default=kwargs['G_DT_END'],
-                        help='Ending date in `dtformat` format')
-    parser.add_argument('--timeframe', required=False, default=kwargs['G_DT_TIMEFRAME'],
-                        choices=['minutes', 'daily', 'weekly', 'monthly'],
-                        help='重新采样到的时间范围')
+    parser.add_argument('--data', required=False, default=kwargs['G_FILE_PATH'], help='Specific data to be read in')
+    parser.add_argument('--dtformat', required=False, default=kwargs['G_DT_DTFORMAT'], help='Ending date in data datetime format')
+    parser.add_argument('--fromdate', required=False, default=kwargs['G_DT_START'], help='Starting date in `dtformat` format')
+    parser.add_argument('--todate', required=False, default=kwargs['G_DT_END'], help='Ending date in `dtformat` format')
+    parser.add_argument('--timeframe', required=False, default=kwargs['G_DT_TIMEFRAME'], choices=['minutes', 'daily', 'weekly', 'monthly'], help='重新采样到的时间范围')
     parser.add_argument('--compression', required=False, type=int, default=kwargs['G_DT_COMPRESSION'], help='将 n 条压缩为 1, 最小周期为原数据周期')
     parser.add_argument('--kpr', required=False, type=dict, default=kwargs.get('G_P_PARAM', dict()).get('kpr'), help="当穿越关键价格后加仓限制，字典类型 {日期1:{'kps':[价格1,价格2]}, 日期2:{'kps':[价格1,价格2]},}"),
     parser.add_argument('--pwl', required=False, type=list, default=kwargs.get('G_P_PARAM', dict()).get('pwl'), help='--pwl 盈亏千分比'),
@@ -102,14 +96,10 @@ def parse_args(pargs=None):
     parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15, help=('Number of CPUs to use in the optimization'
                                                                                        '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
     parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
-    parser.add_argument('--no-optreturn', action='store_true', required=False,
-                        help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
+    parser.add_argument('--no-optreturn', action='store_true', required=False, help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
 
     # Plot options
-    parser.add_argument('--plot', '-p', nargs='?', required=False,
-                        metavar='kwargs', const=True, default=kwargs['G_PLOT'],
-                        help=('绘制应用传递的任何 kwargs 的读取数据\n'
-                              '\n''例如:\n''\n''  --plot style="candle" (to plot candles)\n'))
+    parser.add_argument('--plot', '-p', nargs='?', required=False, metavar='kwargs', const=True, default=kwargs['G_PLOT'], help='绘制应用传递的任何 kwargs 的读取数据\n\n例如:\n\n  --plot style="candle" (to plot candles)\n')
     parser.add_argument("-f", "--file", default="file")  # 接收这个-f参数
     if pargs is not None:
         return parser.parse_args(pargs)
@@ -121,8 +111,9 @@ def runstrat(args=None):
     global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
     strats = None
     result_one = glv.get('G_RESULT_ONE')
+    results_opt = glv.get('G_RESULTS_OPT')
 
-    args = parse_args(args)  # 解析命令行参数
+    args = parse_args(args)
     glv.set('args', args)
     kwargs = glv.get('kwargs')  # 参数字典
     kwargs['test_kwargs'] = dict()  # 回测参数字典
@@ -141,6 +132,7 @@ def runstrat(args=None):
     if args.todate is not None:
         dt_end = datetime.strptime(args.todate, dt_dtformat).date()
         # dkwargs['todate'] = dt_end
+    # 从文件路径加载数据
     if args.data is not None:
         file_path = args.data
         myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
@@ -149,8 +141,66 @@ def runstrat(args=None):
         # hdf文件的key, key=合约id_数据周期
         kwargs['hdf_key'] = hdf_key = str(kwargs['G_CONT_ID'])
         print("run time:", datetime.now())
-        print('dt_start:', dt_start, 'dt_end:', dt_end)
-        # print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
+        # print('dt_start:', dt_start, 'dt_end:', dt_end)
+        print("dt_format:", dt_format, "dt_start:", datetime.strftime(dt_start, "%Y-%m-%d"), "dt_end:", datetime.strftime(dt_end, "%Y-%m-%d"))
+        df_data = None
+        # 从hdf文件加载数据 hdf文件加载速度要比用read_csv从csv文件中加载数据快很多
+        if os.path.exists(file_path_hdf_abs):
+            print(file_path_hdf_abs)
+            # 读取hdf文件数据
+            hdf_store = pd.HDFStore(file_path_hdf_abs, mode='r')
+            # 从hdf文件中加载指定key的数据
+            df_data = hdf_store.get(hdf_key)
+            # 关闭hdf文件
+            hdf_store.close()
+            pass
+        # 从csv文件中加载数据
+        elif os.path.exists(file_path_abs):
+            print(file_path_abs)
+            # 加载数据
+            df_data = pd.read_csv(filepath_or_buffer=file_path_abs,
+                                  # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
+                                  parse_dates=['datetime'],
+                                  index_col='datetime',
+                                  infer_datetime_format=True,
+                                  usecols=['datetime', 'open', 'close'],
+                                  )
+            # df.sort_values(by=["datetime"], ascending=True, inplace=True)  # 按日期先后排序
+            # df.sort_values(by=["date", "time"], ascending=True, inplace=True)  # 按日期时间列先后排序
+
+            # df.index = pd.to_datetime(df.date + ' ' + df.time, format=dt_format)  # 方式1: 将日期列和时间合并后转换成日期类型,并设置成列索引
+            # df.index = pd.to_datetime(df.date.astype(str) + ' ' + df.time.astype(str), format=dt_format)  # 方式2: 将日期列和时间合并后转换成日期类型,并设置成列索引
+            # df.index = pd.to_datetime(df['date'] + ' ' + df['time'], format=dt_format)  # 方式3: 将日期列和时间合并后转换成日期类型,并设置成列索引
+            # df.index = pd.to_datetime(df['date'], format=dt_dtformat) + pd.to_timedelta(df['time'])  # 方式4: 将日期列和时间合并后转换成日期类型,并设置成列索引
+            # df.index = pd.to_datetime(df.pop('date')) + pd.to_timedelta(df.pop('time'))  # 方式5: 将日期列和时间合并后转换成日期类型,并设置成列索引
+            # df.index = pd.to_datetime(df['date'].str.cat(df['time'], sep=' '), format=dt_format)  # 方式6: 将日期列和时间合并后转换成日期类型,并设置成列索引
+            # df_data['openinterest'] = 0.00  # 增加一列openinterest
+            # df_data = df_data[['open', 'high', 'low', 'close', 'volume']]  # 取出特定的列
+            # df_data.rename(columns={"volume": "vol"}, inplace=True)  # 列名修改
+            pass
+            # 将当前周期数据保存到hdf文件中,创建hdf文件
+            hdf_store = pd.HDFStore(file_path_hdf_abs, mode='w')
+            # 存储数据到hdf中
+            hdf_store[hdf_key] = df_data
+            # 关闭hdf文件
+            hdf_store.close()
+            pass
+        elif not os.path.exists(file_path_abs):
+            raise Exception("数据源文件未找到！" + file_path_abs)
+
+        # 截取时间段内样本数据
+        df_data = df_data[dt_start:dt_end]  # 截取时间段内的数据
+        # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)  # 使用GenericCSVData数据源创建交易数据集, 对于日期和时间是同一列的不太适用
+        data = (bt.feeds.PandasData(dataname=df_data, fromdate=dt_start, todate=dt_end))  # 使用pandas数据源创建交易数据集
+        # 由数据相对路径+合约id+数据周期+开始日期+结束时期+{参数字典}组成的文件名
+        kwargs['file_name'] = ('{:}_{:}_{:}_{:}_{:}'
+                               .format((str(kwargs['G_FILE_PATH'][:6]) + kwargs['G_CONT_ID']),
+                                       (str(kwargs['G_DT_COMPRESSION']) + (kwargs['G_DT_TIMEFRAME'][:1])),
+                                       kwargs['G_DT_START'], kwargs['G_DT_END'],
+                                       (str(kwargs['G_P_PARAM']).replace('range', '')  # 替换路径中的range字符串
+                                        .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 将路径中的空格':字符替换成''
+                                       ) + ('_rs' if kwargs['G_OPTS_IS_USE'] else ''))
+
     if args.pwl is not None:
         kwargs['test_kwargs']['pwl'] = args.pwl
     if args.pw is not None:
@@ -162,84 +212,22 @@ def runstrat(args=None):
     if args.kpr is not None:
         kwargs['test_kwargs']['kpr'] = args.kpr
 
-    df_data = None
-    if not os.path.exists(file_path_abs):
-        print(file_path_abs)
-        raise Exception("数据源文件未找到！" + file_path_abs)
-    # 从hdf文件加载数据 hdf文件加载速度要比用read_csv从csv文件中加载数据快很多
-    elif os.path.exists(file_path_hdf_abs):
-        print(file_path_hdf_abs)
-        # 读取hdf文件数据
-        hdf_store = pd.HDFStore(file_path_hdf_abs, mode='r')
-        # 从hdf文件中加载指定key的数据
-        df_data = hdf_store.get(hdf_key)
-        # 关闭hdf文件
-        hdf_store.close()
-        pass
-    # 从csv文件中加载数据
-    elif os.path.exists(file_path_abs):
-        print(file_path_abs)
-        # 加载数据
-        df_data = pd.read_csv(filepath_or_buffer=file_path_abs,
-                              # parse_dates={'datetime': ['date', 'time']},  # 日期和时间分开的情况
-                              parse_dates=['datetime'],
-                              index_col='datetime',
-                              infer_datetime_format=True,
-                              usecols=['datetime', 'open', 'close'],
-                              )
-        # df.sort_values(by=["datetime"], ascending=True, inplace=True)  # 按日期先后排序
-        # df.sort_values(by=["date", "time"], ascending=True, inplace=True)  # 按日期时间列先后排序
-
-        # df.index = pd.to_datetime(df.date + ' ' + df.time, format=dt_format)  # 方式1: 将日期列和时间合并后转换成日期类型,并设置成列索引
-        # df.index = pd.to_datetime(df.date.astype(str) + ' ' + df.time.astype(str), format=dt_format)  # 方式2: 将日期列和时间合并后转换成日期类型,并设置成列索引
-        # df.index = pd.to_datetime(df['date'] + ' ' + df['time'], format=dt_format)  # 方式3: 将日期列和时间合并后转换成日期类型,并设置成列索引
-        # df.index = pd.to_datetime(df['date'], format=dt_dtformat) + pd.to_timedelta(df['time'])  # 方式4: 将日期列和时间合并后转换成日期类型,并设置成列索引
-        # df.index = pd.to_datetime(df.pop('date')) + pd.to_timedelta(df.pop('time'))  # 方式5: 将日期列和时间合并后转换成日期类型,并设置成列索引
-        # df.index = pd.to_datetime(df['date'].str.cat(df['time'], sep=' '), format=dt_format)  # 方式6: 将日期列和时间合并后转换成日期类型,并设置成列索引
-        # df_data['openinterest'] = 0.00  # 增加一列openinterest
-        # df_data = df_data[['open', 'high', 'low', 'close', 'volume']]  # 取出特定的列
-        # df_data.rename(columns={"volume": "vol"}, inplace=True)  # 列名修改
-        pass
-        # 将当前周期数据保存到hdf文件中,创建hdf文件
-        hdf_store = pd.HDFStore(file_path_hdf_abs, mode='w')
-        # 存储数据到hdf中
-        hdf_store[hdf_key] = df_data
-        # 关闭hdf文件
-        hdf_store.close()
-        pass
-
-    # 截取时间段内样本数据
-    df_data = df_data[dt_start:dt_end]  # 截取时间段内的数据
-    # data = bt.feeds.GenericCSVData(dataname=file_path, **dkwargs)  # 使用GenericCSVData数据源创建交易数据集, 对于日期和时间是同一列的不太适用
-    data = (bt.feeds.PandasData(dataname=df_data, fromdate=dt_start, todate=dt_end))  # 使用pandas数据源创建交易数据集
-    tframes = dict(
-        minutes=bt.TimeFrame.Minutes,
-        daily=bt.TimeFrame.Days,
-        weekly=bt.TimeFrame.Weeks,
-        monthly=bt.TimeFrame.Months)
     # 重采样到更大时间框架
     if args.timeframe and args.compression:
+        tframes = dict(
+            minutes=bt.TimeFrame.Minutes,
+            daily=bt.TimeFrame.Days,
+            weekly=bt.TimeFrame.Weeks,
+            monthly=bt.TimeFrame.Months)
         data.resample(timeframe=tframes[args.timeframe], compression=args.compression)
-
+    # 初始化大脑
     cerebro = bt.Cerebro(stdstats=False)
-
+    # 加载数据到大脑
     cerebro.adddata(data)
     # 设置投资金额1000000
     cerebro.broker.setcash(kwargs.get('G_INI_CASH', 10000 * 10))
-
     # 设置手续费
     commissioninfo(cerebro=cerebro)
-
-    # 由数据数据合约id+数据周期+开始日期+结束时期+参数组成的文件名
-    file_name = ('{:}_{:}_{:}_{:}_{:}'
-                 .format((str(kwargs['G_FILE_PATH'][:6]) + kwargs['G_CONT_ID']),
-                         (str(kwargs['G_DT_COMPRESSION']) + (kwargs['G_DT_TIMEFRAME'][:1])),
-                         kwargs['G_DT_START'], kwargs['G_DT_END'],
-                         (str(kwargs['G_P_PARAM']).replace('range', '')  # 替换路径中的range字符串
-                          .translate(str.maketrans({' ': '', '\'': '', ':': '', }))),  # 将路径中的空格':字符替换成''
-                         ))
-    file_name = (file_name + ('_rs' if kwargs['G_OPTS_IS_USE'] else ''))
-    kwargs['file_name'] = file_name
 
     # 参数调优
     if args.opts:
@@ -669,43 +657,6 @@ def logger_config(log_path, log_name):
     logger.streamHandler.setLevel(logging.INFO)  # 设置控制台显示级别 日志级别： debug < info < warning < error < critical
     logger.addHandler(logger.streamHandler)  # 为logger对象添加句柄
     return logger
-
-
-# 在继承 CommInfoBase 基础类的基础上自定义交易费用
-class MyCommission(bt.CommInfoBase):
-    # 对应 setcommission 中介绍的那些参数，也可以增添新的全局参数
-    params = (
-        ('stocklike', False),  # False期货模式
-        ('commtype', bt.CommInfoBase.COMM_PERC),  # 使用百分比费用模式
-        ('percabs', True),  # commission 不以 % 为单位
-        ('leverage', 1.0),  # 杠杆比率，交易时按该杠杆调整所需现金
-        ('margin_rate', False),  # 期货保证金比率
-        ('commission', 0.0),  # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-        ('mult', 1.0),  # 合约乘数，盈亏会按该乘数进行放大
-        ('margin', None),  # 期货保证金，决定着交易费用的类型,只有在 stocklike=False 和 automargin=False时起作用
-    )
-
-    # 自定义费用计算公式
-    def _getcommission(self, size, price, pseudoexec):
-        comm = 0.0
-        if self.p.commtype == bt.CommInfoBase.COMM_PERC:  # 百分比手续费
-            comm = abs(size) * price * self.p.commission
-        elif self.p.commtype == bt.CommInfoBase.COMM_FIXED:  # 固定手续费
-            comm = abs(size) * self.p.commission
-        return comm
-
-    # 自定义保证金计算方式
-    def get_margin(self, price):
-        """计算保证金"""
-        value = 0.0
-        if not self.p.margin_rate:
-            value = self.p.margin
-        elif self.p.margin_rate < 0:
-            value = price * self.p.mult
-        elif self.p.margin_rate > 0:
-            value = price * self.p.mult * self.p.margin_rate  # int/float expected
-        self.p.margin = value  # 设置保证金
-        return value
 
 
 class Statistics():
@@ -1370,6 +1321,5 @@ class MyStrategy(bt.Strategy):
 
 """-------主函数---------"""
 if __name__ == '__main__':
-    glv.init()
     glv.set('kwargs', kwargs)
     runstrat()
