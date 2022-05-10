@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8-*-
-# 全局变量管理模块
+# 全局变量,常量,枚举管理模块
+from enum import Enum
 
 
 def init():
@@ -25,3 +26,10 @@ def get(name, default=None):
         return value if value else default
     except KeyError:
         return None
+
+
+class TargetType(Enum):
+    """枚举开仓类型"""
+    T_SIZE = "数量"  # 成交量
+    T_VALUE = "金额"  # 目标金额
+    T_PERCENT = "百分比"  # 百分比

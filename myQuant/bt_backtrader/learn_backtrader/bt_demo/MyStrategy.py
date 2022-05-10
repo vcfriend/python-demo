@@ -7,21 +7,11 @@ import logging
 import argparse
 import pandas as pd
 import numpy as np
-from enum import Enum
 from datetime import datetime, timedelta
-from my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
-from my_strategy_config import MyCommission  # 自定义合约信息
-import global_variable as glv  # 全局变量模块
+from bt_demo.btlin.my_statistics import My_Statistics  # 自定义的统计分析器
+from bt_demo.btlin import global_variable_constant as gvc  # 全局变量常量枚举管理模块
 
-glv.init()
-
-
-class TargetType(Enum):
-    """枚举开仓类型"""
-    T_SIZE = "数量"  # 成交量
-    T_VALUE = "金额"  # 目标金额
-    T_PERCENT = "百分比"  # 百分比
-
+gvc.init()
 
 kwargs = dict()
 # kwargs['G_FILE_PATH'] = "datas\\ZJIF13-5m-20100416-20220427.csv"
@@ -75,7 +65,7 @@ kwargs['G_P_PARAM'] = {
 # """命令行参数解析"""
 def parse_args(pargs=None):
     """命令行参数解析"""
-    kwargs = glv.get('kwargs', dict())
+    kwargs = gvc.get('kwargs', dict())
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for Order Target')
@@ -110,12 +100,12 @@ def parse_args(pargs=None):
 def runstrat(args=None):
     global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
     strats = None
-    result_one = glv.get('G_RESULT_ONE')
-    results_opt = glv.get('G_RESULTS_OPT')
+    result_one = gvc.get('G_RESULT_ONE')
+    results_opt = gvc.get('G_RESULTS_OPT')
 
     args = parse_args(args)
-    glv.set('args', args)
-    kwargs = glv.get('kwargs')  # 参数字典
+    gvc.set('args', args)
+    kwargs = gvc.get('kwargs')  # 参数字典
     kwargs['test_kwargs'] = dict()  # 回测参数字典
 
     file_path_abs = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = ""
@@ -249,7 +239,7 @@ def runstrat(args=None):
     # 回测分析保存到文件
     if args.quantstats and not args.opts:
         # 使用quantstats 分析工具并保存到HTML文件
-        quantstats_reports_html(result_one=glv.get('G_RESULT_ONE'))
+        quantstats_reports_html(result_one=gvc.get('G_RESULT_ONE'))
         # 使用quantstats 分析工具并保存到HTML文件
 
 
@@ -296,6 +286,7 @@ def commissioninfo(cerebro):
     # # </editor-fold>
     pass
     # <editor-fold desc="折叠代码:交易手续费设置方式二">
+    from bt_demo.btlin.my_strategy_config import MyCommission  # 自定义合约信息
     comm = {
         'ZJIF13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
         'SQRB13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
@@ -313,9 +304,9 @@ def commissioninfo(cerebro):
 # """参数调优"""
 def optimize(cerebro):
     """参数调优"""
-    args = glv.get('args')
-    kwargs = glv.get('kwargs')
-    results_opt = glv.get('G_RESULTS_OPT')
+    args = gvc.get('args')
+    kwargs = gvc.get('kwargs')
+    results_opt = gvc.get('G_RESULTS_OPT')
     opts_kwargs = kwargs.get('G_P_PARAM')  # 优化参数字典
     kwargs['opts_path'] = (kwargs.get('file_name') + '_opt.csv')  # 优化结果保存路径
     print('opts_kwargs:', opts_kwargs)
@@ -330,10 +321,11 @@ def optimize(cerebro):
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")  # 回撤
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
+    from bt_demo.btlin.my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
     cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
     # Run over everything
-    if kwargs['G_OPTS_IS_USE'] and glv.get('G_RESULTS_OPT'):  # 是否使用上次参数优化结果
-        results_opt = glv.get('G_RESULTS_OPT')
+    if kwargs['G_OPTS_IS_USE'] and gvc.get('G_RESULTS_OPT'):  # 是否使用上次参数优化结果
+        results_opt = gvc.get('G_RESULTS_OPT')
         print("--------------- 上次参数优化结果 -----------------")
     else:
         results_opt = cerebro.run(
@@ -343,7 +335,7 @@ def optimize(cerebro):
             # optreturn=False,
             # stdstats=False,
         )
-        glv.set('G_RESULTS_OPT', results_opt)
+        gvc.set('G_RESULTS_OPT', results_opt)
         print("--------------- 参数优化结果 -----------------")
     # clock the end of the process
     tend = time.perf_counter()
@@ -427,7 +419,7 @@ def optimize(cerebro):
     res_df[res_df.columns[:5]].info()  # 显示前几列的数据类型
     if not res_df.empty:
         result_one = results_opt[res_df.index[0]]  # 返回第一个参数测试结果
-        glv.set('G_RESULT_ONE', result_one)
+        gvc.set('G_RESULT_ONE', result_one)
     opts_path = kwargs['opts_path']
     print(opts_path)  # 打印文件路径
     print(res_df.loc[:, :'pnl_net'])  # 显示 开始列到'pnl_net'列的 参数优化结果
@@ -439,7 +431,7 @@ def optimize(cerebro):
 # """回测"""
 def backing(cerebro):
     """回测"""
-    kwargs = glv.get('kwargs')
+    kwargs = gvc.get('kwargs')
     test_kwargs = kwargs['G_P_PARAM']  # 回测参数
     log_logger = None
     if kwargs.get('G_P_LOG_PRINT') or kwargs.get('G_P_LOG_FILE'):
@@ -468,6 +460,7 @@ def backing(cerebro):
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
     cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')
     cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
+    from bt_demo.btlin.my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
     cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
 
     # 添加策略和参数
@@ -476,7 +469,7 @@ def backing(cerebro):
     print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
     # 启动回测
     result_one = cerebro.run()
-    glv.set('G_RESULT_ONE', result_one)
+    gvc.set('G_RESULT_ONE', result_one)
     # clock the end of the process
     tend = time.perf_counter()
     # print out the result_one
@@ -603,7 +596,7 @@ def pyplot(result_one):
 # """quantstats分析报告html"""
 def quantstats_reports_html(result_one):
     # 使用quantstats 分析工具并保存到HTML文件
-    kwargs = glv.get('kwargs')
+    kwargs = gvc.get('kwargs')
     portfolio_stats = result_one[0].analyzers.getbyname('pyFolio')
     returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
     returns.index = returns.index.tz_convert(None)
@@ -659,70 +652,6 @@ def logger_config(log_path, log_name):
     return logger
 
 
-class Statistics():
-    """策略统计,成交记录"""
-    # 记录每笔交易的成交与账户持仓等信息
-    trade_record = {
-        'datetime': [],  # 记录每笔交易发生的时间
-        '订单': [],  # 订单类型: 多,空,净
-        '执行': [],  # 执行操作: 开,平,平令,平昨
-        '交易量': [],  # 发送订单的交易数量
-        '成交量': [],  # 已成交的数量
-        '多头持仓': [],  # 多头持仓数量
-        '空头持仓': [],  # 空头持仓数量
-        '成交价': [],  # 开仓时成交价为开仓价, 平仓时成交价为平仓价
-        '持仓均价': [],  # 账户头寸持仓均价
-        '平仓盈亏%': [],  # 平仓时统计盈亏比率
-        '浮动盈亏%': [],  # 开仓时浮动盈亏比率
-        '收益率%': [],  # 累计收益率
-        '保证金%': [],  # 保证金率
-        '仓位%': [],  # 保证金占用总资金百分比的持仓仓位
-        '回撤%': [],  # 账户金额创新高后的回撤率
-        '帐户金额': [],  # 账户金额
-        '浮动盈亏': [],  # 开仓时浮动盈亏>0为盈利,<0为亏损
-        '平仓盈亏': [],  # 平仓时统计盈亏>0为盈利,<0为亏损
-        '手续费': [],  # 交易手续费
-    }
-    # 时间段内的统计分析
-    analysis_date = {
-        'date': [],  # 时间段 日,月,年
-        '收益率%': [],  # 收益率
-        '胜率%': [],  # 胜率
-        '手续费%': [],  # 交易费/(利润扣除手续费的净盈亏)
-        '盈亏比': [],  # 盈亏比=平均盈利/平均亏损
-        '回撤%': [],  # 账户金额创新高后的回撤率
-        '交易次数': [],  # 交易次数
-        '净利润': [],  # 净利润
-        '总盈利': [],  # 总盈利
-        '总亏损': [],  # 总亏损
-        '平均盈利': [],  # 平均盈利
-        '平均亏损': [],  # 平均亏损
-        '手续费': [],  # 交易手续费
-    }
-    datetime_begin: datetime = None  # 第一笔交易开始时间
-    datetime_end: datetime = None  # 最后一笔交易开始时间
-    gross_profit = 0.0  # 总盈利=策略盈利总额（未扣除手续费）
-    cumulative_return = 0.0  # 累计收益率
-    gross_loss = 0.0  # 总亏损=策略亏损总额（未扣除手续费）
-    gross_num_trade = 0  # 总交易次数
-    num_trade_win = 0  # 盈利交易次数
-    num_trade_loss = 0  # 亏损交易次数
-    max_num_seq_loss = 0  # 最大连续亏损次数
-    avg_num_seq_loss = 0  # 平均连续亏损次数
-    max_num_seq_win = 0  # 最大连续盈利次数
-    avg_num_seq_win = 0  # 平均连续盈利次数
-    percent_win = 0  # 胜率=盈利交易占总交易次数的比例
-    payoff_rate = 0.0  # 盈亏比=平均盈利/平均亏损
-    avg_payoff = 0.0  # 平均盈亏 = 净利润 / 交易次数.
-    avg_win = 0.0  # 平均盈利=总盈利/盈利交易次数
-    avg_loss = 0.0  # 平均亏损=总亏损/亏损交易次数
-    comm_profit_net = 0.0  # 交易费/(利润扣除手续费的净盈亏)
-    max_drawdown = 0.0  # 最大回撤
-    sharp_rate = 0.0  # 夏普率
-
-    pass
-
-
 # 创建策略继承bt.Strategy
 class MyStrategy(bt.Strategy):
 
@@ -760,7 +689,7 @@ class MyStrategy(bt.Strategy):
         log_print=False,  # 是否打印日志到控制台
         log_save=False,  # 是否保存日志到文件
         log_kwargs=dict(),  # 日志参数字典
-        tar=TargetType.T_PERCENT.value,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
+        tar=gvc.TargetType.T_PERCENT.value,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
     )
 
     def getParams(self):
@@ -772,13 +701,13 @@ class MyStrategy(bt.Strategy):
         else:
             self.log_logger = None
         # 如果未赋值,则使用默认参数
-        if self.p.tar == TargetType.T_SIZE.value:
+        if self.p.tar == gvc.TargetType.T_SIZE.value:
             self.p_ok = self.p.ok if self.p.ok else 1  # 开仓手数
             self.p_pmax = self.p.pmax if self.p.pmax else 200  # 最大开仓手数
-        elif self.p.tar == TargetType.T_VALUE.value:
+        elif self.p.tar == gvc.TargetType.T_VALUE.value:
             self.p_ok = self.p.ok if self.p.ok else self.broker.getcash() * 0.10  # 开仓金额
             self.p_pmax = self.p.pmax if self.p.pmax else self.broker.getcash()  # 最大开仓金额
-        elif self.p.tar == TargetType.T_PERCENT.value:
+        elif self.p.tar == gvc.TargetType.T_PERCENT.value:
             self.p_ok = self.p.ok / 100 if self.p.ok else 0.10  # 开仓百分比
             self.p_pmax = self.p.pmax / 100 if self.p.pmax else 1.0  # 最大开仓百分比
         self.p_pwl = self.p.pwl / 1000  # 盈亏千分比
@@ -797,13 +726,13 @@ class MyStrategy(bt.Strategy):
         else:
             self.log_logger = None
         # 如果未赋值,则使用默认参数
-        if self.p.tar == TargetType.T_SIZE.value:
+        if self.p.tar == gvc.TargetType.T_SIZE.value:
             self.p_ok = self.p.ok if self.p.ok else 1  # 开仓手数
             self.p_pmax = self.p.pmax if self.p.pmax else 200  # 最大开仓手数
-        elif self.p.tar == TargetType.T_VALUE.value:
+        elif self.p.tar == gvc.TargetType.T_VALUE.value:
             self.p_ok = self.p.ok if self.p.ok else self.broker.getcash() * 0.10  # 开仓金额
             self.p_pmax = self.p.pmax if self.p.pmax else self.broker.getcash()  # 最大开仓金额
-        elif self.p.tar == TargetType.T_PERCENT.value:
+        elif self.p.tar == gvc.TargetType.T_PERCENT.value:
             self.p_ok = self.p.ok / 100 if self.p.ok else 0.10  # 开仓百分比
             self.p_pmax = self.p.pmax / 100 if self.p.pmax else 1.0  # 最大开仓百分比
         self.p_pwl = self.p.pwl / 1000  # 盈亏千分比
@@ -853,6 +782,7 @@ class MyStrategy(bt.Strategy):
         self.dtopen_month = self.datas[0].open[0]  # 记录每月开盘价
         self.initial_amount = self.broker.getcash()  # 初始金额
         self.cacheVarDict = dict()  # 用于缓存运行时变量dict(变量名=变量值)
+        self.myStrategy = My_Statistics
 
         # 建立对于DataFeed的Open/Close价格的引用参数
         self.dtdt: datetime = self.datas[0].datetime  # 日期时间
@@ -964,7 +894,7 @@ class MyStrategy(bt.Strategy):
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
 
         # 按成交量下单
-        if self.p.tar == TargetType.T_SIZE.value:
+        if self.p.tar == gvc.TargetType.T_SIZE.value:
             # poskkcash = margin * abs(size)  # 开仓金额
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (margin * self.p_pok_max)), get_cash)  # 最大开仓金额
@@ -983,7 +913,7 @@ class MyStrategy(bt.Strategy):
             self.myorder = self.order_target_size(target=self.mpok)
 
         # 按目标金额下单
-        elif self.p.tar == TargetType.T_VALUE.value:
+        elif self.p.tar == gvc.TargetType.T_VALUE.value:
             # self.mpok为目标持仓金额, > margin_cash时 为加仓, < margin_cash时 为减仓
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (1 * self.p_pok_max)), get_cash)  # 最大开仓金额
@@ -1002,7 +932,7 @@ class MyStrategy(bt.Strategy):
             self.myorder = self.order_target_value(target=self.mpok)
 
         # 按目标百分比下单
-        elif self.p.tar == TargetType.T_PERCENT.value:
+        elif self.p.tar == gvc.TargetType.T_PERCENT.value:
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
             posmaxcash = min(max(margin * 1.1, (get_cash * self.p_pok_max)), get_cash)  # 最大开仓金额
             # percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
@@ -1321,5 +1251,5 @@ class MyStrategy(bt.Strategy):
 
 """-------主函数---------"""
 if __name__ == '__main__':
-    glv.set('kwargs', kwargs)
+    gvc.set('kwargs', kwargs)
     runstrat()
