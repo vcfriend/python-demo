@@ -24,13 +24,14 @@ kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2014-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
-# kwargs['G_FILE_PATH'] = "datas\\SQRB13-OC-5m-20090327-20211231.csv"
+# kwargs['G_FILE_PATH'] = "datas\\SQRB-OC-5m-20090327-20211231.csv"
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2011-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-06-25', '2019-02-01'
 
 kwargs['G_DT_DTFORMAT'] = '%Y-%m-%d %H:%M:%S'
-kwargs['G_CONT_ID'] = (re.findall(r"datas\\([\w]{2,6})", kwargs['G_FILE_PATH'])[0])  # 从文件名中提取2-6个字符由字母数字_组成的合约ID
+kwargs['G_CONT_ID'] = (re.findall(r"datas\\([\D]{2,4})", kwargs['G_FILE_PATH'])[0])  # 从文件名中提取2-4个非数字字符组成的合约ID
 kwargs['G_DT_TIMEFRAME'] = 'minutes'  # 重采样更大时间周期 choices=['minutes', 'daily', 'weekly', 'monthly']
 kwargs['G_DT_COMPRESSION'] = 5  # 合成bar的周期数
 kwargs['G_INI_CASH'] = 10000 * 10  # 初始金额
@@ -122,7 +123,7 @@ def runstrat(args=None):
     if args.todate is not None:
         dt_end = datetime.strptime(args.todate, dt_dtformat).date()
         # dkwargs['todate'] = dt_end
-    # 从文件路径加载数据
+    # 从文件路径中加载数据
     if args.data is not None:
         file_path = args.data
         myQuant_ROOT = os.getcwd()[:os.getcwd().find("bt_backtrader\\") + len("bt_backtrader\\")]  # 获取项目中相对根路径
@@ -218,7 +219,17 @@ def runstrat(args=None):
     cerebro.broker.setcash(kwargs.get('G_INI_CASH', 10000 * 10))
     # 设置手续费
     commissioninfo(cerebro=cerebro)
-
+    # 添加通用分析指标
+    # <editor-fold desc="折叠代码:添加通过分析指标">
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
+    cerebro.addanalyzer(bt.analyzers.Returns, _name="returns", tann=252)  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
+    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
+    from bt_demo.btlin.my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
+    cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
+    # </editor-fold>
     # 参数调优
     if args.opts:
         optimize(cerebro=cerebro)
@@ -288,11 +299,11 @@ def commissioninfo(cerebro):
     # <editor-fold desc="折叠代码:交易手续费设置方式二">
     from bt_demo.btlin.my_strategy_config import MyCommission  # 自定义合约信息
     comm = {
-        'ZJIF13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
-        'SQRB13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
-        'SQCU13': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
-        'DQC13': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
-        'ZQCF13': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=4.0, margin_rate=0.11, mult=5.0),  # 棉花合约信息
+        'ZJIF': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
+        'SQRB': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
+        'SQCU': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
+        'DQC': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
+        'ZQCF': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=4.0, margin_rate=0.11, mult=5.0),  # 棉花合约信息
 
     }
     # 添加进 broker
@@ -314,15 +325,7 @@ def optimize(cerebro):
     tstart = time.perf_counter()
     # 为Cerebro引擎添加策略, 优化策略
     strats = cerebro.optstrategy(MyStrategy, **opts_kwargs)
-    # 添加分析指标
-    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
-    cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")  # 回撤
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")  # 夏普率
-    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
-    from bt_demo.btlin.my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
-    cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
+
     # Run over everything
     if kwargs['G_OPTS_IS_USE'] and gvc.get('G_RESULTS_OPT'):  # 是否使用上次参数优化结果
         results_opt = gvc.get('G_RESULTS_OPT')
@@ -350,8 +353,8 @@ def optimize(cerebro):
         my_trade = x[0].analyzers.my_tradeAnalyzer.get_analysis()  # 交易分析引用
         returns = x[0].analyzers.returns.get_analysis()  # 回报分析引用
         pyFolio = x[0].analyzers.pyFolio.get_analysis()  # pyFolio分析引用
-        drawdown = x[0].analyzers.drawdown.get_analysis()  # 回撤分析引用
-        sharpe = x[0].analyzers.sharpe.get_analysis()  # sharpe分析引用
+        drawDown = x[0].analyzers.drawDown.get_analysis()  # 回撤分析引用
+        sharpeRatio = x[0].analyzers.sharpeRatio.get_analysis()  # sharpe分析引用
         timeReturn = x[0].analyzers.timeReturn.get_analysis()  # timeReturn 分析引用
 
         if trade['total']['total'] == 0:
@@ -364,8 +367,8 @@ def optimize(cerebro):
         trade_lost_ = (trade.get('lost')['total'])  # 总亏损次数
         trade_total_ = trade['total']['total']  # 交易次数
         trade_win_rate = (trade_won_ / trade_total_) * 100  # 胜率
-        drawdown_ = drawdown.get('max').get('drawdown', 0)  # 最大回撤
-        sharpe_ = sharpe.get('sharperatio', 0)  # 夏普率
+        drawDown_ = drawDown.get('max').get('drawDown', 0)  # 最大回撤
+        sharpeRatio_ = sharpeRatio.get('sharperatio', 0)  # 夏普率
         trade_pnl_total_ = (trade.get('pnl').get('gross').get('total', 0))  # 总盈亏
         trade_pnl_net_ = (trade.get('pnl')['net']['total'])  # (净盈亏)总盈亏-手续费
         trade_pnl_comm_ = abs(trade_pnl_total_ - trade_pnl_net_)  # 手续费
@@ -380,12 +383,12 @@ def optimize(cerebro):
             'pw': x[0].p.pw,  # 参数
             'pl': x[0].p.pl,  # 参数
             'total': '{:0>4d}'.format(trade_total_),  # 交易次数
-            'sharpe': sharpe_,  # 夏普率
+            'sharpe': sharpeRatio_,  # 夏普率
             'rtot%': returns_rort_,  # 总复合回报
             'py_rt%': pyFolio_returns_,  # pyFolio总复合回报
             'won%': trade_win_rate,  # 胜率
             'rnorm%': returns_rnorm100_,  # 年化归一化回报
-            'maxDD%': round(drawdown_, 3),  # 最大回撤
+            'maxDD%': round(drawDown_, 3),  # 最大回撤
             'comm%': round(trade_comm_net_p, 3),  # 手续费占比净盈亏百分比
             'pnl_net': '{:8.2f}'.format(trade_pnl_net_),  # 总盈亏余额含手续费
         })
@@ -454,14 +457,7 @@ def backing(cerebro):
     cerebro.addobserver(bt.observers.DrawDown)
     # 添加分析指标
     cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualReturn')  # 返回年初至年末的年度收益率
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
-    cerebro.addanalyzer(bt.analyzers.Returns, _name='returns', tann=252)  # 计算年化收益：日度收益
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
     cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name='sharpeRatio_A')
-    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', )  # 添加收益率时序
-    from bt_demo.btlin.my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
-    cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
 
     # 添加策略和参数
     cerebro.addstrategy(MyStrategy, log_kwargs=log_kwargs, **test_kwargs)
@@ -593,7 +589,7 @@ def pyplot(result_one):
     pass
 
 
-# """quantstats分析报告html"""
+# """quantstats分析html报告"""
 def quantstats_reports_html(result_one):
     # 使用quantstats 分析工具并保存到HTML文件
     kwargs = gvc.get('kwargs')
@@ -752,12 +748,12 @@ class MyStrategy(bt.Strategy):
         self.sig_order = dict()  # 策略信号生成的订单
         self.order_datetime: datetime = None  # 订单发生时间
         self.entry_price_begin = 0.0  # 初始入场价格
-        self.entry_price = 0.0  # 入场价格
-        self.entry_price_ref1 = 0.0  # 上一次入场价格
+        self.entry_price = 0.0  # 开仓价格
+        self.entry_price_ref1 = 0.0  # 上一次开仓价格
         self.exit_price = 0.0  # 离场价格
         self.order_this_bar = 0  # 该周期是否有交易 0没有,1有
         self.bar_executed = 0  # 记录当前交易的bar序列
-        self.turtleunits = 0  # 加仓次数
+        self.turtleunits = 0  # 开仓次数
         self.numlosst = 0  # 统计连续亏损次数
         self.ppunit = 1  # 交易手数比率
         self.ppos_profit_ref1 = 0.0  # 上一笔交易盈亏幅度
@@ -1045,7 +1041,8 @@ class MyStrategy(bt.Strategy):
                 or self.sig_longa1 or self.sig_shorta1
                 or self.sig_long_dec or self.sig_short_dec
                 or self.sig_longx1 or self.sig_shortx1):
-            self.order_datetime = self.dtdt.datetime(0)  # 订单时间
+            self.order_datetime = self.dtdt.datetime(0)  # 订单开始时间
+            pass
 
         # 空仓开仓和持仓加仓准备
         if (self.sig_long or self.sig_short) or (self.sig_longa1 or self.sig_shorta1):
@@ -1108,16 +1105,20 @@ class MyStrategy(bt.Strategy):
             self.mppp = self.p_pp if p_pp != self.p_pp else self.mppp  # 盈亏增减幅度
 
             self.entry_pok_begin = self.mpok  # 空仓时入场开仓单位
-            self.sig_order['入场价'] = self.dtclose[0]  # 入场价格
+            self.sig_order = dict()  # 订单信号初始化
+            self.sig_order['开始时间'] = self.dtdt.datetime(0)  # 订单开始时间
+            self.sig_order['入场价'] = self.dtclose[0]  # 开始入场价格-空仓时的开仓价
             self.sig_order['开仓价'] = self.dtclose[0]  # 开仓价格
-            self.entry_price = self.dtclose[0]  # 入场价格
+            self.sig_order['开仓次数'] = 1  # 开仓次数
+            self.entry_price = self.dtclose[0]  # 开仓价格
             self.entry_price_begin = self.entry_price  # 开始入场价格
-            self.turtleunits = 1  # 加仓次数
+            self.turtleunits = 1  # 开仓次数
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.bar_executed = len(self)  # 记录当前交易的bar序列
         # 买入开仓价格
         if self.sig_long:
             t_enter += ',买入'
+            self.sig_order['开仓类型'] = '买入开仓'
             self.sig_ref1 = self.position_flag = 1  # 记录开仓信号
             self.mpok = abs(self.mpok)
 
@@ -1126,6 +1127,7 @@ class MyStrategy(bt.Strategy):
         # 卖出开仓价格
         elif self.sig_short:
             t_enter += ',卖出'
+            self.sig_order['开仓类型'] = '卖出开仓'
             self.sig_ref1 = self.position_flag = -1  # 记录开仓信号
             self.mpok = -abs(self.mpok)
             # self.radd = self.entry_price * (1 - self.p_pw)
@@ -1139,8 +1141,9 @@ class MyStrategy(bt.Strategy):
             self.sig_order['加仓价'] = self.dtclose[0]  # 加仓价格
             self.sig_order['开仓价'] = self.dtclose[0]  # 开仓价格
             self.entry_price_ref1 = self.entry_price
-            self.entry_price = self.dtclose[0]  # 入场价格
-            self.turtleunits += 1  # 加仓次数加1
+            self.entry_price = self.dtclose[0]  # 开仓价格
+            self.turtleunits += 1  # 开仓次数加1
+            self.sig_order['开仓次数'] = self.turtleunits  # 开仓次数
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.bar_executed = len(self)  # 记录当前交易的bar序列
             mpe_r1_ = abs(self.entry_price - self.entry_price_ref1) / self.entry_price_ref1  # 当前入场价与上次入场价之间的涨跌幅度
@@ -1154,6 +1157,7 @@ class MyStrategy(bt.Strategy):
         # 多头加仓价格
         if self.sig_longa1:
             t_add += ',买入'
+            self.sig_order['多头持仓'] = self.position.size
             self.mpok = abs(self.mpok)
 
             self.radd = self.entry_price * (1 + self.mpwa)
@@ -1161,16 +1165,17 @@ class MyStrategy(bt.Strategy):
         # 空头加仓价格
         if self.sig_shorta1:
             t_add += ',卖出'
+            self.sig_order['空头持仓'] = self.position.size
             self.mpok = -abs(self.mpok)
 
-            # self.radd = self.entry_price * (1 - self.p_pw)
-            # self.lout = self.entry_price * (1 + self.p_pl)
             self.radd = self.entry_price / (1 + self.mpwa)
             self.lout = self.entry_price * (1 + self.mpla)
 
-        # 空仓开仓下单及日志
+        # 空仓开仓下单执行及日志
         if self.sig_long or self.sig_short:
             self.myorder = self.order_target(self.mpok)
+            self.sig_order['交易量'] = self.mpok
+            self.sig_order['状态'] = '开仓'
             if self.myorder and hasattr(self.myorder, 'size'):
                 t_enter += ',开仓:{:d}'.format(self.myorder.size)
             else:
@@ -1180,9 +1185,11 @@ class MyStrategy(bt.Strategy):
             t_enter += ',总资产:{:.2f}'.format(assets)
             # self.log(t_enter)
             pass
-        # 持仓加仓下单及日志
+        # 持仓加仓下单执行及日志
         if self.sig_longa1 or self.sig_shorta1:
             self.myorder = self.order_target(self.mpok)  # 加仓中
+            self.sig_order['交易量'] = self.mpok
+            self.sig_order['状态'] = '加仓'
             if self.myorder and hasattr(self.myorder, 'size'):
                 t_add += ',加仓:{:d}'.format(self.myorder.size)
             else:
@@ -1204,6 +1211,8 @@ class MyStrategy(bt.Strategy):
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.sig_long_keyPoint = False  # 清除信号
             self.sig_short_keyPoint = False  # 清除信号
+            self.sig_order['交易量'] = self.mpok
+            self.sig_order['状态'] = '减仓'
             self.myorder = self.order_target(self.mpok)
             t_dec += ',多头' if self.sig_longx1 else ',空头'
             t_dec += ',减仓:{:}'.format(self.position.size)
@@ -1214,9 +1223,15 @@ class MyStrategy(bt.Strategy):
 
         # 多头清仓离场准备
         if self.sig_longx1:
+            t_exit += ',多头'
+            self.sig_order['多头持仓'] = self.position.size
+            self.sig_order['平仓类型'] = '卖出平仓'
             self.ppos_profit_ref1 = ((self.exit_price - self.entry_price_begin) / self.entry_price_begin)  # 计算上一笔交易盈亏幅度
         # 空头清仓离场准备
         if self.sig_shortx1:
+            t_exit += ',空头'
+            self.sig_order['空头持仓'] = self.position.size
+            self.sig_order['平仓类型'] = '买入平仓'
             self.ppos_profit_ref1 = ((self.entry_price_begin - self.exit_price) / self.entry_price_begin)  # 计算上一笔交易盈亏幅度
         # 清仓离场价格及头寸 SEXIT CLOSE
         if self.sig_longx1 or self.sig_shortx1:
@@ -1225,8 +1240,10 @@ class MyStrategy(bt.Strategy):
                 self.mpok = (self.mpok / self.turtleunits)
             self.mpok = self.mpok if self.mpok > self.p_pok_min else self.p_pok_min
             self.exit_price = self.dtclose[0]
+            self.sig_order['状态'] = '清仓'
+            self.sig_order['平仓价'] = self.dtclose[0]
             self.position_flag = 0  # 清仓后头寸方向为0
-            self.turtleunits = 0  # 加仓次数
+            self.turtleunits = 0  # 开仓次数
             self.numlosst += 1  # 统计连续亏损次数
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.mbstop = 0
@@ -1234,7 +1251,7 @@ class MyStrategy(bt.Strategy):
         if self.sig_longx1 or self.sig_shortx1:  # 平仓离场
             # 全部平仓
             self.myorder = self.close()
-            t_exit += ',多头' if self.sig_longx1 else ',空头'
+            self.sig_order['结束时间'] = self.dtdt.datetime(0)  # 订单结束时间
             t_exit += ',平仓:{:}'.format(self.position.size)
             t_exit += ',价格:{:.2f}'.format(self.dtclose[0])
             t_exit += ',总资产:{:.2f}'.format(assets)
