@@ -1119,7 +1119,7 @@ class MyStrategy(bt.Strategy):
         self.sig_exit = self.sig_longx1 or self.sig_shortx1
         t_enter = t_add = t_exit = t_dec = 'next:'
 
-        # 当有信号发生时,更新订单信息
+        # 信号发生时,更新订单信息
         if self.sig_begin or self.sig_add or self.sig_dec or self.sig_exit:
             # <editor-fold desc="折叠代码:订单信息更新">
             if self.sig_begin or self.sig_add:
@@ -1136,6 +1136,8 @@ class MyStrategy(bt.Strategy):
                     self.sig_order['入场价'] = self.dtclose[0]  # 开始入场价格-空仓时的开仓价
                 # 空仓开仓
                 if self.sig_begin:
+                    self.myorders = []
+                    self.sig_order['订单列表'] = self.myorders
                     self.sig_order['开仓价'] = self.dtclose[0]  # 开仓价格
                     self.sig_order['交易量'] = self.mpok
                 # 持仓加仓
@@ -1285,9 +1287,7 @@ class MyStrategy(bt.Strategy):
         if self.sig_begin:
             self.sig_order['交易量'] = self.mpok
             self.myorder = self.order_target(self.mpok)
-            self.myorders = []
             self.myorders.append(self.myorder)
-            self.sig_order['订单列表'] = self.myorders
 
             if self.myorder and hasattr(self.myorder, 'size'):
                 t_enter += ',开仓:{:d}'.format(self.myorder.size)
@@ -1368,6 +1368,8 @@ class MyStrategy(bt.Strategy):
 
         # 清仓离场下单及日志
         if self.sig_exit:  # 平仓离场
+            self.sig_order['交易量'] = self.mpok
+            self.sig_order['平仓价'] = self.dtclose[0]
             t_exit += ',平仓:{:}'.format(self.position.size)
             t_exit += ',价格:{:.2f}'.format(self.dtclose[0])
             t_exit += ',总资产:{:.2f}'.format(assets)
