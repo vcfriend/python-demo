@@ -31,7 +31,8 @@ kwargs = dict()  # 参数字典
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
 kwargs['G_FILE_PATH'] = "datas\\SQRB-OC-5m-20090327-20211231.csv"
-kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2011-02-01'
+kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2009-07-01'
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2011-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-06-25', '2019-02-01'
@@ -42,7 +43,7 @@ kwargs['G_DT_TIMEFRAME'] = 'minutes'  # 重采样更大时间周期 choices=['mi
 kwargs['G_DT_COMPRESSION'] = 5  # 合成bar的周期数
 kwargs['G_INI_CASH'] = 10000 * 10  # 初始金额
 kwargs['G_PLOT'] = False  # 是否绘图,可提供绘图参数:'style="candle"'
-kwargs['G_QUANTSTATS'] = True  # 是否使用 quantstats 分析测试结果
+kwargs['G_QUANTSTATS'] = False  # 是否使用 quantstats 分析测试结果
 kwargs['G_P_LOG_FILE'] = False  # 是否输出日志到文件
 kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
 kwargs['G_OPTS'] = 0  # 是否参数调优
@@ -854,11 +855,11 @@ class MyStrategy(bt.Strategy):
                     # self.sig_order['持仓量'] += trade.size
                     pass
                 # 空仓开仓或持仓加仓
-                # (self.sig_order['开仓价列表']).append(price)  # 开仓价格
+                # self.sig_order.setdefault('开仓价列表', []).append(price)  # 开仓价格
                 # self.sig_order['加仓价'] = price  # 加仓价格
                 # self.sig_order['上次开仓价'] = list(self.sig_order['开仓价列表'])[-1] if list(self.sig_order['开仓价列表']) else 0  # 上次加仓价格
                 # self.sig_order['开仓均价'] = round(np.mean(list(self.sig_order['开仓价列表'])), 2) if list(self.sig_order['开仓价列表']) else 0  # 开仓均价
-                # (self.sig_order['信号开仓价列表']).append(self.dtclose[0])  # 信号开仓价
+                # self.sig_order.setdefault('信号开仓价列表', []).append(self.dtclose[0])  # 信号开仓价
                 # self.sig_order['信号开仓均价'] = np.mean(self.sig_order['信号开仓价列表']) if list(self.sig_order['信号开仓价列表']) else 0  # 信号开仓价均价
                 pass
             # 减仓或清仓
@@ -870,24 +871,18 @@ class MyStrategy(bt.Strategy):
                 if self.sig_exit:
                     # 多头清仓离场
                     if self.sig_longx1:
-                        self.sig_order['多头持仓'] += self.position.size
                         self.sig_order['平仓类型'] = '卖出平仓'
-                        self.sig_order['平仓量'] += trade.size  # 在交易回报函数中赋值
+                        # self.sig_order['平仓量'] += trade.size  # 在交易回报函数中赋值
                         pass
                     # 空头清仓离场
                     if self.sig_shortx1:
-                        self.sig_order['空头持仓'] += self.position.size
                         self.sig_order['平仓类型'] = '买入平仓'
-                        self.sig_order['平仓量'] += trade.size  # 在交易回报函数中赋值
+                        # self.sig_order['平仓量'] += trade.size  # 在交易回报函数中赋值
                         pass
                     # 清仓离场
                     self.sig_order['状态'] = '清仓完结'
-                    self.sig_order['平仓单位'] = round(self.mpok, 3)
-
-                    (self.sig_order['平仓价列表']).append(price)  # 平仓价
-                    self.sig_order['平仓均价'] = np.mean(self.sig_order['平仓价列表']) if list(self.sig_order['平仓价列表']) else 0  # 平仓均价
-                    # (self.sig_order['信号平仓价列表']).append(self.dtclose[0])  # 信号平仓价
-                    # self.sig_order['信号平仓均价'] = np.mean(self.sig_order['信号平仓价列表']) if list(self.sig_order['信号平仓价列表']) else 0  # 平仓均价
+                    # self.sig_order.get('平仓价列表', list()).append(price)  # 平仓价
+                    # self.sig_order['平仓均价'] = np.mean(self.sig_order['平仓价列表']) if list(self.sig_order['平仓价列表']) else 0  # 平仓均价
                     pass
                 pass
         # 交易头寸关闭时
@@ -895,20 +890,19 @@ class MyStrategy(bt.Strategy):
             self.sig_order['平仓价列表'] = self.sig_order.get('平仓价列表', list())  # 不存在则初始化为列表
             # 减仓离场
             if self.sig_dec:
-                (self.sig_order['平仓价列表']).append(price)  # 平仓价格
+                self.sig_order.get('平仓价列表', list()).append(price)  # 平仓价格
                 pass
             # 清仓离场
             if self.sig_exit:  # 平仓离场
                 self.sig_order['状态'] = '清仓完结'
-                self.sig_order['平仓量'] = self.sig_order.get('平仓量', 0)
                 if self.sig_longx1:  # 多头平仓
                     self.sig_order['平仓量'] += trade.size  # 累计平仓成交量
                     pass
                 if self.sig_shortx1:  # 空头平仓
                     self.sig_order['平仓量'] += trade.size  # 累计平仓成交量
                     pass
-                (self.sig_order['平仓价列表']).append(price)  # 添加平仓价格到列表
-                self.sig_order['平仓均价'] = np.mean(self.sig_order['平仓价列表']) if list(self.sig_order['平仓价列表']) else 0  # 平仓均价
+                self.sig_order.get('平仓价列表', list()).append(price)  # 添加平仓价格到列表
+                self.sig_order['平仓均价'] = np.mean(self.sig_order.get('平仓价列表', [0]))  # 平仓均价
                 pass
         # </editor-fold>
         if not trade.isclosed:
@@ -937,67 +931,67 @@ class MyStrategy(bt.Strategy):
         # 检查一个订单是否 完成状态
         if order.status in [order.Completed]:
             self.myorder.status = order.status  # 订单状态
+            pass
             # <editor-fold desc="折叠代码: 订单管理">
             # 如果订单执行价格和头寸为空或是0则返回
-            if not order.price or order.price == 0:
-                return
-            price = float('%.2f' % order.price)
+            # if not order.price or order.price == 0:
+            #     return
+            ord_cre_price__ = float('%.2f' % order.price) if order and order.price else 0
+            ord_exe_price = order.executed.price
+            ord_exe_size = order.executed.size
+            self.sig_order.setdefault('订单列表', []).append(self.myorder)  # 增加订单到列表
             # 空仓开仓或持仓加仓
             if self.sig_begin or self.sig_add:
+
                 # 空仓开仓
                 if self.sig_begin:
-                    self.sig_order['入场时间'] = self.dtdt.datetime(0)  # 订单开始时间
+                    self.sig_order['入场时间'] = self.dtdt.datetime(0).strftime('%Y-%m-%d %H:%M:%S')  # 订单开始时间
                     self.sig_order['状态'] = '入场订单'
-                    self.sig_order['开仓单位'] = round(self.mpok, 3)
+                    self.sig_order['开仓单位列表'] = []
                     self.sig_order['开仓量'] = 0  # 订单开仓量
                     self.sig_order['多头持仓'] = 0
                     self.sig_order['空头持仓'] = 0
                     self.sig_order['持仓量'] = 0
-                    self.sig_order['入场价'] = price  # 开始入场价格-空仓时的开仓价
-                    self.sig_order['开仓价列表'] = []  # 开仓价格
+                    self.sig_order['入场价'] = ord_exe_price  # 开始入场价格-空仓时的开仓价
+                    self.sig_order['开仓价列表'] = []  # 开仓价列表
                     self.sig_order['上次开仓价'] = self.sig_order['入场价']
-                    self.sig_order['加仓价'] = None  # 加仓价格
+                    self.sig_order['加仓价'] = 0  # 加仓价格
 
-                    self.sig_order['平仓单位'] = None  # 平仓单位
-                    self.sig_order['平仓量'] = 0  # 在交易回报函数中赋值
-                    self.sig_order['平仓价列表'] = []  # 平仓价格
-                    self.sig_order['信号开仓价列表'] = []  # 信号开仓价格
-                    self.sig_order['信号平仓价列表'] = []  # 信号平仓价格
+                    self.sig_order['平仓单位列表'] = []  # 平仓单位列表
+                    self.sig_order['平仓量'] = 0  # 在订单回报函数中赋值
+                    self.sig_order.setdefault('平仓价列表', [])  # 平仓价格
+                    self.sig_order.setdefault('信号开仓价列表', [])  # 信号开仓价列表
+                    self.sig_order.setdefault('信号平仓价列表', [])  # 信号平仓价列表
                     self.sig_order['开仓次数'] = 1  # 开仓次数
-                    self.sig_order['开仓均价'] = None  # 开仓均价
-                    self.sig_order['信号开仓均价'] = None  # 信号开仓均价
-                    self.sig_order['平仓均价'] = None  # 平仓均价
+                    self.sig_order['开仓均价'] = 0  # 开仓均价
+                    self.sig_order['信号开仓均价'] = 0  # 信号开仓均价
+                    self.sig_order['平仓均价'] = 0  # 平仓均价
+                    self.sig_order.setdefault('订单列表', [])  # 策略信号生成的订单列表
 
-                    self.sig_order['开仓价列表'] = self.sig_order.get('开仓价列表', list())  # 不存在则初始化为列表
-                    self.sig_order['平仓价列表'] = self.sig_order.get('平仓价列表', list())  # 不存在则初始化为列表
-                    self.sig_order['信号开仓价列表'] = self.sig_order.get('信号开仓价列表', list())  # 不存在则初始化为列表
-                    self.sig_order['信号平仓价列表'] = self.sig_order.get('信号平仓价列表', list())  # 不存在则初始化为列表
                     pass
-                # # 持仓加仓
+                # 空仓开仓或持仓加仓
+                self.sig_order.setdefault('开仓单位列表', []).append(round(self.mpok, 3))
+                self.sig_order.setdefault('开仓价列表', []).append(ord_exe_price)  # 开仓价格
+                self.sig_order['加仓价'] = ord_exe_price  # 加仓价格
+                self.sig_order['开仓均价'] = round(np.mean(self.sig_order.setdefault('开仓价列表', [0])), 2)  # 开仓均价
+                # 持仓加仓
                 if self.sig_add:
                     self.sig_order['状态'] = '加仓订单'
-                    self.sig_order['加仓单位'] = round(self.mpok, 3)
-                    self.sig_order['加仓价'] = price  # 加仓价格
+                    self.sig_order['加仓价'] = ord_exe_price  # 加仓价格
+                    self.sig_order['上次开仓价'] = self.sig_order.setdefault('开仓价列表', [])[-2]  # 上次加仓价格
                     pass
                 # 多头入场或多头加仓
                 if self.sig_long or self.sig_longa1:
-                    self.sig_order['开仓量'] += order.size  # 订单开仓量
-                    self.sig_order['多头持仓'] += order.size
-                    self.sig_order['持仓量'] += order.size
+                    self.sig_order['开仓量'] += ord_exe_size  # 订单开仓量
+                    self.sig_order['多头持仓'] += ord_exe_size
+                    self.sig_order['持仓量'] += ord_exe_size
                     pass
                 # 空头入场或空头加仓
                 if self.sig_short or self.sig_shorta1:
-                    self.sig_order['开仓量'] += order.size  # 订单开仓量
-                    self.sig_order['空头持仓'] += order.size
-                    self.sig_order['持仓量'] += order.size
+                    self.sig_order['开仓量'] += order.executed.size  # 订单开仓量
+                    self.sig_order['空头持仓'] += order.executed.size
+                    self.sig_order['持仓量'] += order.executed.size
                     pass
-                # 空仓开仓或持仓加仓
-                (self.sig_order['开仓价列表']).append(price)  # 开仓价格
-                self.sig_order['加仓价'] = price  # 加仓价格
-                self.sig_order['上次开仓价'] = list(self.sig_order['开仓价列表'])[-1] if list(self.sig_order['开仓价列表']) else 0  # 上次加仓价格
-                self.sig_order['开仓均价'] = round(np.mean(list(self.sig_order['开仓价列表'])), 2) if list(self.sig_order['开仓价列表']) else 0  # 开仓均价
-                (self.sig_order['信号开仓价列表']).append(self.dtclose[0])  # 信号开仓价
-                self.sig_order['信号开仓均价'] = np.mean(self.sig_order['信号开仓价列表']) if list(self.sig_order['信号开仓价列表']) else 0  # 信号开仓价均价
                 pass
             # 减仓或清仓
             if self.sig_dec or self.sig_exit:
@@ -1010,28 +1004,24 @@ class MyStrategy(bt.Strategy):
                     if self.sig_longx1:
                         self.sig_order['多头持仓'] += self.position.size
                         self.sig_order['平仓类型'] = '卖出平仓'
-                        self.sig_order['平仓量'] += order.size  # 在交易回报函数中赋值
+                        self.sig_order['平仓量'] += ord_exe_size  # 在交易回报函数中赋值
                         pass
                     # 空头清仓离场
                     if self.sig_shortx1:
                         self.sig_order['空头持仓'] += self.position.size
                         self.sig_order['平仓类型'] = '买入平仓'
-                        self.sig_order['平仓量'] += order.size  # 在交易回报函数中赋值
+                        self.sig_order['平仓量'] += ord_exe_size  # 在交易回报函数中赋值
                         pass
                     # 清仓离场
                     self.sig_order['状态'] = '清仓完结'
-                    self.sig_order['平仓单位'] = round(self.mpok, 3)
+                    self.sig_order.setdefault('平仓单位列表', []).append(round(self.mpok, 3))
 
-                    # (self.sig_order['平仓价列表']).append(price)  # 平仓价
-                    # self.sig_order['平仓均价'] = np.mean(self.sig_order['平仓价列表']) if list(self.sig_order['平仓价列表']) else 0  # 平仓均价
-                    (self.sig_order['信号平仓价列表']).append(self.dtclose[0])  # 信号平仓价
-                    self.sig_order['信号平仓均价'] = np.mean(self.sig_order['信号平仓价列表']) if list(self.sig_order['信号平仓价列表']) else 0  # 平仓均价
-                    pass
+                self.sig_order.setdefault('平仓价列表', []).append(ord_exe_price)  # 平仓价
+                self.sig_order['平仓均价'] = round(np.mean(self.sig_order.setdefault('平仓价列表', [0])), 2)  # 平仓均价
                 pass
-            pass
             # </editor-fold>
+            pass
             # <editor-fold desc="折叠代码: 订单日志">
-
             t = 'notify_order:'
             # 检查一个订单是否完成状态
             if order.status in [order.Completed]:
@@ -1056,20 +1046,21 @@ class MyStrategy(bt.Strategy):
                 t += ',订单取消/保证金不足/拒绝'
                 t += ',持仓:{:d}'.format(self.position.size)
                 t += ',Price:{:.2f}'.format(self.dtclose[0])
-            t += ',add:{:.2f}'.format(self.radd)
-            t += ',lout:{:.2f}'.format(self.lout)
-            t += ',open_m:{:}'.format(self.dtopen_month)
-            t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证金率
-            t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低成交1手所需保证金
-            t += ',可用资金:{:.2f}'.format(self.broker.getcash())
-            t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))  # 持仓市值,持仓占用的保证金
-            t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
-            t += ',开仓:{:.3f}'.format(self.mpok)
+                t += ',add:{:.2f}'.format(self.radd)
+                t += ',lout:{:.2f}'.format(self.lout)
+                t += ',open_m:{:}'.format(self.dtopen_month)
+                t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证金率
+                t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低成交1手所需保证金
+                t += ',可用资金:{:.2f}'.format(self.broker.getcash())
+                t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))  # 持仓市值,持仓占用的保证金
+                t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
+                t += ',开仓:{:.3f}'.format(self.mpok)
             # </editor-fold>
-
+        # 交易日志
         self.log(t, dt=self.dtdt.datetime(0))
-        # if not order.alive():
-        #     self.myorder = None  # 表示没有订单待处理
+        # 如果没有订单处于仍然可以执行的状态
+        if not order.alive():
+            self.myorder = None  # 表示没有订单待处理
 
     def order_target(self, size=None, data=None):
         """订单开仓头寸管理"""
@@ -1160,6 +1151,9 @@ class MyStrategy(bt.Strategy):
         """每当有新的k线周期生成时通知信息"""
         # self.log('Close, %.2f' % self.dtclose[0], dt=bt.num2date(self.dtdt[0]))  # 打印当前收盘价 bt.num2date(self.dtdt[0]) 日期数值转换
         # self.log('dt, {:}'.format((self.dtdt.datetime(0) - self.dtdt.datetime(-1)).total_seconds() / 60))  # 计算与一个时间序列的间隔分钟数
+        # 如果有订单正在挂起，不操作
+        if self.myorder:
+            return
         # if (round(self.dtdate(0).month // 3) % 4) != (round(self.dtdate(-1).month // 3) % 4):  # 记录每个季度open价
         if self.order_datetime:  # 判断订单时间是否小于间隔周期
             dt1 = (self.dtdt.datetime(0) - self.order_datetime).total_seconds() / 60  # 订单时间到当前bar的间隔分钟数
@@ -1169,9 +1163,6 @@ class MyStrategy(bt.Strategy):
             # print(self.dtdt.datetime(0).strftime("%Y-%m-%d %H:%M:%S"), self.order_datetime.strftime("%Y-%m-%d %H:%M:%S"), 'C:', self.dtclose[0], 'dt1:', dt1, 'dt2:', dt2, 'dt3:', dt3, 'dt4:', dt4)
             if dt3 < self.p.ojk:
                 return
-        # 如果有订单正在挂起，不操作
-        # if self.myorder:
-        #     return
         # 记录每个月open价
         dtopen_month = self.dtopen[0] if (round(self.dtdt.date(0).month)) != (round(self.dtdt.date(-1).month)) else self.dtopen_month
         # 关键价不为空时且价格在关键价附近时调整加仓幅度
@@ -1242,56 +1233,61 @@ class MyStrategy(bt.Strategy):
                 self.order_datetime = self.dtdt.datetime(0)  # 开仓订单开始时间
                 # 空仓开仓
                 if self.sig_begin:
-                    self.sig_order = dict()
+                    self.sig_order = dict(
+                        入场时间='',
+                        订单列表=[],  # 策略信号生成的订单列表
+                        离场时间='',
+                        状态='',
+                        开仓次数=0,
+                        开仓单位列表=[],
+                        开仓量=0,  # 订单开仓量
+                        平仓量=0,
+                        多头持仓=0,
+                        空头持仓=0,
+                        持仓量=0,
+                        入场价=0,
+                        开仓价列表=[],
+                        开仓均价=0,
+                        上次开仓价=0,
+                        加仓价=0,
+                        平仓单位列表=[],
+                        平仓价列表=[],
+                        平仓均价=0,
+                        信号开仓价列表=[],
+                        信号平仓价列表=[],
+                        信号开仓均价=0,
+
+                    )
                     self.sig_orders.append(self.sig_order)
-                    self.sig_order['入场时间'] = self.dtdt.datetime(0)  # 订单开始时间
+                    self.sig_order['入场时间'] = self.dtdt.datetime(0).strftime('%Y-%m-%d %H:%M:%S')  # 订单开始时间
                     self.sig_order['状态'] = '入场'
-                    self.sig_order['开仓单位'] = round(self.mpok, 3)
-                    self.sig_order['开仓量'] = 0  # 订单开仓量
-                    self.sig_order['多头持仓'] = 0
-                    self.sig_order['空头持仓'] = 0
-                    self.sig_order['持仓量'] = 0
                     self.sig_order['入场价'] = self.dtclose[0]  # 开始入场价格-空仓时的信号价
-                    self.sig_order['开仓价列表'] = []  # 开仓价格
-                    self.sig_order['上次开仓价'] = self.sig_order['入场价']
-                    self.sig_order['加仓价'] = None  # 加仓价格
-
-                    self.sig_order['平仓单位'] = None  # 平仓单位
-                    self.sig_order['平仓量'] = 0  # 在交易回报函数中赋值
-                    self.sig_order['平仓价列表'] = []  # 平仓价格
-                    self.sig_order['信号开仓价列表'] = []  # 信号开仓价格
-                    self.sig_order['信号平仓价列表'] = []  # 信号平仓价格
-                    self.sig_order['开仓次数'] = 1  # 开仓次数
-                    self.sig_order['开仓均价'] = None  # 开仓均价
-                    self.sig_order['信号开仓均价'] = None  # 信号开仓均价
-                    self.sig_order['平仓均价'] = None  # 平仓均价
-
-                    self.sig_order['开仓价列表'] = self.sig_order.get('开仓价列表', list())  # 不存在则初始化为列表
-                    self.sig_order['平仓价列表'] = self.sig_order.get('平仓价列表', list())  # 不存在则初始化为列表
-                    self.sig_order['信号开仓价列表'] = self.sig_order.get('信号开仓价列表', list())  # 不存在则初始化为列表
-                    self.sig_order['信号平仓价列表'] = self.sig_order.get('信号平仓价列表', list())  # 不存在则初始化为列表
-
                     self.myorders = []
-                    self.sig_order['订单列表'] = self.myorders
-                    # 持仓加仓
+                    pass
+                # 空仓开仓或加仓
+                self.sig_order['开仓次数'] += 1  # 开仓次数
+                self.sig_order.setdefault('信号开仓价列表', []).append(self.dtclose[0])  # 信号开仓价
+                self.sig_order['上次开仓价'] = self.sig_order.setdefault('信号开仓价列表', [])[-1]
+                self.sig_order['信号开仓均价'] = round(np.mean(self.sig_order.get('信号开仓价列表', [0])), 2)  # 信号开仓均价
+                # 持仓加仓
                 if self.sig_add:
                     self.sig_order['状态'] = '加仓'
-                    self.sig_order['开仓单位'] = round(self.mpok, 3)
                     self.sig_order['加仓价'] = self.dtclose[0]  # 加仓价格
-                    self.sig_order['开仓次数'] += self.sig_order['开仓次数']  # 开仓次数
+
                 # 买入开仓
                 if self.sig_long:
                     self.sig_order['开仓类型'] = '买入开仓'
                 # 卖出开仓
                 elif self.sig_short:
                     self.sig_order['开仓类型'] = '卖出开仓'
-                # 空仓开仓或加仓
-                (self.sig_order['信号开仓价列表']).append(self.dtclose[0])  # 信号开仓价
+
             # 减仓或清仓
             if self.sig_dec or self.sig_exit:
                 self.order_datetime = self.dtdt.datetime(0)  # 平仓订单开始时间
+                self.sig_order.get('信号平仓价列表', []).append(self.dtclose[0])  # 信号平仓价
+                self.sig_order['信号平仓均价'] = round(np.mean(self.sig_order.setdefault('信号平仓价列表', [0])) ,2)  # 平仓均价
                 if self.sig_exit:
-                    self.sig_order['离场时间'] = self.dtdt.datetime(0)  # 订单结束时间
+                    self.sig_order['离场时间'] = self.dtdt.datetime(0).strftime('%Y-%m-%d %H:%M:%S')  # 订单结束时间
                     self.sig_order['离场价'] = self.dtclose[0]  # 离场价格-清仓时的信号价
                     self.sig_order['状态'] = '清仓'
                     if self.sig_longx1:
@@ -1422,7 +1418,6 @@ class MyStrategy(bt.Strategy):
 
         # 空仓开仓下单执行及日志
         if self.sig_begin:
-            self.sig_order['开仓单位'] = self.mpok
             self.myorder = self.order_target(self.mpok)
             self.myorders.append(self.myorder)
 
@@ -1438,7 +1433,6 @@ class MyStrategy(bt.Strategy):
 
         # 持仓加仓下单执行及日志
         if self.sig_add:
-            self.sig_order['开仓单位'] = self.mpok
             self.myorder = self.order_target(self.mpok)  # 加仓中
             self.myorders.append(self.myorder)
             if self.myorder and hasattr(self.myorder, 'size'):
@@ -1468,7 +1462,7 @@ class MyStrategy(bt.Strategy):
             self.order_this_bar = 1  # 标记该周期的交易状态
             self.sig_long_keyPoint = False  # 清除信号
             self.sig_short_keyPoint = False  # 清除信号
-            self.sig_order['平仓单位'] = self.mpok
+            self.sig_order['平仓单位列表'] = self.mpok
             self.sig_order['状态'] = '减仓'
             self.myorder = self.order_target(self.mpok)
             t_dec += ',多头' if self.sig_longx1 else ',空头'
@@ -1505,7 +1499,6 @@ class MyStrategy(bt.Strategy):
 
         # 清仓离场下单及日志
         if self.sig_exit:  # 平仓离场
-            self.sig_order['平仓单位'] = self.mpok
             t_exit += ',平仓:{:}'.format(self.position.size)
             t_exit += ',价格:{:.2f}'.format(self.dtclose[0])
             t_exit += ',总资产:{:.2f}'.format(assets)
