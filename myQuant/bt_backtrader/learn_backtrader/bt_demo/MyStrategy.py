@@ -50,6 +50,7 @@ kwargs['G_OPTS'] = 0  # 是否参数调优
 kwargs['G_OPTS_IS_USE'] = 0  # 是否使用上次优化结果
 G_P_PW = [10, True, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [10, False, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_OK = [10, False, 10, 100, 10]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -61,6 +62,7 @@ G_P_KPR = [True, {  # 关键价格[是否启用, {日期1: dict({'kps':[价格�
 kwargs['G_P_PARAM'] = {
     'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if kwargs['G_OPTS'] and G_P_PW[1] else G_P_PW[0]),
     'pl': (range(G_P_PL[2], G_P_PL[3], G_P_PL[4]) if kwargs['G_OPTS'] and G_P_PL[1] else G_P_PL[0]),
+    'ok': (range(G_P_OK[2], G_P_OK[3], G_P_OK[4]) if kwargs['G_OPTS'] and G_P_OK[1] else G_P_OK[0]),
     # 'pwl': (range(G_P_PWL[2], G_P_PWL[3], G_P_PWL[4]) if G_OPTS and G_P_PWL[1] else G_P_PWL[0]),
     # 'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
     # 'po': (range(G_P_PO[2], G_P_PO[3], G_P_PO[4]) if G_OPTS and G_P_PO[1] else G_P_PO[0]),
@@ -454,7 +456,7 @@ def backing(cerebro):
     log_kwargs = dict(
         log_logger=log_logger,
         log_print=kwargs.get('G_P_LOG_PRINT', False),  # 是否打印日志到控制台
-        log_save=kwargs.get('G_P_LOG_FILE', False),  # 是否保存日志到文件
+        log_file=kwargs.get('G_P_LOG_FILE', False),  # 是否保存日志到文件
     )
     print('test_kwargs:', test_kwargs)  # 回测参数
     print('log_kwargs:', log_kwargs)  # 日志参数
@@ -672,7 +674,7 @@ class MyStrategy(bt.Strategy):
         txt = ('%s, %s' % (dt.strftime('%a %Y-%m-%d %H:%M:%S'), txt))
         # 使用日志系统输出
         if self.p.log_kwargs and self.log_logger:
-            if self.p.log_kwargs['log_save']:
+            if self.p.log_kwargs['log_file']:
                 if hasattr(self.log_logger, 'fileHandler'):
                     self.log_logger.fileHandler.setLevel(logging.DEBUG)  # 将debug日志信息输出到文件
             if self.p.log_kwargs['log_print'] or printlog:
@@ -696,7 +698,7 @@ class MyStrategy(bt.Strategy):
         kpr=dict(),  # 仓位控制的关价格点位
         valid=None,  # 订单生效时间
         log_print=False,  # 是否打印日志到控制台
-        log_save=False,  # 是否保存日志到文件
+        log_file=False,  # 是否保存日志到文件
         log_kwargs=dict(),  # 日志参数字典
         tar=gvc.TargetType.T_PERCENT.value,  # T_PERCENT 按目标百分比下单 T_SIZE,  # 按目标数量下单 T_VALUE,  # 按目标金额下单
     )
@@ -705,7 +707,7 @@ class MyStrategy(bt.Strategy):
         """获取参数"""
         if self.p.log_kwargs:
             self.p.log_print = self.p.log_kwargs['log_print']
-            self.p.log_save = self.p.log_kwargs['log_save']
+            self.p.log_file = self.p.log_kwargs['log_file']
             self.log_logger = self.p.log_kwargs['log_logger']  # 获取logger对象
         else:
             self.log_logger = None
@@ -730,7 +732,7 @@ class MyStrategy(bt.Strategy):
         # super().__init__(*args, **kwargs)
         if self.p.log_kwargs:
             self.p.log_print = self.p.log_kwargs['log_print']
-            self.p.log_save = self.p.log_kwargs['log_save']
+            self.p.log_file = self.p.log_kwargs['log_file']
             self.log_logger = self.p.log_kwargs['log_logger']  # 获取logger对象
         else:
             self.log_logger = None
@@ -927,7 +929,6 @@ class MyStrategy(bt.Strategy):
             return
         # 检查一个订单是否 完成状态
         if order.status in [order.Completed]:
-            self.myorder.status = order.status  # 订单状态
             pass
             # <editor-fold desc="折叠代码: 订单管理">
             # 如果订单执行价格和头寸为空或是0则返回
@@ -1044,20 +1045,21 @@ class MyStrategy(bt.Strategy):
                 elif order.issell():
                     t += ',卖出单'
                 t += ',订单取消/保证金不足/拒绝'
-                t += ',持仓:{:d}'.format(self.position.size)
-                t += ',Price:{:.2f}'.format(self.dtclose[0])
-                t += ',add:{:.2f}'.format(self.radd)
-                t += ',lout:{:.2f}'.format(self.lout)
-                t += ',open_m:{:}'.format(self.dtopen_month)
-                t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证金率
-                t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低成交1手所需保证金
-                t += ',可用资金:{:.2f}'.format(self.broker.getcash())
-                t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))  # 持仓市值,持仓占用的保证金
-                t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
-                t += ',开仓:{:.3f}'.format(self.mpok)
+            pass
+            t += ',持仓:{:d}'.format(self.position.size)
+            t += ',Price:{:.2f}'.format(self.dtclose[0])
+            t += ',add:{:.2f}'.format(self.radd)
+            t += ',lout:{:.2f}'.format(self.lout)
+            t += ',open_m:{:}'.format(self.dtopen_month)
+            t += ',m_rate:{:}'.format(self.broker.getcommissioninfo(data=self.data).p.margin_rate)  # 获取保证金率
+            t += ',margin:{:.2f}'.format(self.broker.getcommissioninfo(data=self.data).get_margin(self.dtclose[0]))  # 最低成交1手所需保证金
+            t += ',可用资金:{:.2f}'.format(self.broker.getcash())
+            t += ',持仓市值:{:.2f}'.format(self.broker.getvalue(datas=[self.data]))  # 持仓市值,持仓占用的保证金
+            t += ',总资产:{:,.2f}'.format(self.broker.getvalue())
+            t += ',开仓:{:.3f}'.format(self.mpok)
+            # 交易日志
+            self.log(t, dt=self.dtdt.datetime(0))
             # </editor-fold>
-        # 交易日志
-        self.log(t, dt=self.dtdt.datetime(0))
         # 如果没有订单处于仍然可以执行的状态
         if not order.alive():
             self.myorder = None  # 表示没有订单待处理
@@ -1088,62 +1090,61 @@ class MyStrategy(bt.Strategy):
         if self.p.tar == gvc.TargetType.T_SIZE.value:
             # poskkcash = margin * abs(size)  # 开仓金额
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
-            posmaxcash = min(max(margin * 1.1, (margin * self.p_pok_max)), get_cash)  # 最大开仓金额
-            percent = abs(size * margin / get_cash_value)  # 目标持仓比率
-            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
+            posmaxcash = min(max(margin * 1.1, (margin * self.p_pok_max)), get_cash_value)  # 最大开仓金额
+            percent = abs(size * margin * 1.01 / get_cash_value)  # 目标持仓比率
+            poskkcash = abs(percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit))  # 总盈利>初始金额时,使用盈利金额交易
+            poskkcash = (poskkcash + margin_cash)
 
             # 限定使用资金的范围
-            poskkcash = abs(  # sign 为开仓方向
-                get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
-                else (  # 最小开仓金额<可用金额时
-                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
-                    else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
-                          else poskkcash)))
-            target = int(round((poskkcash + margin_cash) // margin))
-            self.mpok = sign * target
-            self.myorder = self.order_target_size(target=self.mpok)
+            if poskkcash < posmincash:  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                poskkcash = posmincash
+            elif poskkcash > posmaxcash:  # 开仓金额>最大开仓金额时,使用最大开仓金额
+                poskkcash = posmaxcash
+            target = (poskkcash // margin)  # 换算成手数
+
+            self.mpok = target = int(sign * target)
+            self.myorder = self.order_target_size(target=target)
 
         # 按目标金额下单
         elif self.p.tar == gvc.TargetType.T_VALUE.value:
             # size为目标持仓金额, > margin_cash时 为加仓, < margin_cash时 为减仓
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
-            posmaxcash = min(max(margin * 1.1, (1 * self.p_pok_max)), get_cash)  # 最大开仓金额
+            posmaxcash = min(max(margin * 1.1, (1 * self.p_pok_max)), get_cash_value)  # 最大开仓金额
             percent = abs(size / get_cash_value)  # 目标持仓比率
-            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
+            poskkcash = abs(percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit))  # 总盈利>初始金额时,使用盈利金额交易
+            poskkcash = (poskkcash + margin_cash)
 
             # 限定使用资金的范围
-            poskkcash = abs(  # sign 为开仓方向
-                get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额````
-                else (  # 最小开仓金额<可用金额时
-                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
-                    else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
-                          else poskkcash)))
-            value = (poskkcash + margin_cash)
-            self.mpok = sign * value
-            self.myorder = self.order_target_value(target=self.mpok)
+            if poskkcash < posmincash:  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                poskkcash = posmincash
+            elif poskkcash > posmaxcash:  # 开仓金额>最大开仓金额时,使用最大开仓金额
+                poskkcash = posmaxcash
+
+            self.mpok = target = sign * poskkcash
+            self.myorder = self.order_target_value(target=target)
 
         # 按目标百分比下单
         elif self.p.tar == gvc.TargetType.T_PERCENT.value:
             posmincash = min(margin * 1.1, get_cash)  # 最小开仓金额
-            posmaxcash = min(max(margin * 1.1, (get_cash * self.p_pok_max)), get_cash)  # 最大开仓金额
+            posmaxcash = min(max(margin * 1.1, (get_cash_value * self.p_pok_max)), get_cash_value)  # 最大开仓金额
             # percent = (margin_cash / get_cash)  # 持仓头寸占可用资金比率
             # percent = (margin_cash / get_cash_value)  # 持仓头寸占总资金比率
             percent = abs(size)  # 目标持仓比率
 
             # poskkcash = percent * (get_cash - open_profit)  # (可用资金-浮动盈亏)金额百分比交易
             # poskkcash = percent * (get_cash_value - open_profit)  # 帐户总资金百分比交易
-            poskkcash = percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit)  # 总盈利>初始金额时,使用盈利金额交易
+            poskkcash = abs(percent * (get_cash - open_profit - self.initial_amount) if total_return > 100 else percent * (get_cash - open_profit))  # 总盈利>初始金额时,使用盈利金额交易
+            poskkcash = (poskkcash + margin_cash)
 
             # 限定使用资金的范围
-            poskkcash = abs(  # sign 为开仓方向
-                get_cash if (posmincash > get_cash)  # 最小开仓金额>可用金额时,使用可用金额
-                else (  # 最小开仓金额<可用金额时
-                    posmincash if (abs(poskkcash) <= posmincash)  # 开仓金额<最小开仓金额时,使用最小开仓金额
-                    else (posmaxcash if (abs(poskkcash) > posmaxcash)  # 开仓金额>最大开仓金额时,使用最大开仓金额
-                          else poskkcash)))
-            percent = ((poskkcash + margin_cash) / get_cash_value)  # 计算占用账户总资金的百分比
-            self.mpok = sign * abs(percent)
-            self.myorder = self.order_target_percent(target=self.mpok)
+            if poskkcash < posmincash:  # 开仓金额<最小开仓金额时,使用最小开仓金额
+                poskkcash = posmincash
+            elif poskkcash > posmaxcash:  # 开仓金额>最大开仓金额时,使用最大开仓金额
+                poskkcash = posmaxcash
+            target = abs(poskkcash / get_cash_value)  # 计算占用账户总资金的百分比
+
+            self.mpok = target = sign * target
+            self.myorder = self.order_target_percent(target=target)
 
         return self.myorder
 
@@ -1507,8 +1508,13 @@ class MyStrategy(bt.Strategy):
             t_exit += ',平仓:{:}'.format(self.position.size)
             t_exit += ',价格:{:.2f}'.format(self.dtclose[0])
             t_exit += ',总资产:{:.2f}'.format(assets)
-            # self.myorder = self.order_target(self.mpok)  # 全部平仓
-            self.myorder = self.close()  # 全部平仓
+            # 多头清仓离场
+            if self.sig_longx1:
+                self.sell(size=self.position.size)
+            # 空头清仓离场
+            if self.sig_shortx1:
+                self.buy(size=self.position.size)
+            # self.myorder = self.close()  # 全部平仓
             # self.log(t_exit)
             pass
 
