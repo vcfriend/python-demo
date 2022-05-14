@@ -308,7 +308,7 @@ def commissioninfo(cerebro):
     # <editor-fold desc="折叠代码:交易手续费设置方式二">
     from bt_demo.btlin.my_strategy_config import MyCommission  # 自定义合约信息
     comm = {
-        'ZJIF': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00050, margin_rate=0.23, mult=300.0),  # 股指合约信息
+        'ZJIF': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00046, margin_rate=0.23, mult=300.0),  # 股指合约信息 平今仓为万分之4.6
         'SQRB': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息
         'SQCU': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
         'DQC': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
@@ -1236,10 +1236,10 @@ class MyStrategy(bt.Strategy):
                 if self.sig_begin:
                     self.sig_order = dict(
                         入场时间='',
+                        开仓次数=0,
                         订单列表=[],  # 策略信号生成的订单列表
                         离场时间='',
                         状态='',
-                        开仓次数=0,
                         开仓单位列表=[],
                         平仓单位列表=[],
                         开仓量=0,  # 订单开仓量
