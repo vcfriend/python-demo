@@ -19,7 +19,7 @@ class MyCommission(bt.CommInfoBase):
     def _getcommission(self, size, price, pseudoexec):
         comm = 0.0
         if self.p.commtype == bt.CommInfoBase.COMM_PERC:  # 百分比手续费
-            comm = abs(size) * price * self.p.commission
+            comm = abs(size) * price * self.p.commission * self.p.mult
         elif self.p.commtype == bt.CommInfoBase.COMM_FIXED:  # 固定手续费
             comm = abs(size) * self.p.commission
         return comm
