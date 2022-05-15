@@ -1,8 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
+class My_Statistics:
+    """策略统计,订单,成交记录"""
 
-class My_Statistics():
-    """策略统计,成交记录"""
+    # 记录由策略信号生成的订单信息
+    # sig_order = dict(MyStrategy.sigOrder)
+    # 订单信号列表
+    sig_orders = []
+
     # 记录每笔交易的成交与账户持仓等信息
     trade_record = {
         'datetime': [],  # 记录每笔交易发生的时间
