@@ -15,9 +15,9 @@ from bt_demo.btlin.my_statistics import My_Statistics  # 自定义的统计分�
 from bt_demo.btlin import global_variable_constant as gvc  # 全局变量常量枚举管理模块
 
 gvc.init()
-G_CEREBRO = None  # 大脑引擎
-G_RESULT_ONE = None  # 回测大脑返回
-G_RESULTS_OPT = None  # 参数调优大脑返回
+cerebro = None  # 大脑引擎
+results_opt = None  # 回测大脑返回
+results_opt = None  # 参数调优大脑返回
 res_df = None  # 筛选后的参数优化结果
 
 kwargs = dict()  # 参数字典
@@ -295,8 +295,7 @@ def optimize(cerebro):
             # optreturn=False,
             # stdstats=False,
         )
-        G_RESULTS_OPT = results_opt
-        gvc.set('G_RESULTS_OPT', G_RESULTS_OPT)
+        gvc.set('G_RESULTS_OPT', results_opt)
         print("\n--------------- 参数优化结果 -----------------")
     # clock the end of the process
     tend = time.perf_counter()
@@ -424,8 +423,7 @@ def backing(cerebro):
     print('组合期初资金: %s' % format(cerebro.broker.getvalue(), ',.2f'))
     # 启动回测
     result_one = cerebro.run()
-    G_RESULT_ONE = result_one
-    gvc.set('G_RESULT_ONE', G_RESULT_ONE)
+    gvc.set('G_RESULT_ONE', result_one)
     # print out the result_one
     print("\n--------------- 回测结果 -----------------")
     # clock the end of the process
