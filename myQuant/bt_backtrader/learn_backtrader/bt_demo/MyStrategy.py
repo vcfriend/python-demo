@@ -10,6 +10,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from bt_demo.btlin.my_strategy_config import MyCommission  # 自定义合约信息
 from bt_demo.btlin.my_statistics import My_Statistics  # 自定义的统计分析器
 from bt_demo.btlin import global_variable_constant as gvc  # 全局变量常量枚举管理模块
 
@@ -46,8 +47,9 @@ kwargs['G_PLOT'] = False  # 是否绘图,可提供绘图参数:'style="candle"'
 kwargs['G_QUANTSTATS'] = False  # 是否使用 quantstats 分析测试结果
 kwargs['G_P_LOG_FILE'] = False  # 是否输出日志到文件
 kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
-kwargs['G_OPTS'] = 0  # 是否参数调优
+kwargs['G_OPTS'] = 1  # 是否参数调优
 kwargs['G_OPTS_IS_USE'] = 0  # 是否使用上次优化结果
+kwargs['G_t_start'] = time.perf_counter()  # 当前时间计数器
 G_P_PW = [10, True, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [10, False, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OK = [10, False, 10, 100, 10]  # 参数[默认值,是否优化,最小值,最大值,步长]
@@ -108,7 +110,7 @@ def parse_args(pargs=None):
 
 
 def runstrat(args=None):
-    global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
+    global result_one, results_opt, res_df, cerebro  # 申明要使用全局变量
     strats = None
     result_one = gvc.get('G_RESULT_ONE')
     results_opt = gvc.get('G_RESULTS_OPT')
@@ -116,6 +118,8 @@ def runstrat(args=None):
     args = parse_args(args)
     gvc.set('args', args)
     kwargs = gvc.get('kwargs')  # 参数字典
+    # clock the start of the process
+    kwargs['G_t_start'] = time.perf_counter()
     kwargs['test_kwargs'] = dict()  # 回测参数字典
 
     file_path_abs = dt_start = dt_end = dt_format = dt_dtformat = dt_tmformat = ""
@@ -227,7 +231,7 @@ def runstrat(args=None):
     # 设置投资金额1000000
     cerebro.broker.setcash(kwargs.get('G_INI_CASH', 10000 * 10))
     # 设置手续费
-    commissioninfo(cerebro=cerebro)
+    MyCommission.set_commission_info(cerebro=cerebro, cont_id=kwargs['G_CONT_ID'])
     # 添加通用分析指标
     # <editor-fold desc="折叠代码:添加通过分析指标">
     cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
@@ -263,68 +267,10 @@ def runstrat(args=None):
         # 使用quantstats 分析工具并保存到HTML文件
 
 
-# """设置手续费"""
-def commissioninfo(cerebro):
-    """设置手续费"""
-    # # <editor-fold desc="折叠代码:交易手续费设置一">
-    # cerebro.broker.setcommission(
-    #     # 交易手续费，根据margin取值情况区分是百分比手续费还是固定手续费
-    #     commission=0.0015,
-    #     # commission=4,
-    #     # 期货保证金，决定着交易费用的类型,只有在stocklike=False时起作用
-    #     margin=0,
-    #     # 乘数，盈亏会按该乘数进行放大
-    #     mult=10.0,
-    #     # 交易费用计算方式，取值有：
-    #     # 1.CommInfoBase.COMM_PERC 百分比费用
-    #     # 2.CommInfoBase.COMM_FIXED 固定费用
-    #     # 3.None 根据 margin 取值来确定类型
-    #     commtype=bt.CommInfoBase.COMM_PERC,
-    #     # 当交易费用处于百分比模式下时，commission 是否为 % 形式
-    #     # True，表示不以 % 为单位，0.XX 形式；False，表示以 % 为单位，XX% 形式
-    #     percabs=True,
-    #     # 是否为股票模式，该模式通常由margin和commtype参数决定
-    #     # margin=None或COMM_PERC模式时，就会stocklike=True，对应股票手续费；
-    #     # margin设置了取值或COMM_FIXED模式时,就会stocklike=False，对应期货手续费
-    #     stocklike=False,
-    #     # 计算持有的空头头寸的年化利息
-    #     # days * price * abs(size) * (interest / 365)
-    #     interest=0.0,
-    #     # 计算持有的多头头寸的年化利息
-    #     interest_long=False,
-    #     # 杠杆比率，交易时按该杠杆调整所需现金
-    #     leverage=1.0,
-    #     # 自动计算保证金
-    #     # 如果 False, 则通过margin参数确定保证金
-    #     # 如果automargin<0, 通过mult*price确定保证金
-    #     # 如果automargin>0, 如果 automargin*price确定保证金 automargin=mult*margin
-    #     automargin=10 * 0.13,
-    #     # 交易费用设置作用的数据集(也就是作用的标的)
-    #     # 如果取值为None，则默认作用于所有数据集(也就是作用于所有assets)
-    #     name=None
-    # )
-    # # </editor-fold>
-    pass
-    # <editor-fold desc="折叠代码:交易手续费设置方式二">
-    from bt_demo.btlin.my_strategy_config import MyCommission  # 自定义合约信息
-    comm = {
-        'ZJIF': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00046, margin_rate=0.23, mult=300.0),  # 股指合约信息 平今仓为万分之4.6
-        'SQRB': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.13, mult=10.0),  # 螺纹钢合约信息 万分之1.5
-        'SQCU': MyCommission(commtype=bt.CommInfoBase.COMM_PERC, commission=0.00015, margin_rate=0.14, mult=5.0),  # 沪铜合约信息
-        'DQC': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=2.4, margin_rate=0.10, mult=10.0),  # 玉米合约信息
-        'ZQCF': MyCommission(commtype=bt.CommInfoBase.COMM_FIXED, commission=4.0, margin_rate=0.11, mult=5.0),  # 棉花合约信息
-
-    }
-    # 添加进 broker
-    cerebro.broker.addcommissioninfo(comm[kwargs['G_CONT_ID']], name=None)  # name 用于指定该交易费用函数适用的标的,未指定将适用所有标的
-    # </editor-fold>
-    pass
-
-
 # """参数调优"""
 def optimize(cerebro):
     """参数调优"""
-    global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
+    global result_one, results_opt, res_df  # 申明要使用全局变量
     args = gvc.get('args')
     kwargs = gvc.get('kwargs')
     results_opt = gvc.get('G_RESULTS_OPT')
@@ -332,7 +278,7 @@ def optimize(cerebro):
     kwargs['opts_path'] = (kwargs.get('file_name') + '_opt.csv')  # 优化结果保存路径
     print('opts_kwargs:', opts_kwargs)
     # clock the start of the process
-    kwargs['tstart'] = time.perf_counter()
+    kwargs['G_t_start'] = time.perf_counter()
     # 为Cerebro引擎添加策略, 优化策略
     strats = cerebro.optstrategy(MyStrategy, **opts_kwargs)
 
@@ -355,7 +301,7 @@ def optimize(cerebro):
     # clock the end of the process
     tend = time.perf_counter()
     # print out the results_opt
-    print('Time used optimize:', '{:.2f}s'.format(tend - kwargs['tstart']))
+    print('Optimum usage time:', '{:.2f}s'.format(tend - kwargs['G_t_start']))
 
     res_df = pd.DataFrame()  # 新建一个空的pandas列表,内容由字典填充
 
@@ -446,7 +392,7 @@ def optimize(cerebro):
 # """回测"""
 def backing(cerebro):
     """回测"""
-    global G_RESULT_ONE, G_RESULTS_OPT, res_df  # 申明要使用全局变量
+    global result_one, results_opt, res_df  # 申明要使用全局变量
     kwargs = gvc.get('kwargs')
     test_kwargs = kwargs['G_P_PARAM']  # 回测参数
     log_logger = None
@@ -461,7 +407,7 @@ def backing(cerebro):
     print('test_kwargs:', test_kwargs)  # 回测参数
     print('log_kwargs:', log_kwargs)  # 日志参数
     # clock the start of the process
-    kwargs['tstart'] = time.perf_counter()
+    kwargs['G_t_start'] = time.perf_counter()
     # 添加观测器,绘制时显示
     cerebro.addobserver(bt.observers.Broker)
     cerebro.addobserver(bt.observers.Trades)
@@ -485,7 +431,7 @@ def backing(cerebro):
     # clock the end of the process
     tend = time.perf_counter()
     # print out the results_opt
-    print('Time used optimize:', '{:.2f}s'.format(tend - kwargs['tstart']))
+    print('Backtest usage time:', '{:.2f}s'.format(tend - kwargs['G_t_start']))
     # 引擎运行后打期末资金
     print('组合期末资金: %s' % format(cerebro.broker.getvalue(), ',.2f'), end='')
     # 回测结果提取分析
@@ -508,8 +454,10 @@ def result_analysis(result_one):
     my_analyze_return = dict(gvc.get('analyze_return'))
     print(" Cumulative Return rtot: {:.2f}".format(returns['rtot'] * 100))
     print(" Cumulative Return pyFolio: {:,.2f}".format(sum(pyFolio['returns'].values()) * 100))
-    print(" Cumulative Return my: {:,.2f}".format(my_analyze_return['cumulative_return'] * 100))
+    print(" Cumulative Return my: {:,.2f}".format(my_analyze_return['cumulative_return_my'] * 100))
     print(" CAGR my: {:,.2f}".format(my_analyze_return['CAGR'] * 100))
+    print(" sharpe_ratio: {:,.2f}".format(my_analyze_return['sharpe_ratio']))
+    print(" sortino_ratio: {:,.2f}".format(my_analyze_return['sortino_ratio']))
     print("\n--------------- 年度收益率 -----------------")
     annualReturn = result_one[0].analyzers.annualReturn.get_analysis()
     # print(' 收益率k,v', get_analysis.items())
@@ -814,17 +762,19 @@ class MyStrategy(bt.Strategy):
         self.myorders: [backtrader.Order] = []  # 从入场到离场的完整信号订单
         self.sig_order = dict()  # 策略信号生成的订单
         self.sig_orders = []  # 策略信号生成的订单列表
-        self.kwargs = dict(gvc.get('kwargs'))  # 获取全局参数
-        gvc.set('sig_orders', self.sig_orders)  # 保存到全局变量
         self.analyze_return = dict(  # 分析回报
             dt_start='',  # 开始时间
             dt_end='',  # 结束时间
-            time_in_market=timedelta(days=0),  # 累计订单市场时间
-            cumulative_return=0,  # 累计收益率
-            cumulative_return_log=0,  # 累计对数收益率 对数收益率=np.log('普通收益率' + 1) 转换普通收益率=np.exp('对数收益率') -1
+            time_in_market=timedelta(days=0),  # 累计订单持仓时长
+            time_in_market_avg=timedelta(days=0),  # 平均订单持仓时长
+            cumulative_return_my=.0,  # 累计收益率
+            cumulative_return_log=.0,  # 累计对数收益率 对数收益率=np.log('普通收益率' + 1) 转换普通收益率=np.exp('对数收益率') -1
             CAGR=float(0),  # CAGR年复合增长率 公式：(现有价值/基础价值)^(1/年数)-1
+            return_std=.0,  # 收益率标准差
+            sharpe_ratio=.0,  # 夏普比率=(投资回报率平均值-无风险收益率rf)/投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
+            sortino_ratio=.0,  # sortino ratio 索提诺比率 = (期望收益率rp - 可接受最低收益率mar)/((小于rf的样本rpt - rf)^2累加和的平均值)的开方
+
         )
-        gvc.set('analyze_return', self.analyze_return)  # 保存到全局变量
 
     def start(self):
         """在回测开始之前调用,对应第0根bar"""
@@ -833,13 +783,17 @@ class MyStrategy(bt.Strategy):
         self.myorder = None  # 哨兵避免挂单操作
         self.dtopen_month = self.dtopen[0]
         self.initial_amount = self.broker.getcash()
-        # clock the end of the process
-        tend = time.perf_counter()
+        self.kwargs = dict(gvc.get('kwargs', dict()))  # 获取全局参数
+        self.dt_dtformat = self.kwargs.get('G_DT_DTFORMAT', '%Y-%m-%d %H:%M:%S')
+        if self.kwargs:
+            gvc.set('sig_orders', self.sig_orders)  # 保存到全局变量
+            gvc.set('analyze_return', self.analyze_return)  # 保存到全局变量
+            # clock the end of the process
+            tend = time.perf_counter()
+            if self.kwargs and self.kwargs.get('t_start'):
+                print('Time used loading:', '{:.2f}s'.format(tend - kwargs['t_start']))
+        self.analyze_return['dt_start'] = self.dtdt.datetime(0).strftime(self.dt_dtformat)  # 交易开始时间
 
-        if self.kwargs and self.kwargs.get('tstart'):
-            print('Time used loading:', '{:.2f}s'.format(tend - kwargs['tstart']))
-        pass
-        self.analyze_return['dt_start'] = self.dtdt.datetime(0).strftime(self.kwargs['G_DT_DTFORMAT'])  # 交易开始时间
 
     def notify_trade(self, trade):
         """每当有持仓头寸开仓和平仓时通知信息"""
@@ -1014,9 +968,19 @@ class MyStrategy(bt.Strategy):
                 self.sig_order['平仓收益率'] = self.sig_order['净盈亏'] / (self.sig_order['总资金'] - self.sig_order['净盈亏'])
                 self.sig_order['对数收益率'] = np.log(self.sig_order['平仓收益率'] + 1)
                 self.analyze_return['cumulative_return_log'] += self.sig_order['对数收益率']  # 累计对数收益率
-                self.analyze_return['cumulative_return'] = np.exp(self.analyze_return['cumulative_return_log']) - 1  # 累计对数收益率转换成普通收益率
-                time_in_market = self.analyze_return.setdefault('time_in_market', timedelta(days=0))  # 累计订单市场的时间
-                self.analyze_return['CAGR'] = (np.power((1 + self.analyze_return['cumulative_return']), 1 / (time_in_market.days / 365)) - 1)  # CARG 复合增长率 公式：(现有价值/基础价值)^(1/年数)-1
+                self.analyze_return['cumulative_return_my'] = np.exp(self.analyze_return['cumulative_return_log']) - 1  # 累计对数收益率转换成普通收益率
+                time_in_market_avg = self.analyze_return.setdefault('time_in_market_avg', timedelta(days=0))  # 平均订单市场时间
+                time_in_market = self.analyze_return.setdefault('time_in_market', timedelta(days=0))  # 累计订单市场时间
+                self.analyze_return['CAGR'] = (np.power((1 + self.analyze_return['cumulative_return_my']), 1 / (time_in_market.days / 365)) - 1)  if time_in_market.days else 0  # CARG 复合增长率 公式：(现有价值/基础价值)^(1/年数)-1
+                return_ratio_all = [o['平仓收益率'] for o in self.sig_orders]  # 收益率列表
+                self.analyze_return['return_std'] = np.std(return_ratio_all).round(5)  # 计算收益率标准差
+                mar = 0.00  # 可接受最低收益率mar
+                rf = 0.003  # 无风险年利率rf 也可用 存款基准利率
+                # 夏普比率=(投资回报率平均值-无风险收益率rf)/投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
+                self.analyze_return['sharpe_ratio'] = ((np.mean(return_ratio_all) - rf) / self.analyze_return['return_std']) * np.sqrt(time_in_market / time_in_market_avg) if self.analyze_return['return_std'] else 0
+                # sortino ratio 索提诺比率 = (期望收益率rp - 可接受最低收益率mar)/((小于rf的样本rpt - rf)^2累加和的平均值)的开方
+                sortino_ratio_der = np.sqrt(sum([np.power(x - rf, 2) for x in return_ratio_all if x < rf]) / len(return_ratio_all))
+                self.analyze_return['sortino_ratio'] = ((np.mean(return_ratio_all) - mar) / sortino_ratio_der) if sortino_ratio_der else 0
 
                 pass
             # </editor-fold>
@@ -1236,41 +1200,42 @@ class MyStrategy(bt.Strategy):
                 if self.sig_begin:
                     self.sig_order = dict(
                         入场时间='',
-                        开仓次数=0,
+                        持仓时长=timedelta(days=0),
                         离场时间='',
+                        开仓次数=0,
                         状态='',
                         开仓类型='',
                         开仓单位列表=[],
                         平仓单位列表=[],
                         开仓量列表=[],
                         平仓量列表=[],
-                        多头持仓=0,
-                        空头持仓=0,
+                        多头持仓=.0,
+                        空头持仓=.0,
                         持仓量=0,
-                        入场价=0,
+                        入场价=.0,
                         订单受理价列表=[],
                         订单未成交价列表=[],
                         开仓价列表=[],
-                        开仓均价=0,
-                        上次开仓价=0,
-                        加仓价=0,
+                        开仓均价=.0,
+                        上次开仓价=.0,
+                        加仓价=.0,
                         平仓价列表=[],
-                        平仓均价=0,
+                        平仓均价=.0,
                         开仓信号价列表=[],
                         平仓信号价列表=[],
-                        开仓信号均价=0,
-                        收益率=0,
-                        对数收益率=0,
-                        平仓收益率=0,
-                        累计收益率=0,
+                        开仓信号均价=.0,
+                        收益率=.0,
+                        对数收益率=.0,
+                        平仓收益率=.0,
+                        累计收益率=.0,
                         平仓盈亏=0,
-                        净盈亏=0,
-                        手续费=0,
-                        总资金=0,
+                        净盈亏=.0,
+                        手续费=.0,
+                        总资金=.0,
                         订单列表=[],  # 策略信号生成的订单列表
                     )
                     self.sig_orders.append(self.sig_order)
-                    self.sig_order['入场时间'] = self.dtdt.datetime(0).strftime(self.kwargs['G_DT_DTFORMAT'])  # 订单开始时间
+                    self.sig_order['入场时间'] = self.dtdt.datetime(0).strftime(self.dt_dtformat)  # 订单开始时间
                     self.sig_order['状态'] = '入场'
                     self.sig_order['期初金额'] = self.broker.getvalue()  # 当前总资产
                     self.sig_order['入场价'] = self.dtclose[0]  # 开始入场价格-空仓时的信号价
@@ -1289,18 +1254,20 @@ class MyStrategy(bt.Strategy):
                 # 空仓开仓或加仓
                 self.sig_order['开仓次数'] += 1  # 开仓次数
                 self.sig_order.setdefault('开仓信号价列表', []).append(self.dtclose[0])  # 信号开仓价
-                self.sig_order['开仓信号均价'] = round(np.mean(self.sig_order.get('开仓信号价列表', [0])), 2)  # 开仓信号均价
+                self.sig_order['开仓信号均价'] = np.mean(self.sig_order.get('开仓信号价列表', [0])).round(2)  # 开仓信号均价
 
             # 减仓或清仓
             if self.sig_dec or self.sig_exit:
                 self.order_datetime = self.dtdt.datetime(0)  # 平仓订单开始时间
                 self.sig_order.get('平仓信号价列表', []).append(self.dtclose[0])  # 信号平仓价
-                self.sig_order['信号平仓均价'] = round(np.mean(self.sig_order.setdefault('平仓信号价列表', [0])), 2)  # 平仓均价
+                self.sig_order['信号平仓均价'] = np.mean(self.sig_order.setdefault('平仓信号价列表', [0])).round(2)  # 平仓均价
                 if self.sig_exit:
                     self.sig_order['状态'] = '清仓'
-                    self.sig_order['离场时间'] = self.dtdt.datetime(0).strftime(self.kwargs['G_DT_DTFORMAT'])  # 订单结束时间
-                    self.analyze_return['dt_end'] = self.dtdt.datetime(0).strftime(self.kwargs['G_DT_DTFORMAT'])  # 订单结束时间
-                    self.analyze_return['time_in_market'] += (self.dtdt.datetime(0) - datetime.strptime(self.sig_order['入场时间'], self.kwargs['G_DT_DTFORMAT']))  # 累计订单市场时间
+                    self.sig_order['离场时间'] = self.dtdt.datetime(0).strftime(self.dt_dtformat)  # 订单结束时间
+                    self.sig_order['持仓时长'] = self.dtdt.datetime(0) - datetime.strptime(self.sig_order['入场时间'], self.dt_dtformat)
+                    self.analyze_return['dt_end'] = self.dtdt.datetime(0).strftime(self.dt_dtformat)  # 订单结束时间
+                    self.analyze_return['time_in_market'] += self.sig_order['持仓时长']  # 累计订单市场时间
+                    self.analyze_return['time_in_market_avg'] = self.analyze_return['time_in_market'] / len(self.sig_orders)  # 平均订单持仓时长
                     self.sig_order['离场价'] = self.dtclose[0]  # 离场价格-清仓时的信号价
                     if self.sig_longx1:
                         self.sig_order['状态'] = '多头清仓'
