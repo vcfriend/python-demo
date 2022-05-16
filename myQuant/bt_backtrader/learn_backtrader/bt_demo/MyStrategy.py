@@ -44,6 +44,7 @@ kwargs['G_DT_TIMEFRAME'] = 'minutes'  # 重采样更大时间周期 choices=['mi
 kwargs['G_DT_COMPRESSION'] = 5  # 合成bar的周期数
 kwargs['G_INI_CASH'] = 10000 * 10  # 初始金额
 kwargs['G_PLOT'] = False  # 是否绘图,可提供绘图参数:'style="candle"'
+kwargs['G_TANN'] = 252  # 用于年化（标准化）的期间数，即: - ``days: 252`` - ``weeks: 52`` - ``months: 12`` - ``years: 1``
 kwargs['G_QUANTSTATS'] = False  # 是否使用 quantstats 分析测试结果
 kwargs['G_P_LOG_FILE'] = False  # 是否输出日志到文件
 kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
@@ -234,11 +235,12 @@ def runstrat(args=None):
     MyCommission.set_commission_info(cerebro=cerebro, cont_id=kwargs['G_CONT_ID'])
     # 添加通用分析指标
     # <editor-fold desc="折叠代码:添加通过分析指标">
-    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Years)  # 此分析器通过查看时间范围的开始和结束来计算回报
+    tann = kwargs.setdefault('G_TANN', 1)  # 用于年化（标准化）的期间数，即: - ``Days: 252`` - ``Weeks: 52`` - ``Months: 12`` - ``Years: 1``
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timeReturn', timeframe=bt.TimeFrame.Days)  # 此分析器通过查看时间范围的开始和结束来计算回报
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawDown')  # 计算最大回撤相关指标
-    cerebro.addanalyzer(bt.analyzers.Returns, _name="returns", tann=252)  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报
+    cerebro.addanalyzer(bt.analyzers.Returns, _name="returns", tann=tann)  # 使用对数方法计算的总回报、平均回报、复合回报和年化回报 # 用于年化（标准化）的期间数，即: - ``days: 252`` - ``weeks: 52`` - ``months: 12`` - ``years: 1``
     cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyFolio')  # 添加PyFolio
-    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0)  # 计算年化夏普比率：日度收益
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpeRatio', timeframe=bt.TimeFrame.Days, annualize=True, riskfreerate=0.003)  # 计算年化夏普比率：日度收益 riskfreerate=无风险利率
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="tradeAnalyzer")  # 提供有关平仓交易的统计信息（也保留未平仓交易的数量）
     from bt_demo.btlin.my_tradeanalyzer import My_TradeAnalyzer  # 自定义分析器
     cerebro.addanalyzer(My_TradeAnalyzer, _name="my_tradeAnalyzer")  # 自定义平仓交易的统计信息
@@ -472,11 +474,11 @@ def result_analysis(result_one):
             for kk, vv in v.items():
                 t = (" [{:},{:.2f}]" if isinstance(vv, float) else " [{:},{:}]").format(kk, vv)
                 print(t, end='')
-    print("\n--------------- 年化收益：日度收益 -----------------")
+    print("\n--------------- 年化收益: -----------------")
     an_returns = result_one[0].analyzers.returns.get_analysis()
     for k, v in an_returns.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
-    print("\n--------------- 年化夏普比率：日度收益 -----------------")
+    print("\n--------------- 年化夏普比率: -----------------")
     sharpeRatio = (result_one[0].analyzers.sharpeRatio.get_analysis())
     for k, v in sharpeRatio.items():
         print((" [{:},{:.2f}]" if isinstance(v, float) else " [{:},{:}]").format(k, v), end='')
@@ -810,7 +812,7 @@ class MyStrategy(bt.Strategy):
             累计对数收益率=.0,  # 累计对数收益率 对数收益率=np.log('普通收益率' + 1) 转换普通收益率=np.exp('对数收益率') -1
             CAGR=float(0),  # CAGR年复合增长率 公式：(现有价值/基础价值)^(1/年数)-1
             收益率标准差=.0,  # 收益率标准差
-            sharpe_ratio=.0,  # 夏普比率=(投资回报率平均值-无风险收益率rf)/投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
+            sharpe_ratio=.0,  # 夏普比率=(单位投资回报率平均值-无风险收益率rf)/单位投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
             sortino_ratio=.0,  # sortino ratio 索提诺比率 = (期望收益率rp - 可接受最低收益率mar)/((小于rf的样本rpt - rf)^2累加和的平均值)的开方
             drawdown=.0,  # 回撤 回撤=(前期最高值-期间最低值)/前期最高值
             最大回撤=[],  # 最大回撤
@@ -831,8 +833,8 @@ class MyStrategy(bt.Strategy):
             gvc.set('sig_analyze', self.sig_analyze)  # 保存到全局变量
             # clock the end of the process
             tend = time.perf_counter()
-            if self.kwargs and self.kwargs.get('t_start'):
-                print('Time used loading:', '{:.2f}s'.format(tend - kwargs['t_start']))
+            if self.kwargs and self.kwargs.get('G_t_start'):
+                print('Time used loading:', '{:.2f}s'.format(tend - kwargs['G_t_start']))
         self.sig_analyze['开始时间'] = self.dtdt.datetime(0).strftime(self.dt_dtformat)  # 交易开始时间
 
     def notify_trade(self, trade):
@@ -1014,15 +1016,16 @@ class MyStrategy(bt.Strategy):
                 self.sig_analyze['累计平仓收益率'] = np.exp(self.sig_analyze['累计对数收益率']) - 1  # 累计对数收益率转换成普通收益率
                 time_in_market_avg = self.sig_analyze.setdefault('订单持仓平均时长', timedelta(days=0))  # 平均订单市场时间
                 time_in_market = self.sig_analyze.setdefault('订单持仓累计时长', timedelta(days=0))  # 累计订单市场时间
+                tann = self.kwargs.setdefault('G_TANN', 252)  # 用于年化（标准化）的期间数，即: - ``days: 252`` - ``weeks: 52`` - ``months: 12`` - ``years: 1``
                 self.sig_analyze['CAGR'] = (np.power((1 + self.sig_analyze['累计平仓收益率']), 1 / (time_in_market.days / 365)) - 1) if time_in_market.days else 0  # CARG 复合增长率 公式：(现有价值/基础价值)^(1/年数)-1
                 return_ratio_all = [o['平仓收益率'] for o in self.sig_orders]  # 收益率列表
                 self.sig_analyze['收益率标准差'] = np.std(return_ratio_all).round(5)  # 计算收益率标准差
                 mar = 0.00  # 可接受最低收益率mar
                 rf = 0.003  # 无风险年利率rf 也可用 存款基准利率
-                # 夏普比率=(投资回报率平均值-无风险收益率rf)/投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
+                # 夏普比率=(单位投资回报率平均值-无风险收益率rf)/单位投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
                 self.sig_analyze['sharpe_ratio'] = ((np.mean(return_ratio_all) - rf) / self.sig_analyze['收益率标准差']) * np.sqrt(time_in_market / time_in_market_avg) if self.sig_analyze['收益率标准差'] else 0
                 # sortino ratio 索提诺比率 = (期望收益率rp - 可接受最低收益率mar)/((小于rf的样本rpt - rf)^2累加和的平均值)的开方
-                sortino_ratio_der = np.sqrt(sum([np.power(x - rf, 2) for x in return_ratio_all if x < rf]) / len(return_ratio_all))
+                sortino_ratio_der = np.sqrt(sum([np.power(rpt - rf, 2) for rpt in return_ratio_all if rpt < rf]) / len(return_ratio_all))
                 self.sig_analyze['sortino_ratio'] = ((np.mean(return_ratio_all) - mar) / sortino_ratio_der) if sortino_ratio_der else 0
                 pnl_list = [o['平仓盈亏'] for o in self.sig_orders]
                 # 回撤 回撤=(前期最高值-期间最低值)/前期最高值
@@ -1165,7 +1168,7 @@ class MyStrategy(bt.Strategy):
         if i == 0:
             return 0
         j = np.argmax(return_list[:i])
-        return (return_list[j] - return_list[i]) / return_list[j], j, i
+        return [round((return_list[j] - return_list[i]) / return_list[j], 3), j, i]
 
     def next(self):
         """每当有新的k线周期生成时通知信息"""
