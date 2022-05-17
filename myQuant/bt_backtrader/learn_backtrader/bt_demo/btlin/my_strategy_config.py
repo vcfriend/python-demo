@@ -19,6 +19,7 @@ class MyCommission(bt.CommInfoBase):
     def _getcommission(self, size, price, pseudoexec):
         comm = 0.0
         if self.p.commtype == bt.CommInfoBase.COMM_PERC:  # 百分比手续费
+            # 交易手续费计算公式: 手数*价格*合约乘数*手续费率(0.00015)如螺纹钢手续费率=万分之1.5
             comm = abs(size) * price * self.p.commission * self.p.mult
         elif self.p.commtype == bt.CommInfoBase.COMM_FIXED:  # 固定手续费
             comm = abs(size) * self.p.commission
