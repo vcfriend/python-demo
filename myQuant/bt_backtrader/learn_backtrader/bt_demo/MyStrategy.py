@@ -35,7 +35,7 @@ kwargs = dict()  # 参数字典
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
 kwargs['G_FILE_PATH'] = "datas\\SQRB-OC-5m-20090327-20211231.csv"
-kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2009-07-14'
+kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2009-7-14'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2011-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
@@ -467,7 +467,7 @@ def result_analysis(result_one):
     print(" so最大回撤比2: {:}".format(my_return_analyze['so"最大回撤比2']))
     print(" so最大回撤比3: {:}".format(my_return_analyze['so"最大回撤比3']))
     print(" drawdown_avg: {:}".format(my_return_analyze['sa"平均回撤比']))
-    print(" account_balance: {:}".format(my_return_analyze['sa"账户余额']))
+    print(" account_balance: {:}".format(my_return_analyze['sa"期末余额']))
     print(" comm_sum: {:.2f}".format(my_return_analyze['sa"手续费累计']))
     print(" comm/net%: {:.2f}".format(my_return_analyze['sa"净佣比%']))
     print("\n--------------- 年度收益率 -----------------")
@@ -807,6 +807,7 @@ class MyStrategy(bt.Strategy):
             'so"开仓均价': .0,
             'so"上次开仓价': .0,
             'so"加仓价': .0,
+            'so"成交金额': [],
             'so"平仓价[]': [],
             'so"平仓均价': .0,
             'so"平仓成交价[]': [],
@@ -817,13 +818,15 @@ class MyStrategy(bt.Strategy):
             'so"平仓回撤比': .0,
             'so"最大回撤比{开始时间,结束时间,最大回撤比,累计收益率}': {'开始时间': '', '结束时间': '', '最大回撤比': .0, '累计收益率': .0},
             'so"对数收益率': .0,
-            'so"平仓收益率{平仓时间,平仓收益率,累计收益率}': {'平仓时间': '', '平仓收益率': .0, '累计收益率': .0},
+            'so"平仓收益率{平仓时间,平仓收益率,累计收益率}': {'平仓时间': '', '平仓收益率': .0, '累计收益率': .0},  # 统计平仓的收益率
+            'so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}': {'开仓时间': '', '平仓时间': '', '开平收益率': .0, '累计收益率': .0},  # 统计开平仓时的收益率
             'so"累计收益率': .0,
             'so"平仓盈亏': 0,
             'so"净盈亏': .0,
             'so"手续费[]': [],  # 记录每笔订单的手续费
             'so"手续费合计': .0,
-            'so"总资金': .0,
+            'so"期初资金': .0,
+            'so"期未资金': .0,
             'so"订单[]': [],  # 策略信号生成的订单列表
         }
         self.sig_orders = []  # 策略信号生成的订单列表
@@ -837,10 +840,12 @@ class MyStrategy(bt.Strategy):
             'sa"手续费so[]': [],  # 每笔信号订单的合计手续费
             'sa"累计盈亏': .0,  # 累计平仓盈亏
             'sa"手续费累计': .0,  # 累加信号订单的手续费(全部交易的手续费)
-            'sa"账户余额[]': [],  # 账户余额列表
-            'sa"账户余额': .0,  # 账户余额
+            'sa"期末余额[]': [],  # 账户余额列表
+            'sa"期初余额': .0,  # 期初余额
+            'sa"期末余额': .0,  # 期末余额
             'sa"净佣比%': .0,  # 净利润/手续费
             'sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]': [],  # 平仓收益率列表 [{'平仓时间': '', '平仓收益率': .0, '累计收益率': .0}]
+            'sa"开平收益率[{开仓时间,平仓时间,开平收益率,累计收益率}]': [],  # 开平收益率列表 [{'开仓时间': '', '平仓时间': '', '开平收益率': .0, '累计收益率': .0}]
             'sa"对数收益率[]': [],  # 对数收益率列表
             'sa"累计收益率': .0,  # 累计平仓收益率
             'sa"累计对数收益率': .0,  # 累计对数收益率 对数收益率=np.log('普通收益率' + 1) 转换普通收益率=np.exp('so"对数收益率') -1
@@ -975,6 +980,7 @@ class MyStrategy(bt.Strategy):
 
     def notify_order(self, order):
         """每当有交易订单创建和关闭时通知信息"""
+        dt = self.datas[0].datetime.datetime(0)  # 时间断点调试条件 dt > bt.datetime.datetime.strptime('2009-08-05 11:30:00', '%Y-%m-%d %H:%M:%S')
         if order.status in [order.Accepted, order.Submitted]:
             # broker 提交/接受了，买/卖订单则什么都不做 [order.Accepted, order.Submitted]
             # self.log('order.OrdTypes:{:},size:{:}'.format(order.OrdTypes[order.ordtype], order.size))
@@ -991,12 +997,15 @@ class MyStrategy(bt.Strategy):
             # if not order.price or order.price == 0:
             #     return
             self.sig_order.setdefault('so"订单[]', []).append(order)  # 增加订单到列表
+            comminfo = self.broker.getcommissioninfo(self.data)
+            margin = comminfo.get_margin(self.dtclose[0])  # 最低开仓保证金
             ord_cre_price__ = float('%.2f' % order.created.price) if order and order.created.price else 0
             ord_exe_price = order.executed.price  # 订单成交价
             ord_exe_size = order.executed.size  # 订单成交量
             ord_exe_comm = order.executed.comm  # 手续费
             ord_exe_pnl = order.executed.pnl  # 平仓盈亏
             ord_exe_value = order.executed.value  # 成交金额 占用保证金
+            ord_total_value = self.broker.getvalue(datas=[self.data])  # 持仓市值 总成交金额
 
             # 空仓开仓或持仓加仓
             if self.sig_begin or self.sig_add:
@@ -1007,17 +1016,25 @@ class MyStrategy(bt.Strategy):
                     self.sig_order['so"状态'] = '入场订单'
                     self.sig_order['so"入场价'] = ord_exe_price  # 开始入场价格-空仓时的开仓价
                     self.sig_order['so"上次开仓价'] = self.sig_order['so"入场价']
+                    self.sig_order['so"期初资金'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
                     pass
                 # 空仓开仓或持仓加仓
                 self.sig_order.setdefault('so"开仓单位[]', []).append(round(self.mpok, 3))
                 self.sig_order.setdefault('so"开仓价[]', []).append(ord_exe_price)  # 开仓价格
                 self.sig_order['so"开仓均价'] = np.mean(self.sig_order.setdefault('so"开仓价[]', [0])).round(2)  # 开仓均价
                 self.sig_order['so"持仓量'] = self.position.size
+                self.sig_order.setdefault('so"成交金额', []).append(ord_exe_value)
                 self.sig_order['so"手续费合计'] += round(ord_exe_comm, 2)  # 累计订单开仓佣金
                 self.sig_order.setdefault('so"手续费[]', []).append(round(ord_exe_comm, 2))  # 记录订单开仓佣金
-                self.sig_order['so"净盈亏'] = round(ord_exe_pnl - self.sig_order['so"手续费合计'], 2)  # 当前交易损益减去佣金(净pnl）
-                self.sig_order['so"总资金'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
+                ord_cre_pnl = (ord_exe_price - self.sig_order['so"开仓均价']) * self.position.size * comminfo.p.mult  # 持仓盈亏
+                self.sig_order['so"净盈亏'] = round(ord_cre_pnl - self.sig_order['so"手续费合计'], 2)  # 当前交易损益减去佣金(净pnl）
+                self.sig_order['so"期未资金'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
                 self.sig_order.setdefault('so"开仓量[]', []).append(ord_exe_size)  # 订单开仓量列表
+                ord_total_value = ord_total_value if ord_total_value else sum(self.sig_order['so"成交金额'])  # 计算持仓占用保证金
+
+                open_yield = (self.sig_order['so"净盈亏'] / max(abs(self.sig_order['so"期未资金'] - self.sig_order['so"净盈亏']), self.sig_order['so"期初资金']))  # 开仓收益率
+                self.sig_order['so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}'] = {'开仓时间': self.sig_order['so"入场时间'], '平仓时间': self.sig_order['so"离场时间'], '开平收益率': open_yield, '累计收益率': self.sig_analyze['sa"累计收益率']}
+
                 # 持仓加仓
                 if self.sig_add:
                     self.sig_order['so"状态'] = '加仓订单'
@@ -1065,47 +1082,47 @@ class MyStrategy(bt.Strategy):
                 self.sig_order.setdefault('so"手续费[]', []).append(round(ord_exe_comm, 2))  # 记录订单平仓佣金
                 self.sig_order['so"平仓盈亏'] = round(ord_exe_pnl, 2)  # 平仓盈亏
                 self.sig_order['so"净盈亏'] = round(ord_exe_pnl - self.sig_order['so"手续费合计'], 2)  # 当前交易损益减去佣金(净pnl）
-                self.sig_order['so"总资金'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
+                self.sig_order['so"期未资金'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
                 self.sig_analyze.setdefault('sa"手续费so[]', []).append(self.sig_order['so"手续费合计'])
                 self.sig_analyze['sa"手续费累计'] += self.sig_order['so"手续费合计']  # 累加信号订单的手续费(全部交易的手续费)
                 self.sig_analyze['sa"累计盈亏'] += self.sig_order['so"净盈亏']  # 累加信号订单的盈亏(全部交易的盈亏)
-                self.sig_analyze['sa"账户余额'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
+                self.sig_analyze['sa"期末余额'] = round(self.broker.getvalue(), 2)  # 当前账户总资金
                 self.sig_analyze['sa"净佣比%'] = round((self.sig_analyze['sa"手续费累计'] / self.sig_analyze['sa"累计盈亏']) * 100, 2)  # 净佣比
-                self.sig_analyze.setdefault('sa"账户余额[]', []).append(self.sig_order['so"总资金'])
+                self.sig_analyze.setdefault('sa"期末余额[]', []).append(self.sig_order['so"期未资金'])
                 self.sig_order.setdefault('so"平仓单位[]', []).append(round(self.mpok, 3))
                 self.sig_order.setdefault('so"平仓价[]', []).append(ord_exe_price)  # 平仓价
                 self.sig_order['so"平仓均价'] = np.mean(self.sig_order.get('so"平仓价[]', 0)).round(2)  # 平仓均价
-                closing_yield = (self.sig_order['so"净盈亏'] / (self.sig_order['so"总资金'] - self.sig_order['so"净盈亏']))  # 平仓收益率
+                closing_yield = (self.sig_order['so"净盈亏'] / max(abs(self.sig_order['so"期未资金'] - self.sig_order['so"净盈亏']), self.sig_order['so"期初资金']))  # 平仓收益率
                 self.sig_order['so"平仓收益率{平仓时间,平仓收益率,累计收益率}'] = {'平仓时间': self.sig_order['so"离场时间'], '平仓收益率': closing_yield, '累计收益率': self.sig_analyze['sa"累计收益率']}
                 self.sig_order['so"对数收益率'] = np.log(self.sig_order['so"平仓收益率{平仓时间,平仓收益率,累计收益率}']['平仓收益率'] + 1)
                 self.sig_analyze.setdefault('sa"对数收益率[]', []).append(self.sig_order['so"对数收益率'])
                 self.sig_analyze['sa"累计对数收益率'] += self.sig_order['so"对数收益率']  # 累计对数收益率
                 self.sig_analyze['sa"累计收益率'] = np.exp(self.sig_analyze['sa"累计对数收益率']) - 1  # 累计对数收益率转换成普通收益率
                 self.sig_order['so"平仓收益率{平仓时间,平仓收益率,累计收益率}']['累计收益率'] = self.sig_analyze['sa"累计收益率']
+                self.sig_order['so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}']['平仓时间'] = self.sig_order['so"离场时间']
+                self.sig_order['so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}']['开平收益率'] = closing_yield
+                self.sig_order['so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}']['累计收益率'] = self.sig_analyze['sa"累计收益率']
                 self.sig_analyze.setdefault('sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]', []).append(self.sig_order['so"平仓收益率{平仓时间,平仓收益率,累计收益率}'])
+                self.sig_analyze.setdefault('sa"开平收益率[{开仓时间,平仓时间,开平收益率,累计收益率}]', []).append(self.sig_order['so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}'])
                 time_in_market_avg = self.sig_analyze.setdefault('sa"持仓平均时长', timedelta(days=0))  # 平均订单市场时间
                 time_in_market = self.sig_analyze.setdefault('sa"持仓累计时长', timedelta(days=0))  # 累计订单市场时间
                 tann = self.kwargs.setdefault('G_TANN', 252)  # 用于年化（标准化）的期间数，即: - ``days: 252`` - ``weeks: 52`` - ``months: 12`` - ``years: 1``
                 self.sig_analyze['sa"CAGR'] = (np.power((1 + self.sig_analyze['sa"累计收益率']), 1 / (time_in_market.days / 365)) - 1) if time_in_market.days else 0  # CARG 复合增长率 公式：(现有价值/基础价值)^(1/年数)-1
-                return_ratio_all = [o['so"平仓收益率{平仓时间,平仓收益率,累计收益率}']['平仓收益率'] for o in self.sig_orders]  # 收益率列表
-                self.sig_analyze['sa"收益率标准差'] = np.std(return_ratio_all).round(5)  # 计算收益率标准差
+                return_oc_ratio_all = [o['so"开平收益率{开仓时间,平仓时间,开平收益率,累计收益率}']['开平收益率'] for o in self.sig_orders]  # 开平仓收益率列表
+                self.sig_analyze['sa"收益率标准差'] = np.std(return_oc_ratio_all).round(5)  # 计算收益率标准差
                 mar = 0.00  # 可接受最低收益率mar
                 rf = 0.003  # 无风险年利率rf 也可用 存款基准利率
                 # 夏普比率=(单位投资回报率平均值-无风险收益率rf)/单位投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
-                self.sig_analyze['sa"sharpe_ratio'] = ((np.mean(return_ratio_all) - rf) / self.sig_analyze['sa"收益率标准差']) * np.sqrt(time_in_market / time_in_market_avg) if self.sig_analyze['sa"收益率标准差'] else 0
+                self.sig_analyze['sa"sharpe_ratio'] = ((np.mean(return_oc_ratio_all) - rf) / self.sig_analyze['sa"收益率标准差']) * np.sqrt(time_in_market / time_in_market_avg) if self.sig_analyze['sa"收益率标准差'] else 0
                 # sortino ratio 索提诺比率 = (期望收益率rp - 可接受最低收益率mar)/((小于rf的样本rpt - rf)^2累加和的平均值)的开方
-                sortino_ratio_der = np.sqrt(sum([np.power(rpt - rf, 2) for rpt in return_ratio_all if rpt < rf]) / len(return_ratio_all))
-                self.sig_analyze['sa"sartino_ratio'] = ((np.mean(return_ratio_all) - mar) / sortino_ratio_der) if sortino_ratio_der else 0
-                # rate_list = [ad['平仓收益率'] for ad in list(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'])]  # 平仓收益率列表
-                rate_list = list(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'])  # 平仓收益率列表
-                # rate_dict_list = [so['so"平仓收益率{平仓时间,平仓收益率,累计收益率}'] for so in self.sig_orders]  # 平仓收益率字典列表
-                rate_dict_list = list(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'])  # 平仓收益率字典列表
-                somax = max(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'], key=lambda x: x['平仓收益率'])
+                sortino_ratio_der = np.sqrt(sum([np.power(rpt - rf, 2) for rpt in return_oc_ratio_all if rpt < rf]) / len(return_oc_ratio_all))
+                self.sig_analyze['sa"sartino_ratio'] = ((np.mean(return_oc_ratio_all) - mar) / sortino_ratio_der) if sortino_ratio_der else 0
+                rate_oc_dict_list = list(self.sig_analyze['sa"开平收益率[{开仓时间,平仓时间,开平收益率,累计收益率}]'])  # 开平收益率字典列表
+                so_oc_max_dict = max(rate_oc_dict_list, key=lambda x: x['开平收益率'])  # 获取收益率最大的一项字典
                 # 回撤=(前期最高值-当前值)/前期最高值
-                drawdown = ((somax['平仓收益率'] - float(self.sig_order['so"平仓收益率{平仓时间,平仓收益率,累计收益率}']['平仓收益率'])) / somax['平仓收益率']) if somax['平仓收益率'] else 0
-                self.sig_order['so"平仓回撤比'] = max(self.sig_order['so"平仓回撤比'], drawdown)  # 取当前回撤幅度最大的值
+                drawdown_oc = ((so_oc_max_dict['开平收益率'] - closing_yield) / so_oc_max_dict['开平收益率']) if so_oc_max_dict['开平收益率'] else 0
+                self.sig_order['so"平仓回撤比'] = max(self.sig_order['so"平仓回撤比'], drawdown_oc)  # 取当前回撤幅度最大的值
                 # 最大回撤=(前期最高值-期间的最低值)/前期最高值, 开始时间, 结束时间
-                # drawdown_max = round((max(rate_list) - min(rate_list[rate_list.index(max(rate_list)):])) / max(rate_list), 3)
                 max_drawdown_dict = self.max_drawdown_fun()
                 # 当回撤>之前的值, 或有新的时间序列回撤时,更新值
                 if (max_drawdown_dict and max_drawdown_dict['最大回撤比'] > 0
@@ -1278,37 +1295,13 @@ class MyStrategy(bt.Strategy):
 
     def max_drawdown_fun(self):
         # 最大回撤=(前期最高值-期间的最低值)/前期最高值, 开始时间, 结束时间
-        # rate_list = [od['平仓收益率'] for od in self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]']]
-        # idmax = rate_list.index(max(rate_list))  # 前期最高值下标
-        # idmin = rate_list.index(min(rate_list[idmax:]))  # 期间的最低值下标
-        pass
-        # drawdown_max_dict = (lambda imax, imin: {'最大回撤比': '{:.3f}'.format((rate_list[imax] - rate_list[imin]) / rate_list[imax]),
-        #                                          '开始时间': dict(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'][imax])['平仓时间'],
-        #                                          '结束时间': dict(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'][imin])['平仓时间'],
-        #                                          }, idmax, idmin)
-        pass
-        # drawdown_max = (rate_list[idmax] - rate_list[idmin]) / rate_list[idmax]
-        # if drawdown_max > 0.02:
-        #     drawdown_max_dict = {'最大回撤比': round(drawdown_max, 3),
-        #                          '开始时间': dict(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'][idmax])['平仓时间'],
-        #                          '结束时间': dict(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'][idmin])['平仓时间'],
-        #                          }
-        #     # # 'sa"最大回撤比{开始时间+结束时间:最大回撤比}'
-        #     # drawdown_max_dict = {str(dict(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'][idmax])['平仓时间'])
-        #     #                      + str(dict(self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]'][idmin])['平仓时间'])
-        #     #                      : '{:.3f}'.format(drawdown_max)}
-        #     return drawdown_max_dict
-        # else:
-        #     return None
-        pass
-        # 最大回撤=(前期最高值-期间的最低值)/前期最高值, 开始时间, 结束时间
-        rate_list = self.sig_analyze['sa"平仓收益率[{平仓时间,平仓收益率,累计收益率}]']
-        max_rate_item = max(rate_list, key=lambda x: x['平仓收益率'])  # 返回字典列表中最大值的那一项,返回值是字典
-        min_rate_item = min(rate_list[rate_list.index(max_rate_item):], key=lambda x: x['平仓收益率'])  # 前期最高值后,期间的最低值的那一项
-        drawdown_max = round((max_rate_item['平仓收益率'] - min_rate_item['平仓收益率']) / max_rate_item['平仓收益率'], 3) if max_rate_item['平仓收益率'] else 0
+        rate_oc_list = self.sig_analyze['sa"开平收益率[{开仓时间,平仓时间,开平收益率,累计收益率}]']
+        max_rate_item = max(rate_oc_list, key=lambda x: x['开平收益率'])  # 返回字典列表中最大值的那一项,返回值是字典
+        min_rate_item = min(rate_oc_list[rate_oc_list.index(max_rate_item):], key=lambda x: x['开平收益率'])  # 前期最高值后,期间的最低值的那一项
+        drawdown_max = round((max_rate_item['开平收益率'] - min_rate_item['开平收益率']) / max_rate_item['开平收益率'], 3) if max_rate_item['开平收益率'] else 0
         if drawdown_max > 0.02:
             drawdown_max_dict = {'最大回撤比': round(drawdown_max, 3),
-                                 '开始时间': max_rate_item['平仓时间'],
+                                 '开始时间': max_rate_item['开仓时间'],
                                  '结束时间': min_rate_item['平仓时间'],
                                  '累计收益率': round(min_rate_item['累计收益率'], 3),
                                  }
@@ -1320,6 +1313,7 @@ class MyStrategy(bt.Strategy):
         """每当有新的k线周期生成时通知信息"""
         # self.log('Close, %.2f' % self.dtclose[0], dt=bt.num2date(self.dtdt[0]))  # 打印当前收盘价 bt.num2date(self.dtdt[0]) 日期数值转换
         # self.log('dt, {:}'.format((self.dtdt.datetime(0) - self.dtdt.datetime(-1)).total_seconds() / 60))  # 计算与一个时间序列的间隔分钟数
+        dt = self.datas[0].datetime.datetime(0)  # 时间断点调试条件 dt > bt.datetime.datetime.strptime('2009-08-05 11:30:00', '%Y-%m-%d %H:%M:%S')
         # 如果有订单正在挂起，不操作
         if self.myorder:
             return
@@ -1660,7 +1654,7 @@ class MyStrategy(bt.Strategy):
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
         #          , doprint=
         # 最大回撤
-        max_drawdown = self.max_drawdown(return_list=self.sig_analyze.get('sa"账户余额[]'))
+        max_drawdown = self.max_drawdown(return_list=self.sig_analyze.get('sa"期末余额[]'))
         self.sig_analyze.setdefault('sa"最大回撤比[]', []).append(max_drawdown)
         self.sig_order
         self.sig_orders
