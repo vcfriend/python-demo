@@ -33,3 +33,29 @@ class TargetType(Enum):
     T_SIZE = "数量"  # 成交量
     T_VALUE = "金额"  # 目标金额
     T_PERCENT = "百分比"  # 百分比
+
+
+class Color:
+    Black = 0
+    Red = 1
+    Green = 2
+    Yellow = 3
+    Blue = 4
+    Magenta = 5
+    Cyan = 6
+    White = 7
+
+
+class Mode:
+    Foreground = 30
+    Background = 40
+    ForegroundBright = 90
+    BackgroundBright = 100
+
+
+def tcolor(c, m=Mode.Foreground):
+    return '\033[{}m'.format(m + c)
+
+
+def treset():
+    return '\033[0m'
