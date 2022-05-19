@@ -36,7 +36,7 @@ kwargs = dict()  # 参数字典
 # kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
 kwargs['G_FILE_PATH'] = "datas\\SQRB-OC-5m-20090327-20211231.csv"
 kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2009-7-14'
-# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2011-02-01'
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2010-04-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-06-25', '2019-02-01'
@@ -850,9 +850,7 @@ class MyStrategy(bt.Strategy):
             'sa_收益率标准差': .0,  # 收益率标准差
             'sa_sharpe_ratio': .0,  # 夏普比率=(单位投资回报率平均值-无风险收益率rf)/单位投资回报率的标准差)*sqrt(持仓时长/单位持仓时长)
             'sa_sartino_ratio': .0,  # sortino ratio 索提诺比率 = (期望收益率rp - 可接受最低收益率mar)/((小于rf的样本rpt - rf)^2累加和的平均值)的开方
-            'sa_最大回撤比[{平仓时间,最大回撤比}]': {'平仓时间': '', '最大回撤比': .0},
             'sa_最大回撤比[{开始时间,结束时间,最大回撤比,累计收益率}]': [],  # [{'开始时间': '', '结束时间': '', '最大回撤比': .0, '累计收益率': .0}]
-            'sa_最大回撤比[{开始时间,结束时间,最大回撤比}]': [],  # 最大回撤比列表 [{'开始时间': '', '结束时间': '', '最大回撤比': .0},]
             'sa_drawDown': .0,  # 回撤 回撤=(前期最高值-期间最低值)/前期最高值
             'sa_最大回撤比[]': [],  # 最大回撤
             'sa_平均回撤比': .0,  # 平均回撤比
@@ -1290,7 +1288,7 @@ class MyStrategy(bt.Strategy):
         rate_oc_list = self.sig_analyze['sa_开平收益率[{开仓时间,平仓时间,开平收益率,累计收益率}]']
         max_rate_item = max(rate_oc_list, key=lambda x: x['累计收益率'])  # 返回字典列表中最大值的那一项,返回值是字典
         min_rate_item = min(rate_oc_list[rate_oc_list.index(max_rate_item):], key=lambda x: x['累计收益率'])  # 前期最高值后,期间的最低值的那一项
-        drawdown_max = round((max_rate_item['累计收益率'] - min_rate_item['累计收益率']) / max_rate_item['累计收益率'], 3) if max_rate_item['累计收益率'] else 0
+        drawdown_max = round((max_rate_item['累计收益率'] - min_rate_item['累计收益率']) / (1 + max_rate_item['累计收益率']), 3) if max_rate_item['累计收益率'] else 0
         if drawdown_max > 0.03:
             drawdown_max_dict = {
                 '最大回撤比': round(drawdown_max, 3),
@@ -1392,7 +1390,7 @@ class MyStrategy(bt.Strategy):
                     self.sig_order = copy.deepcopy(self.sigOrder)
                     self.sig_orders.append(self.sig_order)
                     self.sig_order['so_状态'] = '入场'
-                    self.sig_order['期初金额'] = self.broker.getvalue()  # 当前总资产
+                    self.sig_order['so_期初金额'] = self.broker.getvalue()  # 当前总资产
                     self.myorders = []
                     pass
                 # 买入开仓
@@ -1414,7 +1412,7 @@ class MyStrategy(bt.Strategy):
             if self.sig_dec or self.sig_exit:
                 self.order_datetime = self.dtdt.datetime(0)  # 平仓订单开始时间
                 self.sig_order.get('so_平仓信号价[]', []).append(self.dtclose[0])  # 信号平仓价
-                self.sig_order['信号平仓均价'] = np.mean(self.sig_order.setdefault('so_平仓信号价[]', [0])).round(2)  # 平仓均价
+                self.sig_order['so_信号平仓均价'] = np.mean(self.sig_order.setdefault('so_平仓信号价[]', [0])).round(2)  # 平仓均价
                 if self.sig_exit:
                     self.sig_order['so_状态'] = '清仓'
 
