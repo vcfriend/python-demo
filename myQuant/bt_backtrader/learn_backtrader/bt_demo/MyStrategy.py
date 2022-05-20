@@ -7,7 +7,6 @@ import copy
 import backtrader
 import backtrader as bt
 import logging
-# import colorlog
 import argparse
 import pandas as pd
 import numpy as np
@@ -603,13 +602,6 @@ def logger_config(log_path, log_name):
     '''
     logger是日志对象，handler是流处理器，console是控制台输出（没有console也可以，将不会在控制台输出，会在日志文件中输出）
     '''
-    log_colors_config = {
-        'DEBUG': 'white',  # cyan white
-        'INFO': 'green',
-        'WARNING': 'yellow',
-        'ERROR': 'red',
-        'CRITICAL': 'bold_red',
-    }
     # 获取logger对象,取名
     logger = logging.getLogger(log_name)
     # 输出DEBUG及以上级别的信息，针对所有输出的第一层过滤
@@ -761,6 +753,7 @@ class MyStrategy(bt.Strategy):
         self.sig_keyPoint = False  # 价格在关键价附近
         self.mbstop = 0  # 是否触发回撤止损
         self.pl_sum = 0  # 累计连续亏损百分比
+        self.redo_num = 0  # 重新下单次数
         self.initial_amount = self.broker.getcash()  # 初始金额
         self.cacheVarDict = dict()  # 用于缓存运行时变量dict(变量名=变量值)
 
@@ -1152,6 +1145,7 @@ class MyStrategy(bt.Strategy):
         t = (tcolor(*color_mode) + 'notify_order:' + treset())
         # 检查一个订单是否完成状态
         if order.status in [order.Completed]:
+            self.redo_num = 0
             if order.isbuy():
                 t += (tcolor(*color_mode) + ',已买入' + treset())
             elif order.issell():
@@ -1168,10 +1162,23 @@ class MyStrategy(bt.Strategy):
             self.bar_executed = len(self)
         # 注意: 当资金不足时，broker会拒绝订单
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
+            # 保证金不足时 重新调整开仓量并下单
+            if order.status in [order.Margin] and self.redo_num < 3:
+                self.redo_num += 1
+                # re_open_size = int(order.created.size / self.turtleunits)
+                # if order.isbuy():
+                #     self.buy(size=re_open_size)  # 重新调整开仓量并下单
+                #     pass
+                # elif order.issell():
+                #     self.sell(size=re_open_size)  # 重新调整开仓量并下单
+                #     pass
+                pass
             if order.isbuy():
                 t += (tcolor(*color_mode) + ',买入单' + treset())
             elif order.issell():
                 t += (tcolor(*color_mode) + ',卖出单' + treset())
+            t += (tcolor(*color_mode) + ',未成交:{:^3d}'.format(order.created.size) + treset())  # 成交量 开仓数量
+            t += (tcolor(*color_mode) + ',订单价:{:5.1f}'.format(order.created.price) + treset())  # 成交量 开仓数量
             t += (tcolor(Color.Black, Mode.BackgroundBright) + ',订单取消/保证金不足/拒绝' + treset())
         pass
         color_mode = (Color.White, Mode.Foreground)
@@ -1211,7 +1218,7 @@ class MyStrategy(bt.Strategy):
         get_cash_value = abs(self.broker.getvalue())  # 账户总资金
         sign = np.sign(size)  # 取正负符号
         size = abs(size)
-        open_profit = sign * self.position.size * (self.position.price - self.dtclose[0])  # 浮动盈亏
+        open_profit = sign * (self.position.size * (self.position.price - self.dtclose[0]) / 2)  # 浮动盈亏
         total_return = (get_cash_value - self.initial_amount) / self.initial_amount  # 总回报率
 
         # 按成交量下单
@@ -1640,15 +1647,14 @@ class MyStrategy(bt.Strategy):
 
     def stop(self):
         """测略结束时，多用于参数调优"""
-        # self.log(' 参数 pw:{:2d} '.format(self.p.pw)
+        # self.log(' 参数: '
+        #          + ' pw:{:2d} '.format(self.p.pw)
         #          + ' pl:{:2d} '.format(self.p.pl)
         #          + ' 期末资金: {:.2f} '.format(self.broker.getvalue())
-        #          , doprint=
+        #          , doprint=True)
         # 最大回撤
         max_drawdown = self.max_drawdown(return_list=self.sig_analyze.get('sa_期末余额[]'))
         self.sig_analyze.setdefault('sa_最大回撤比[]', []).append(max_drawdown)
-        self.sig_order
-        self.sig_orders
         pass
 
 
