@@ -462,7 +462,6 @@ def result_analysis(result_one):
     print(" sortino_ratio: {:,.2f}".format(my_return_analyze['sa_sartino_ratio']))
     print(" sa_max_drawdown[]: {:}".format(my_return_analyze['sa_max_drawdown[]']))
     print(" sa_最大回撤比[]: {:}".format(my_return_analyze['sa_最大回撤比[{开始时间,结束时间,最大回撤比,累计收益比}]']))
-    print(" sa_最大回撤比2[]: {:}".format(my_return_analyze['sa_最大回撤比2[{开始时间,结束时间,最大回撤比,累计收益比}]']))
     print(" drawdown_avg: {:}".format(my_return_analyze['sa_平均最大回撤比']))
     print(" account_balance: {:}".format(my_return_analyze['sa_期末余额']))
     print(" comm_sum: {:.2f}".format(my_return_analyze['sa_手续费累计']))
@@ -1138,11 +1137,6 @@ class MyStrategy(bt.Strategy):
                 so_rate_order_d['累计对数收益比'] = self.sig_analyze['sa_累计对数收益比']
                 # 一笔完整的从入场开仓到离场平仓的订单收益比字典,构建完成,添加到 订单收益比列表
 
-                # so_id = next((ix for ix, x in enumerate(so_rate_order_ld) if x["开仓时间"] == so_rate_order_d['开仓时间']), None)  # 查找so字典列表中开始时间相同的下标
-                # so_rate_order_ld[so_id] = so_rate_order_d
-                # sa_id = next((ix for ix, x in enumerate(sa_rate_order_ld) if x["开仓时间"] == so_rate_order_d['开仓时间']), None)  # 查找sa字典列表中开始时间相同的下标
-                # sa_rate_order_ld[sa_id] = so_rate_order_d
-
                 time_in_market_avg = self.sig_analyze.setdefault('sa_持仓平均时长', timedelta(days=0))  # 平均订单市场时间
                 time_in_market = self.sig_analyze.setdefault('sa_持仓累计时长', timedelta(days=0))  # 累计订单市场时间
                 tann = self.kwargs.setdefault('G_TANN', 252)  # 用于年化（标准化）的期间数，即: - ``days: 252`` - ``weeks: 52`` - ``months: 12`` - ``years: 1``
@@ -1184,30 +1178,18 @@ class MyStrategy(bt.Strategy):
                 drawdown_l = [o['so_最大回撤比{开始时间,结束时间,最大回撤比,累计收益比}']['最大回撤比'] for o in self.sig_orders if o['so_最大回撤比{开始时间,结束时间,最大回撤比,累计收益比}']['最大回撤比'] > 0]
                 # 平均回撤比
                 self.sig_analyze['sa_平均最大回撤比'] = np.mean(drawdown_l).round(5) if drawdown_l else 0
-                # rate_sum_sa_order_l = [o['累计收益比'] for o in sa_rate_order_ld]
-                # max_rate_d = max(sa_rate_order_ld, key=lambda x: x['累计收益比'])  # 返回字典列表中最大值的那一项,返回值是字典
-                # 最大回撤比=(前期最高值-期间的最低值)/前期最高值
-                ret_max_drawdown_l = self.max_drawdown(return_list=self.sig_analyze.get('sa_期末余额[]'))  # 调用函数计算最大回撤比,开始位置和结束位置
-                so_max_drawdown2_d = self.sig_order.setdefault('so_最大回撤比2{开始时间,结束时间,最大回撤比,累计收益比}', {})
-                sa_max_drawdown2_ld = self.sig_analyze.setdefault('sa_最大回撤比2[{开始时间,结束时间,最大回撤比,累计收益比}]', [])
-                if ret_max_drawdown_l:
-                    # sa_rate_order_ld = list(self.sig_analyze['sa_订单收益比[{开仓时间,平仓时间,订单收益比,对数收益比,累计收益比,累计对数收益比}]'])  # 订单收益比字典列表
-                    # 根据max_drawdown_l返回值回撤开始下标,结束下标,最大回撤比,构建回撤信息字典
-                    i_begin, i_end, max_drawdown = int(ret_max_drawdown_l[0]), int(ret_max_drawdown_l[1]), ret_max_drawdown_l[2]
-                    so_max_drawdown2_d['最大回撤比'] = self.sig_order['so_最大回撤比'] = max_drawdown
-                    so_max_drawdown2_d['开始时间'] = sa_rate_order_ld[i_begin]['开仓时间']
-                    so_max_drawdown2_d['结束时间'] = sa_rate_order_ld[i_end]['平仓时间']
-                    so_max_drawdown2_d['累计收益比'] = sa_rate_order_ld[i_end]['累计收益比']
-
+                # return_list = [o['累计收益比'] for o in sa_rate_order_ld]
+                return_list = self.sig_analyze.get('sa_期末余额[]')
+                ret_max_drawdown = self.max_drawdown(return_list=return_list)  # 最大回撤比
+                if ret_max_drawdown:
                     # 查找sa字典列表中开始时间相同的下标
-                    sa_id = next((ix for ix, x in enumerate(sa_max_drawdown2_ld) if x["开始时间"] == so_max_drawdown2_d['开始时间']), None)
+                    sa_id = next((ix for ix, x in enumerate(self.sig_analyze.setdefault('sa_max_drawdown[]', [])) if x[0] == ret_max_drawdown[0]), None)
                     # 存在则修改sa字典列表,不存在则添加到sa字典列表中
                     if sa_id is not None:
-                        sa_max_drawdown2_ld[sa_id] = so_max_drawdown2_d
+                        self.sig_analyze.setdefault('sa_max_drawdown[]', [])[sa_id] = ret_max_drawdown
                     else:
-                        sa_max_drawdown2_ld.append(so_max_drawdown2_d)
+                        self.sig_analyze.setdefault('sa_max_drawdown[]', []).append(ret_max_drawdown)
 
-                    pass
             # </editor-fold>
             pass
         pass
@@ -1738,10 +1720,18 @@ class MyStrategy(bt.Strategy):
         #          , doprint=True)
         pass
         # 最大回撤
-        sa_rate_order_ld = self.sig_analyze['sa_订单收益比[{开仓时间,平仓时间,订单收益比,对数收益比,累计收益比,累计对数收益比}]']  # 订单收益比字典列表
-        ret_max_drawdown = self.max_drawdown(return_list=[x['累计收益比'] for x in sa_rate_order_ld])
-        # ret_max_drawdown = self.max_drawdown(return_list=self.sig_analyze.get('sa_期末余额[]'))
-        self.sig_analyze.setdefault('sa_max_drawdown[]', []).append(ret_max_drawdown)
+        # sa_rate_order_ld = self.sig_analyze['sa_订单收益比[{开仓时间,平仓时间,订单收益比,对数收益比,累计收益比,累计对数收益比}]']  # 订单收益比字典列表
+        # ret_max_drawdown = self.max_drawdown(return_list=[x['累计收益比'] for x in sa_rate_order_ld])
+
+        # ret_max_drawdown = self.max_drawdown(return_list=self.sig_analyze.get('sa_期末余额[]'))  # 最大回撤比
+        # if ret_max_drawdown:
+        #     # 查找sa字典列表中开始时间相同的下标
+        #     sa_id = next((ix for ix, x in enumerate(self.sig_analyze.setdefault('sa_max_drawdown[]', [])) if x[0] == ret_max_drawdown[0]), None)
+        #     # 存在则修改sa字典列表,不存在则添加到sa字典列表中
+        #     if sa_id is not None:
+        #         self.sig_analyze.setdefault('sa_max_drawdown[]', [])[sa_id] = ret_max_drawdown
+        #     else:
+        #         self.sig_analyze.setdefault('sa_max_drawdown[]', []).append(ret_max_drawdown)
         pass
 
 
