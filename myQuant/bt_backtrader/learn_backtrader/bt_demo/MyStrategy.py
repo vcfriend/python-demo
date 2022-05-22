@@ -25,17 +25,17 @@ res_df = None  # 筛选后的参数优化结果
 kwargs = dict()  # 参数字典
 # kwargs['G_FILE_PATH'] = "datas\\ZJIF13-5m-20100416-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2016-02-01'
-# kwargs['G_FILE_PATH'] = "datas\\DQC13-5m-20120709-20220330.csv"
+kwargs['G_FILE_PATH'] = "datas\\DQC13-5m-20120709-20220330.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2014-02-01'
-# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2017-02-01'
+kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2017-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2017-01-01', '2022-02-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\ZQCF13-5m-20121224-20220415.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2013-01-01', '2022-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQRB13-5m-20121224-20220330.csv"
-kwargs['G_FILE_PATH'] = "datas\\SQRB-OC-5m-20090327-20211231.csv"
-kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2009-10-14'
-# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2010-04-01'
+# kwargs['G_FILE_PATH'] = "datas\\SQRB-OC-5m-20090327-20211231.csv"
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2009-10-14'
+# kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2011-04-01'
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2009-04-01', '2013-02-01'
 # kwargs['G_FILE_PATH'] = "datas\\SQCU13-5m-20150625-20220427.csv"
 # kwargs['G_DT_START'], kwargs['G_DT_END'] = '2015-06-25', '2019-02-01'
@@ -53,13 +53,13 @@ kwargs['G_P_LOG_PRINT'] = False  # 是否输出日志到控制台
 kwargs['G_OPTS'] = 0  # 是否参数调优
 kwargs['G_OPTS_IS_USE'] = 0  # 是否使用上次优化结果
 kwargs['G_t_start'] = time.perf_counter()  # 当前时间计数器
-G_P_PW = [10, True, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PW = [10, False, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PL = [10, False, 2, 13, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OK = [10, False, 10, 100, 10]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PO = [5, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
+G_P_PP = [5, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_PWL = [10, False, 2, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_OJK = [1, False, 1, 3, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PO = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
-G_P_PP = [0, False, 0, 5, 1]  # 参数[默认值,是否优化,最小值,最大值,步长]
 G_P_KPR = [True, {  # 关键价格[是否启用, {日期1: dict({'kps':[价格区间1]},日期2: {'kps':[价格区间2]},})]
     datetime(2013, 10, 30).date(): {'kps': [2448, 2323], },
     datetime(2015, 4, 30).date(): {'kps': [2323, 2450], },
@@ -68,10 +68,10 @@ kwargs['G_P_PARAM'] = {
     'pw': (range(G_P_PW[2], G_P_PW[3], G_P_PW[4]) if kwargs['G_OPTS'] and G_P_PW[1] else G_P_PW[0]),
     'pl': (range(G_P_PL[2], G_P_PL[3], G_P_PL[4]) if kwargs['G_OPTS'] and G_P_PL[1] else G_P_PL[0]),
     'ok': (range(G_P_OK[2], G_P_OK[3], G_P_OK[4]) if kwargs['G_OPTS'] and G_P_OK[1] else G_P_OK[0]),
-    # 'pwl': (range(G_P_PWL[2], G_P_PWL[3], G_P_PWL[4]) if G_OPTS and G_P_PWL[1] else G_P_PWL[0]),
-    # 'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if G_OPTS and G_P_OJK[1] else G_P_OJK[0]),
-    # 'po': (range(G_P_PO[2], G_P_PO[3], G_P_PO[4]) if G_OPTS and G_P_PO[1] else G_P_PO[0]),
-    # 'pp': (range(G_P_PP[2], G_P_PP[3], G_P_PP[4]) if G_OPTS and G_P_PP[1] else G_P_PP[0]),
+    'po': (range(G_P_PO[2], G_P_PO[3], G_P_PO[4]) if kwargs['G_OPTS'] and G_P_PO[1] else G_P_PO[0]),
+    # 'pwl': (range(G_P_PWL[2], G_P_PWL[3], G_P_PWL[4]) if kwargs['G_OPTS'] and G_P_PWL[1] else G_P_PWL[0]),
+    # 'ojk': (range(G_P_OJK[2], G_P_OJK[3], G_P_OJK[4]) if kwargs['G_OPTS'] and G_P_OJK[1] else G_P_OJK[0]),
+    # 'pp': (range(G_P_PP[2], G_P_PP[3], G_P_PP[4]) if kwargs['G_OPTS'] and G_P_PP[1] else G_P_PP[0]),
     # 'kpr': G_P_KPR[1] if G_P_KPR[0] else None
 
 }
@@ -100,8 +100,8 @@ def parse_args(pargs=None):
     parser.add_argument('--quantstats', required=False, type=int, default=kwargs['G_QUANTSTATS'], help='是否使用 quantstats 分析测试结果')
     parser.add_argument('--maxcpus', '-m', type=int, required=False, default=15, help=('Number of CPUs to use in the optimization'
                                                                                        '\n  - 0 (default): 使用所有可用的 CPU\n   - 1 -> n: 使用尽可能多的指定\n'))
-    parser.add_argument('--no-optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
-    parser.add_argument('--no-optreturn', action='store_true', required=False, help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
+    parser.add_argument('--no_optdatas', action='store_true', required=False, help='优化中不优化数据预加载')
+    parser.add_argument('--no_optreturn', action='store_true', required=False, help='不要优化返回值以节省时间,这避免了回传大量生成的数据，例如指标在回溯测试期间生成的值')
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False, metavar='kwargs', const=True, default=kwargs['G_PLOT'], help='绘制应用传递的任何 kwargs 的读取数据\n\n例如:\n\n  --plot style="candle" (to plot candles)\n')
@@ -295,7 +295,7 @@ def optimize(cerebro):
         results_opt = cerebro.run(
             maxcpus=args.maxcpus,
             optdatas=not args.no_optdatas,  # optdatas（默认值：True)如果和优化（以及系统可以和使用），数据预加载将只在主进程中完成一次，以节省时间和资源。
-            optreturn=not args.no_optreturn,  # optreturn（默认值：True) 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西,优化结果不是完整的对象,而是具有以下属性的对象（以及所有数据、指标、观察器等）。如果需要对（例如）指标的生成值进行详细分析，请将其关闭
+            optreturn=not args.no_optreturn,  # optreturn（默认值：True) 在大多数情况下，只有分析器和哪些参数是评估策略性能所需的东西,优化结果不是完整的对象,而是具有以下属性的对象（以及所有数据、指标、观察器等）。如果需要对（例如）指标的生成值进行详细分析，请将其关闭 测试显示执行时间方面性能提高了13% - 15%。与optdata相结合，在优化运行时，总增益提高到32%的总速度
             # optreturn=False,
             # stdstats=False,
         )
@@ -461,8 +461,8 @@ def result_analysis(result_one):
     print(" sharpe_ratio: {:,.2f}".format(my_return_analyze['sa_sharpe_ratio']))
     print(" sortino_ratio: {:,.2f}".format(my_return_analyze['sa_sartino_ratio']))
     print(" sa_max_drawdown[]: {:}".format(my_return_analyze['sa_max_drawdown[]']))
-    print(" sa_最大回撤比[]: {:}".format(my_return_analyze['sa_最大回撤比[{开始时间,结束时间,最大回撤比,平均回撤比,累计收益比}]']))
-    print(" sa_最大盈利比[]: {:}".format(my_return_analyze['sa_最大盈利比[{开始时间,结束时间,最大盈利比,平均盈利比,累计收益比}]']))
+    # print(" sa_最大回撤比[]: {:}".format(my_return_analyze['sa_最大回撤比[{开始时间,结束时间,最大回撤比,平均回撤比,累计收益比}]']))
+    # print(" sa_最大盈利比[]: {:}".format(my_return_analyze['sa_最大盈利比[{开始时间,结束时间,最大盈利比,平均盈利比,累计收益比}]']))
     print(" avg_drawdown: {:}".format(my_return_analyze['sa_平均最大回撤比']))
     print(" avg_profit_ratio: {:}".format(my_return_analyze['sa_平均最大盈利比']))
     print(" account_balance: {:}".format(my_return_analyze['sa_期末余额']))
@@ -656,7 +656,7 @@ class MyStrategy(bt.Strategy):
         pll=0,  # 最大回撤千分比
         ojk=1,  # 订单间隔bar周期数
         max=0,  # 最大开仓单位
-        kpr=dict(),  # 仓位控制的关价格点位
+        kpr=dict(),  # 仓位控制的关键价格点位
         valid=None,  # 订单生效时间
         log_print=False,  # 是否打印日志到控制台
         log_file=False,  # 是否保存日志到文件
@@ -830,8 +830,6 @@ class MyStrategy(bt.Strategy):
             'so_订单[]': [],  # 策略信号生成的订单列表
         }
         self.sig_orders = []  # 策略信号生成的订单列表
-        # closing_yield_list = Dict[str, float]
-        # closing_yield_list = Dict[NewType('平仓时间', str), NewType('平仓收益比', float)]
         self.sig_analyze = {  # 回报分析
             'sa_开始时间': '',  # 开始时间
             'sa_结束时间': '',  # 结束时间
@@ -971,8 +969,8 @@ class MyStrategy(bt.Strategy):
         color_mode = (Color.White, Mode.Foreground)
         t += (tcolor(*color_mode) + ',comm:{:.1f}'.format((trade.pnl - trade.pnlcomm)) + treset())  # 手续费
         t += (tcolor(*color_mode) + ',net:{:.1f}'.format(trade.pnlcomm) + treset())  # 净盈亏含手续费
-        t += (tcolor(*color_mode) + ',收益率:{:^6.1%}'.format(self.stats.timereturn.line[0]) + treset())  # 使用前需添加观测器cerebro.addobserver(bt.observers.TimeReturn)
-        t += (tcolor(*color_mode) + ',回撤:{:4.2f}'.format(self.stats.drawdown.drawdown[0]) + treset())  # 使用前需添加观测器cerebro.addobserver(bt.observers.DrawDown)
+        t += (tcolor(*color_mode) + ',收益率:{:^6.1%}'.format(self.stats.timereturn.line[0]) + treset()) if hasattr(self.stats, 'timereturn') else ''  # 使用前需添加观测器cerebro.addobserver(bt.observers.TimeReturn)
+        t += (tcolor(*color_mode) + ',回撤:{:4.2f}'.format(self.stats.drawdown.drawdown[0]) + treset()) if hasattr(self.stats, 'drawdown') else ''  # 使用前需添加观测器cerebro.addobserver(bt.observers.DrawDown)
         t += (tcolor(*color_mode) + ',开仓:{:^6}'.format(round(self.mpok, 5)) + treset())
         t += (tcolor(*color_mode) + ',总资产:{:,.0f}'.format(self.broker.getvalue()) + treset())
         t += (tcolor(*color_mode) + ',add:{:.1f}'.format(self.radd) + treset())
@@ -982,6 +980,78 @@ class MyStrategy(bt.Strategy):
 
     def notify_order(self, order):
         """每当有交易订单创建和关闭时通知信息"""
+        """
+        order在backtrader中的作用
+        在backtrader中，Cerebro是系统的控制核心，Strategy是用户的可操控点，还需要一个将Strategy与系统其它部分相连接的角色，有了这个角色就可以将用户自定义的Strategy的信息传递给系统的其它部分，让系统按用户的需要运转起来，这个角色的扮演者就是order。
+        也就是说：order是连接用户自定义Strategy与backtrader系统其它部分的桥梁，让backtrader可以按照用户的想法运行（回测或者交易）。
+        这种桥梁作用是通过下面的方式来实现：
+        
+        1. order将策略Strategy逻辑所做出的决定，翻译为代理Broker所能理解的信息，Broker最终来执行具体的交易操作。 具体的操作包括：
+        订单创建
+        通过调用Strategy的buy()、sell()、close()方法来返回订单实例。
+        订单取消
+        通过调用Strategy的cancel(order)方法来取消订单。
+        
+        2. order将Broker执行交易的信息反馈给用户。 具体方式为：
+        订单通知
+        通过调用Strategy的notify_order(order)方法来通知order的状态。
+        订单创建
+        上面提到，可以通过buy()、sell()、close()方法来创建订单，这里介绍一下这些方法可能使用到的参数。参数的不同选择，会使订单的交易行为截然不同。因此为了全面了解order的作用，有必要过一遍这些参数：
+        
+        data（默认值：None）
+        order所要操作的数据。如果为None，则系统中的第一组数据（第一只股票/品种）将被使用，也就是self.datas[0]、self.data0、self.data，上面3种形式均可以表示系统中的第一组数据。
+        
+        size（默认值：None）
+        交易单位，size是一个正数。对于买单，如果size=100，就是买100个单位数量的仓位；对于卖单，如果size=100，就是卖100个单位数量的仓位。
+        如果size=None，sizer实例就会通过getsizer方法来获取size的值。也就是说，除了使用buy、sell方法来设置单个订单的交易单位大小，还有方法设置全局交易单位的大小（通过Cerebro.addsizer方法来设置），这样就避免了每个order都要设置交易单位。
+        
+        price（默认值：None）
+        交易价格。
+        默认值None适用于Market、Close订单（后面的exectype参数会介绍各类型订单的意义），由市场决定具体的交易价格。
+        对于Limit、Stop、StopLimit订单，必须显式给price赋值，price值决定了交易的触发点（trigger point）。
+        对于StopTrail、StopTrailLimit订单，是否显示设置price，将决定不同的交易触发点。（后续文章将详细介绍）
+        
+        plimit（默认值：None）
+        只适用于StopLimit订单。在StopLimit订单中，plimit值被设置为隐含的Limit订单price值，而price值被用于触发当前StopLimit订单的Stop条件。（后续文章将详细介绍）
+        
+        exectype（默认值：None）
+        可能的取值：
+        
+        Order.Market或者None：Market订单将以下一个可行的价格进行交易，在回测中，就将以下一根K线的开盘价进行交易。
+        Order.Limit：在给定的价位price或者更好的价位执行的订单。
+        Order.Stop：当价格突破price时，触发订单成交。
+        Order.StopLimit：当价格突破price时触发订单（类似于Order.Stop订单），之后以给定的价位plimit或者更好的价位执行订单（相当于以参数plimit为price的Order.Limit订单）。
+        Order.StopTrail：根据收盘价的变化，动态调整订单的交易价格，以实现利润的保护。
+        Order.StopTrailLimit：Order.StopTrail和Order.Limit的组合，按照Order.StopTrail条件触发，按照Order.Limit条件成交。
+        Order.Historical：尚未发现相关说明及应用。
+        valid（默认值：None）
+        可能的取值：
+        
+        None。生成的订单将不会过期，将一直在市场中等待满足条件后执行或者等待被手动取消。
+        datetime.datetime或者datetime.date的实例。这个日期将被用来创建这样一个订单，如果截止到该给定的日期，该订单仍未满足执行条件，那么这个订单就会过期而取消。
+        Order.DAY或者timedelta()。生成一个单日订单，有效期为1天，单日未满足执行条件，订单就会过期取消。
+        numeric value。对应于matplotlib中的日期格式，将被用来创建订单，订单有效期截止日为该日期。
+        tradeid（默认值：0）
+        这是backtrader应用的一个内部值，用于跟踪相同资产上的重叠交易。当通知订单状态的变化时，此tradeid被发送回策略。
+
+        notify_order方法会在Strategy的next方法前被调用
+        在同一个next周期内，同一个order的通知，可以以相同或者不同的状态在notify_order方法中出现多次。
+        例如：一个订单先被提交给代理，然后立即被代理接受，且已经满足了执行的条件，它的执行就会在下一个next方法被调用前就已经完成。在这个例子中，至少有以下3个状态通知产生：
+        Order.Submitted：产生于订单提交给代理
+        Order.Accepted：产生于代理接受订单，等待被执行
+        Order.Completed：产生于订单满足了执行条件，被立即执行完成
+
+        Order.Created：order实例被创建后的状态。当使用buy、sell、close创建订单时，该状态对用户不可见，需要手动创建order的实例，才能获取到该状态。
+        Order.Submitted：当order实例被发送给broker后的状态。在回测模式下，订单发送是一个即时动作，不需要花费时间。而在实盘中，订单发送将要实际花费时间，代理收到订单后，将订单转发给交易所，随即通知订单已提交。
+        Order.Accepted：当order处于该状态时，该order已经在系统或者交易所中等待被执行，会根据设置的exectype、size、price、valid等参数确定何时被执行。
+        Order.Partial：order部分成交时的状态。order.executed属性里记录了已经成交的size及平均价格。order.executed.exbits里包含了分批成交的详细情况完整列表。
+        Order.Complete：order全部成交的状态（平均成交价格被计算并记录下来）。
+        Order.Rejected：order被broker拒绝的状态。如果某个参数不被broker所接受，那么order也将不被broker接受。订单被拒的原因将通过Strategy的notify_store方法通知用户。该状态对于回测代理不可见。
+        Order.Margin：资金不足，订单无法成交，之前接受的订单会被从系统中删除。
+        Order.Cancelled（或者Order.Canceled）： 对用户订单取消要求的确认。用户通过Strategy的cancel方法提交取消订单申请，可能无法成功地取消订单。订单可能已经成交，但是代理尚未反馈成交结果，或者成交通知还没有发送到Strategy。因此需要Order.Canncelled对是否成功取消订单进行确认。
+        Order.Expired：在该状态下，之前被提交的包含有效时间的订单已经过期，订单被从系统中删除。
+
+        """
         dt = self.datas[0].datetime.datetime(0)  # 时间断点调试条件 dt >= bt.datetime.datetime.strptime('2009-09-24 09:05:00', '%Y-%m-%d %H:%M:%S')
         if order.status in [order.Accepted, order.Submitted]:
             # broker 提交/接受了，买/卖订单则什么都不做 [order.Accepted, order.Submitted]
@@ -1219,8 +1289,8 @@ class MyStrategy(bt.Strategy):
             t += (tcolor(*color_mode) + ',佣金:{:^5.1f}'.format(order.executed.comm) + treset())  # 佣金 手续费
             t += (tcolor(*color_mode) + ',成交价:{:5.1f}'.format(order.executed.price) + treset())  # 成交价
             t += (tcolor(*color_mode) + ',成交金额:{:^6.0f}'.format(order.executed.value) + treset())  # 成交金额 成交占用的保证金
-            t += (tcolor(*color_mode) + ',收益率:{:^6.1%}'.format(self.stats.timereturn.line[0]) + treset())  # 使用前需添加观测器cerebro.addobserver(bt.observers.TimeReturn)
-            t += (tcolor(*color_mode) + ',回撤:{:4.2f}'.format(self.stats.drawdown.drawdown[0]) + treset())  # 使用前需添加观测器cerebro.addobserver(bt.observers.DrawDown)
+            t += (tcolor(*color_mode) + ',收益率:{:^6.1%}'.format(self.stats.timereturn.line[0]) + treset()) if hasattr(self.stats, 'timereturn') else ''  # 使用前需添加观测器cerebro.addobserver(bt.observers.TimeReturn)
+            t += (tcolor(*color_mode) + ',回撤:{:4.2f}'.format(self.stats.drawdown.drawdown[0]) + treset()) if hasattr(self.stats, 'drawdown') else ''  # 使用前需添加观测器cerebro.addobserver(bt.observers.DrawDown)
             self.bar_executed = len(self)
         # 注意: 当资金不足时，broker会拒绝订单
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
@@ -1588,6 +1658,10 @@ class MyStrategy(bt.Strategy):
             # 回撤>平均回撤,增加头寸
             if self.sig_order['so_最大回撤比'] > self.sig_analyze['sa_平均最大回撤比']:
                 self.mpok = (self.mpok * (1 + self.mppo))
+                pass
+            # 盈利>平均盈利,减少头寸
+            if self.sig_order['so_最大盈利比'] > self.sig_analyze['sa_平均最大盈利比']:
+                self.mpok = (self.mpok * (1 - self.mppo))
                 pass
             # 加仓时的盈亏比率平衡
             if self.ppos_profit_ref1 != 0 and self.sig_add:
